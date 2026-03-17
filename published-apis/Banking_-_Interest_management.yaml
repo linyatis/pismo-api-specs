@@ -1,0 +1,628 @@
+openapi: 3.1.0
+info:
+  title: Banking - Interest management
+  version: 1.0.0
+  description: API to handle interest-bearing account operations
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox-integration.pismolabs.io/interest-management
+    description: Sandbox API server for testing
+  - url: https://sandbox.pismolabs.io/passport/v2/s2s/access-token
+    description: Sandbox API for oauth2
+tags:
+  - name: Interest plan
+    description: Manage interest plans
+  - name: Account interest
+    description: Manage account interest
+  - name: Benchmark rate
+    description: Manage benchmarks
+components:
+  parameters:
+    AccountId:
+      name: accountId
+      in: path
+      description: Account ID
+      required: true
+      example: '8080'
+      schema:
+        type: string
+    Authorization:
+      name: authorization
+      in: header
+      description: Authorization
+      required: true
+      example: >-
+        Bearer
+        ac194ce4-ecbe-4007-91bd-94babf388e7278f243bc-4ad8-4ead-a2c3-f42a548fe760
+      schema:
+        type: string
+    Benchmark:
+      name: benchmark
+      in: path
+      description: Market index used to measure the interest a value has over time
+      example: FED
+      required: true
+      schema:
+        type: string
+    ContentType:
+      name: content-type
+      in: header
+      description: Content type
+      required: true
+      example: application/json
+      schema:
+        type: string
+    InterestPlanIdPath:
+      name: interestPlanId
+      in: path
+      description: >-
+        Interest plan ID generated during the plan's creation. Must be an
+        alphanumeric UUID with the alphabetical characters in lowercase.
+      required: true
+      example: d9b2c9e1-4633-4a10-841b-270f7f1493cd
+      schema:
+        type: string
+  schemas:
+    AccrualBasis:
+      type: string
+      description: |
+        Method used to calculate interest accrual.
+          * `BD/252`: Calculates daily interest using a 252-day year and the actual number of business days in each time period.
+          * `ACTUAL/360`: Calculates daily interest using a 360-day year and the actual number of days in each time period.
+          * `ACTUAL/365`: Calculates daily interest using a 365-day year and the actual number of days in each time period.
+          * `ACTUAL/ACTUAL`: Calculates daily interest using the actual number of days in the year (which in the leap year is 366) and the actual number of days in each time period.
+      enum:
+        - BD/252
+        - ACTUAL/360
+        - ACTUAL/365
+        - ACTUAL/ACTUAL
+      example: ACTUAL/365
+    AccrualFrequency:
+      type: string
+      description: Interest accrual frequency
+      enum:
+        - DAILY
+        - MONTHLY
+        - QUARTERLY
+        - HALF-YEARLY
+        - YEARLY
+      example: DAILY
+    Benchmark:
+      type: string
+      description: >
+        Market index used to measure interest value over time. For fixed
+        interest, this field must be null.
+          - BOE: Bank of England, UK
+          - DI: Interbank Deposit Contract, Brazil
+          - FED: Federal Reserve System, USA
+          - RBA: Reserve Bank of Australia
+          - RBI: Reserve Bank of India   
+      enum:
+        - BOE
+        - DI
+        - FED
+        - RBA
+        - RBI
+      example: FED
+    BenchmarkRequired:
+      type: string
+      description: |
+        Market index used to measure interest value over time.
+          - BOE: Bank of England, UK
+          - DI: Interbank Deposit Contract, Brazil
+          - FED: Federal Reserve System, USA
+          - RBA: Reserve Bank of Australia
+          - RBI: Reserve Bank of India   
+      enum:
+        - BOE
+        - DI
+        - FED
+        - RBA
+        - RBI
+      example: FED
+    BenchmarkRate:
+      type: number
+      format: double
+      description: Annual market index rate
+      example: 0.104
+    BenchmarkRateRequest:
+      title: Benchmark rate request
+      type: object
+      properties:
+        benchmark:
+          $ref: '#/components/schemas/BenchmarkRequired'
+        benchmark_rate:
+          $ref: '#/components/schemas/BenchmarkRate'
+        start_date:
+          $ref: '#/components/schemas/StartDate'
+      required:
+        - benchmark
+        - benchmark_rate
+        - start_date
+      example:
+        benchmark: FED
+        benchmark_rate: 0.104
+        start_date: '2024-09-04'
+    BenchmarkRateResponse:
+      title: Benchmark rate response
+      type: object
+      properties:
+        benchmark_rate:
+          $ref: '#/components/schemas/BenchmarkRate'
+        start_date:
+          $ref: '#/components/schemas/StartDate'
+        version:
+          $ref: '#/components/schemas/Version'
+    BenchmarkRateList:
+      type: array
+      format: array
+      items:
+        $ref: '#/components/schemas/GetBenchmarkRate'
+      description: Benchmark rate list
+    CapitalisationFrequency:
+      type: string
+      description: Interest payout frequency
+      enum:
+        - DAILY
+        - MONTHLY
+        - QUARTERLY
+        - HALF-YEARLY
+        - YEARLY
+      example: DAILY
+    CurrencyCode:
+      type: string
+      format: number
+      description: Numeric currency code in ISO 4217 standard
+      example: '986'
+    Description:
+      type: string
+      description: Interest plan name
+      example: Banking plan
+    FeeProcessingCode:
+      type: string
+      format: number
+      description: >-
+        Processing code configured in the [fee model](doc:fee-model) for
+        charging a tax, penalty, or fee.
+      example: '001100'
+    FixedInterestRate:
+      type: string
+      format: number
+      description: >-
+        Fixed annual interest rate for investments or deposits. If a `benchmark`
+        value is provided, this field must be null.
+      example: '0.10'
+    GetBenchmarkRate:
+      type: object
+      properties:
+        benchmark:
+          $ref: '#/components/schemas/BenchmarkRequired'
+        benchmark_rate:
+          $ref: '#/components/schemas/BenchmarkRate'
+        start_date:
+          $ref: '#/components/schemas/StartDate'
+        version:
+          $ref: '#/components/schemas/Version'
+    GetBenchmarkRateResponse:
+      title: Get benchmark rate response
+      type: object
+      properties:
+        get_benchmark_rate_list:
+          $ref: '#/components/schemas/BenchmarkRateList'
+    GetBenchmarkRateOrgResponse:
+      title: Get benchmark rate org response
+      type: object
+      properties:
+        get_benchmark_rate_org_list:
+          $ref: '#/components/schemas/BenchmarkRateList'
+    GetInterestAccountResponse:
+      title: Get interest account response
+      type: object
+      properties:
+        benchmark:
+          $ref: '#/components/schemas/Benchmark'
+        fixed_interest_rate:
+          $ref: '#/components/schemas/FixedInterestRate'
+        margin_rate:
+          $ref: '#/components/schemas/MarginRate'
+        margin:
+          $ref: '#/components/schemas/Margin'
+    GetInterestPlanResponse:
+      title: Get interest plan response
+      type: object
+      properties:
+        interest_plan_id:
+          $ref: '#/components/schemas/InterestPlanId'
+        org_id:
+          $ref: '#/components/schemas/OrgId'
+        description:
+          $ref: '#/components/schemas/Description'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+        benchmark:
+          $ref: '#/components/schemas/Benchmark'
+        fixed_interet_rate:
+          $ref: '#/components/schemas/FixedInterestRate'
+        margin_rate:
+          $ref: '#/components/schemas/MarginRate'
+        margin:
+          $ref: '#/components/schemas/Margin'
+        fee_processing_code:
+          $ref: '#/components/schemas/FeeProcessingCode'
+        accrual_basis:
+          $ref: '#/components/schemas/AccrualBasis'
+        interest_type:
+          $ref: '#/components/schemas/InterestType'
+        capitalisation_frequency:
+          $ref: '#/components/schemas/CapitalisationFrequency'
+        accrual_frequency:
+          $ref: '#/components/schemas/AccrualFrequency'
+    InterestAccountRequest:
+      title: Interest account request
+      type: object
+      properties:
+        benchmark:
+          $ref: '#/components/schemas/Benchmark'
+        fixed_interest_rate:
+          $ref: '#/components/schemas/FixedInterestRate'
+        margin_rate:
+          $ref: '#/components/schemas/MarginRate'
+        margin:
+          $ref: '#/components/schemas/Margin'
+      example:
+        benchmark: FED
+        margin_rate: 1.3
+        margin: 0.05
+    InterestAccountResponse:
+      title: Interest account response
+      type: object
+      properties:
+        benchmark:
+          $ref: '#/components/schemas/Benchmark'
+        fixed_interet_rate:
+          $ref: '#/components/schemas/FixedInterestRate'
+        margin_rate:
+          $ref: '#/components/schemas/MarginRate'
+        margin:
+          $ref: '#/components/schemas/Margin'
+    InterestPlanId:
+      type: string
+      format: UUID
+      description: >-
+        Interest plan ID generated during the plan's creation. Must be an
+        alphanumeric UUID with the alphabetical characters in lowercase.
+      example: 07d84f79-3027-47bd-b628-65528ccc8fb2
+    InterestPlanRequest:
+      title: Interest plan request
+      type: object
+      properties:
+        accrual_basis:
+          $ref: '#/components/schemas/AccrualBasis'
+        accrual_frequency:
+          $ref: '#/components/schemas/AccrualFrequency'
+        capitalisation_frequency:
+          $ref: '#/components/schemas/CapitalisationFrequency'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+        description:
+          $ref: '#/components/schemas/Description'
+        interest_type:
+          $ref: '#/components/schemas/InterestType'
+        benchmark:
+          $ref: '#/components/schemas/Benchmark'
+        fee_processing_code:
+          $ref: '#/components/schemas/FeeProcessingCode'
+        fixed_interest_rate:
+          $ref: '#/components/schemas/FixedInterestRate'
+        margin:
+          $ref: '#/components/schemas/Margin'
+        margin_rate:
+          $ref: '#/components/schemas/MarginRate'
+      required:
+        - accrual_basis
+        - accrual_frequency
+        - capitalisation_frequency
+        - currency_code
+        - description
+        - interest_type
+      example:
+        accrual_basis: ACTUAL/365
+        accrual_frequency: DAILY
+        capitalisation_frequency: DAILY
+        currency_code: '986'
+        description: BANKING PLAN
+        interest_type: COMPOUND
+        benchmark: FED
+        fee_processing_code: '001100'
+        margin: 0.05
+        margin_rate: 1.2
+    InterestPlanResponse:
+      title: Org parameters response
+      type: object
+      properties:
+        interest_plan_id:
+          $ref: '#/components/schemas/InterestPlanId'
+    InterestType:
+      type: string
+      description: >
+        Interest calculation type.
+
+        - SIMPLE: Calculated on the original deposit or investment value.
+
+        - COMPOUND: Calculated on the original value plus the last accumulated
+        interest.
+      enum:
+        - SIMPLE
+        - COMPOUND
+      example: SIMPLE
+    Margin:
+      type: number
+      format: double
+      description: >
+        Also known as a spread, this is an incremental rate the clients receive
+        over the investments or deposits. 
+
+        If a `benchmark` value is provided, this field is optional.
+
+        If `benchmark` is null, this field must be null also.
+      example: 0.02
+    MarginRate:
+      type: number
+      format: double
+      description: >-
+        Rate linked to the benchmark rate. For example, for 110% FED, margin
+        rate is 110%. If a `benchmark` value is not provided, this field must be
+        null.
+      example: 1.1
+    OrgId:
+      type: string
+      description: Organization ID generated in the onboarding process
+      example: TN-cc8f8b89-233a-4582-9f36-63ee85278d6d
+    StartDate:
+      type: string
+      format: date
+      description: >-
+        Date to start applying the benchmark rate in the accrual process. Format
+        = YYYY-MM-DD.
+      example: '2024-09-10'
+    Version:
+      type: string
+      description: Benchmark rate version. Format = YYYY-MM.
+      example: 2024-09
+  responses:
+    400BadRequest:
+      description: Bad request
+    401Unauthorized:
+      description: Unauthorized
+    500InternalServerError:
+      description: Internal server error
+    404NotFound:
+      description: Not found
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - BearerAuth: []
+paths:
+  /v1/interest/plan:
+    post:
+      summary: Create interest plan
+      description: >
+        Create an interest plan configuration that defines how the platform
+        calculates interest accrual. Once created, you can apply the interest
+        plan to a specific product or account. For example, you can provide the
+        `interest_plan_id` when creating a [deposit
+        product](ref:interest-bearing-v1-create-deposit-product), when creating
+        a [savings
+        account](ref:interest-bearing-v1-create-savings-account-product), or
+        when [depositing money](ref:post-v1-interest-deposit) into an account.
+
+
+        This endpoint generates an [Interest plan creation
+        succeeded](https://developers.pismo.io/events/docs/interest-management-interest-plan-creation-success-1)
+        event.
+
+
+        For more information, refer to the [Interest-bearing
+        accounts](doc:interest-bearing-accounts) guide.
+      tags:
+        - Interest plan
+      operationId: post-v1-interest-plan
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+        - $ref: '#/components/parameters/ContentType'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterestPlanRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterestPlanResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/interest/plan/{interestPlanId}:
+    get:
+      summary: Get interest plan
+      description: Get interest plan details.
+      tags:
+        - Interest plan
+      operationId: get-v1-interest-plan
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+        - $ref: '#/components/parameters/InterestPlanIdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetInterestPlanResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/interest/account/{accountId}:
+    get:
+      summary: Get account interest
+      description: Get account interest details.
+      tags:
+        - Account interest
+      operationId: get-v1-interest-account
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/Authorization'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetInterestAccountResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    put:
+      summary: Overwrite account interest
+      description: |
+        Apply specific interest accrual options to an account.
+      tags:
+        - Account interest
+      operationId: put-v1-interest-account
+      parameters:
+        - $ref: '#/components/parameters/ContentType'
+        - $ref: '#/components/parameters/Authorization'
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterestAccountRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterestAccountResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/interest/benchmark-rate:
+    post:
+      summary: Configure benchmark rate
+      description: >
+        Configure the benchmark rate and its start date. Used to calculate
+        interest accual for floating and hybrid investments.
+      tags:
+        - Benchmark rate
+      operationId: post-v1-benchmark-rate
+      parameters:
+        - $ref: '#/components/parameters/ContentType'
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BenchmarkRateRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkRateResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    get:
+      summary: Get Org benchmark rates
+      description: Get all benchmark rates configured for an organization.
+      tags:
+        - Benchmark rate
+      operationId: get-v1-benchmark-rate-org
+      parameters:
+        - $ref: '#/components/parameters/ContentType'
+        - $ref: '#/components/parameters/Authorization'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetBenchmarkRateOrgResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/interest/benchmark-rate/{benchmark}:
+    get:
+      summary: Get specific benchmark rates
+      description: Get all rates configured for a specific benchmark.
+      tags:
+        - Benchmark rate
+      operationId: get-v1-benchmark-rate
+      parameters:
+        - $ref: '#/components/parameters/ContentType'
+        - $ref: '#/components/parameters/Authorization'
+        - $ref: '#/components/parameters/Benchmark'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetBenchmarkRateResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'

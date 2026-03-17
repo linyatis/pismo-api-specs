@@ -1,0 +1,3004 @@
+openapi: 3.1.0
+info:
+  title: Card issuing - Tokenization
+  description: API endpoints for card tokenization.
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://gw-pci.pismolabs.io/cards-tokenization
+    description: PCI API server for testing
+  - url: https://pci.pismolabs.io/cards-tokenization
+    description: Sandbox API server for testing
+tags:
+  - name: Network card profile
+    description: Network card profile endpoints
+  - name: Pre-digitalization
+    description: Pre-digitalization endpoints
+  - name: Token lifecycle
+    description: Token lifecycle endpoints
+  - name: Card lifecycle
+    description: Card lifecycle endpoints
+  - name: Visa Click to Pay [Beta]
+    description: Visa Click to Pay service endpoints
+  - name: MDES Token Connect [Beta]
+    description: Mastercard's Token Connect service endpoints
+components:
+  parameters:
+    accessTokenHeader:
+      name: access_token
+      in: header
+      required: true
+      schema:
+        type: string
+      description: >-
+        Access token. Tokens can expire quickly, which can result in a **401
+        Unauthorized** error.
+    AccountIdHeader:
+      in: header
+      name: x-account-id
+      required: true
+      schema:
+        type: integer
+        format: int64
+      description: Account ID
+    AssetID:
+      name: assetId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: >
+        Image asset ID.  This is the `image_asset_id` field returned from the
+        [Get eligible token
+        requestors](ref:token_connect_get_eligible_token_requestors) endpoint.
+    CardIDpath:
+      name: cardId
+      in: path
+      schema:
+        type: string
+      description: Pismo card ID
+      required: true
+    CardIDpath2:
+      name: card_id
+      in: path
+      schema:
+        type: string
+      description: Pismo card ID
+      required: true
+    CidHeader:
+      name: x-cid
+      in: header
+      schema:
+        type: string
+      description: Request correlation ID used for tracking on Pismo platform.
+    CustomerIDheader:
+      name: x-customer-id
+      in: header
+      required: true
+      schema:
+        type: integer
+      description: Customer ID
+    OwnerBidHeader:
+      name: x-owner-bid
+      in: header
+      schema:
+        type: string
+      description: >
+        Owner business ID. Identifies the issuing entity creating or managing
+        enrollment in Click to Pay.
+      required: true
+    OwnerBidHeader2:
+      name: x-bid
+      in: header
+      schema:
+        type: string
+      description: >
+        Owner business ID. Identifies the issuing entity creating or managing
+        enrollment in Click to Pay.
+      required: true
+    TokenIDpath:
+      name: tokenId
+      in: path
+      schema:
+        type: string
+      description: Token ID
+      required: true
+    TenantHeader:
+      name: x-tenant
+      in: header
+      schema:
+        type: string
+      description: Pismo organization/tenant ID
+      required: true
+  schemas:
+    AccountData:
+      type: object
+      required:
+        - holder_details
+        - validity_details
+      properties:
+        holder_details:
+          $ref: '#/components/schemas/HolderDetails'
+        validity_details:
+          $ref: '#/components/schemas/ValidityDetails'
+    AccountID:
+      type: number
+      description: Pismo account ID
+      example: 8675309
+    ActivationCode:
+      type: string
+      description: >-
+        REQUIRED if `operation_type` is `CALL_CENTER_ACTIVATION`. These codes
+        are known only to the issuer/caller.
+      maxLength: 8
+      example: '94'
+    AdditionalInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name
+        address:
+          type: string
+          description: Address
+        country:
+          type: string
+          description: Country
+        city:
+          type: string
+          description: City
+        state:
+          type: string
+          description: State
+        phone:
+          type: string
+          description: Phone
+        printed_name:
+          type: string
+          description: Name printed on card
+        last_4_digits:
+          type: string
+          description: Last 4 PAN digits
+    Address:
+      type: object
+      required:
+        - country
+      properties:
+        line1:
+          type: string
+          description: Address line one
+          maxLength: 64
+          example: 1313 Mockingbird Lane
+        line2:
+          type: string
+          description: Address line two
+          maxLength: 64
+          example: Apt 4B
+        country:
+          type: string
+          description: |
+            Billing address country - ISO-3166-1 3-letter code.
+          maxLength: 3
+          example: USA
+        country_subdivision:
+          type: string
+          description: Country subdivision such as state or sultanate
+          maxLength: 12
+          example: CA
+        city:
+          type: string
+          description: Billing address city
+          maxLength: 32
+          example: San Francisco
+        postal_code:
+          type: string
+          description: Billing address postal code, such as zip code in the United States.
+          maxLength: 16
+          example: '8675309'
+    ApplePayEncryptedDataResponse:
+      type: object
+      properties:
+        push_data:
+          type: object
+          properties:
+            ephemeralPublicKey:
+              type: string
+              description: Key pair for Apple SDK
+            encryptedData:
+              type: string
+              description: Encrypted card data for Apple SDK
+            activationData:
+              type: string
+              description: Encrypted data for Apple SDK in base64 format
+        additional_info:
+          type: object
+          properties:
+            name:
+              type: string
+              description: Cardholder name
+            address:
+              type: string
+              description: Cardholder address
+            country:
+              type: string
+              description: Cardholder country
+            city:
+              type: string
+              description: Cardholder city
+            state:
+              type: string
+              description: Cardholder state
+            phone:
+              type: string
+              description: Cardholder phone number
+            printed_name:
+              type: string
+              description: Name printed on card
+            last_4_digits:
+              type: string
+              description: Last 4 PAN digits
+            has_address_info:
+              $ref: '#/components/schemas/HasAddressInfo'
+            has_phone_info:
+              $ref: '#/components/schemas/HasPhoneInfo'
+          example:
+            push_data:
+              ephemeralPublicKey: >-
+                BLv5wb8HKPTlabxWW6z2at67jDqLZlFbGrOmq0bc2A0BbhRCmwWpzcf8ST2kEBctYX1nNZ9fE5MRSPf/4Tpz698=
+              encryptedData: uOt1....T9TOebjAM6DI43juahDiaMvpUaQZU2KNaICA==
+              activationData: ewogICJmdW5...PSIKfQ==
+            additional_info:
+              name: Ron Rico
+              address: 221B Baker Street
+              country: Elbonia
+              city: Raccoon
+              phone: 867-5309
+              state: Siege
+              zip_code: '8675309'
+              printed_name: Tupper Weir
+              last_4_digits: '9999'
+              has_address_info: false
+              has_phone_info: true
+    ApplePayEncryptedDataRequest:
+      type: object
+      required:
+        - Apple_public_certificate_b64
+        - device_type
+        - app_version
+        - Nonce
+        - Nonce_signature
+      properties:
+        Apple_public_certificate_b64:
+          description: >
+            Apple SDK Base64 encoded certificate from Apple
+
+            *You need to encode what you receive from Apple with Base64 and then
+            send it here.
+          type: array
+          items:
+            type: string
+            example: LS0tL...Q0FURS0tLS0t
+        device_type:
+          type: string
+          description: Device type that the token will be provisioned for.
+          enum:
+            - MOBILE_PHONE
+            - WATCH
+        app_version:
+          type: string
+          description: Application version from the provisioning request.
+        Nonce:
+          type: string
+          description: >-
+            From Apple SDK. Nonce = "number used once", a one-time-use random
+            generated value.
+          example: '48585930'
+        Nonce_signature:
+          type: string
+          description: From Apple SDK
+          example: vdt5543
+        tav_version:
+          $ref: '#/components/schemas/TAVversion'
+        key_alias:
+          $ref: '#/components/schemas/TokenKeyAlias'
+        authcode:
+          type: string
+          description: >
+            An issuer-generated 6-character code specific to the current
+            provisioning request. Issuer and Visa use this field to identify
+            specific activation codes in problem resolution or authentication
+            related questions. Format is alphanumeric. Allowed characters
+            include 0-9 and A-Z. Characters must be in uppercase and not contain
+            all zeros or all spaces. **REQUIRED** for Visa.
+          example: 0CVBD9
+    CardID:
+      type: number
+      description: Card ID
+      example: 6743052
+    ClickToPayAddress:
+      type: object
+      properties:
+        city:
+          type: string
+          description: City
+          minLength: 1
+          maxLength: 32
+          example: San Francisco
+        state:
+          type: string
+          description: >-
+            State - ISO 3166-2 code format. For example - `RJ` (Rio de Janiero,
+            Brazil)
+          format: ISO 3166-2
+          minLength: 1
+          maxLength: 3
+          example: RJ
+        postal_code:
+          type: string
+          description: Postal code
+          minLength: 1
+          maxLength: 9
+          example: '94105'
+        country_code:
+          type: string
+          format: ISO 3166-1-alpha3,
+          description: Country code - 3-character ISO 3166 (Alpha 3) format
+          minLength: 1
+          maxLength: 3
+          example: USA
+        address_line1:
+          type: string
+          description: Address line one
+          minLength: 1
+          maxLength: 64
+          example: 1000 Market Street
+        address_line2:
+          type: string
+          description: Address line two
+          minLength: 1
+          maxLength: 64
+          example: Building 56
+        address_line3:
+          type: string
+          description: Address line three
+          minLength: 1
+          maxLength: 64
+          example: Suite 101
+    ClickToPayBadRequest:
+      type: object
+      properties:
+        code:
+          type: number
+          description: HTTP response code
+          example: 400
+        message:
+          type: string
+          description: Error description
+        details:
+          type: array
+          description: Error details
+          items:
+            type: string
+    ClickToPayCardInfo:
+      type: object
+      required:
+        - card_id
+      properties:
+        card_id:
+          $ref: '#/components/schemas/CardID'
+        billing_address:
+          $ref: '#/components/schemas/ClickToPayAddress'
+    ClickToPayConsent:
+      type: object
+      description: Consent details
+      required:
+        - time_of_consent
+      properties:
+        time_of_consent:
+          type: string
+          description: >
+            Date/time when consent becomes valid, in ISO UTC format
+            YYYY-MM-DDThh:mm:ss.000Z. Only accepts present and past dates.
+          example: '2020-05-05T12:12:12.000Z'
+          pattern: \d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d\.000Z
+        version:
+          type: string
+          description: Terms and conditions version that the customer accepted.
+          minLength: 1
+          maxLength: 9
+          example: '1.0'
+        presenter:
+          type: string
+          description: Text identifying consent presenter.
+          minLength: 1
+          maxLength: 30
+          example: Acme Bank
+    ClickToPayCustomerInfo:
+      type: object
+      required:
+        - locale
+      properties:
+        locale:
+          $ref: '#/components/schemas/Locale'
+        first_name:
+          type: string
+          description: Customer first name
+          minLength: 1
+          maxLength: 35
+          example: Alex
+        middle_name:
+          type: string
+          description: Customer middle name
+          minLength: 1
+          maxLength: 35
+          example: Robert
+        last_name:
+          type: string
+          description: Customer last name
+          minLength: 1
+          maxLength: 35
+          example: Miller
+        country_code:
+          type: string
+          format: ISO 3166-1-alpha3
+          description: Country code&mdash;3-character ISO 3166 (Alpha 3) format
+          minLength: 1
+          maxLength: 3
+          example: USA
+        emails:
+          type: array
+          description: Customer emails
+          minLength: 1
+          maxLength: 5
+          items:
+            type: string
+            description: Email address
+            format: email
+            example: anita_drink@provider.com
+        phones:
+          type: array
+          description: Customer phones
+          minLength: 1
+          maxLength: 5
+          items:
+            type: string
+            description: Customer phone
+            example: '5545999999999'
+        national_identifiers:
+          type: array
+          description: Customer national identifiers
+          minLength: 1
+          maxLength: 5
+          items:
+            required:
+              - type
+              - value
+            type: object
+            properties:
+              type:
+                type: string
+                description: Identification type
+                enum:
+                  - PASSPORT
+                  - DRIVING_LICENSE
+                  - NATIONAL_IDENTITY
+                example: NATIONAL_IDENTITY
+              value:
+                type: string
+                description: Identification type value
+                minLength: 1
+                maxLength: 24
+                example: A123456
+        consent:
+          $ref: '#/components/schemas/ClickToPayConsent'
+    ClickToPayDeleteCardRequest:
+      type: object
+      required:
+        - card_id
+        - owner_bid
+      properties:
+        owner_bid:
+          $ref: '#/components/schemas/OwnerBid'
+        card_id:
+          $ref: '#/components/schemas/CardID'
+    ClickToPayDeleteCustomerRequest:
+      type: object
+      required:
+        - owner_bid
+      properties:
+        owner_bid:
+          $ref: '#/components/schemas/OwnerBid'
+    ClickToPayEnrollData:
+      type: object
+      required:
+        - owner_bid
+        - card_information
+        - customer_information
+      properties:
+        owner_bid:
+          $ref: '#/components/schemas/OwnerBid'
+        card_information:
+          $ref: '#/components/schemas/ClickToPayCardInfo'
+        customer_information:
+          $ref: '#/components/schemas/ClickToPayCustomerInfo'
+    ClickToPayEnrollCardRequest:
+      type: object
+      required:
+        - card_id
+        - owner_bid
+      properties:
+        owner_bid:
+          $ref: '#/components/schemas/OwnerBid'
+        card_id:
+          $ref: '#/components/schemas/CardID'
+        billing_address:
+          $ref: '#/components/schemas/ClickToPayAddress'
+    ClickToPayGetCustomerCardStatusResponse:
+      type: object
+      properties:
+        customer_id:
+          $ref: '#/components/schemas/CustomerId'
+        cards_status:
+          items:
+            type: object
+            description: Form of identification
+            properties:
+              card_id:
+                $ref: '#/components/schemas/CardID'
+              status:
+                type: boolean
+                description: Is the card active?
+                example: true
+    ClickToPayInternalServerError:
+      type: object
+      description: Click to Pay internal server error
+      properties:
+        code:
+          type: number
+          description: HTTP response code
+          example: 500
+        message:
+          type: string
+          description: Error description
+          example: Internal server error
+    ClickToPayUpdateCustomerRequest:
+      type: object
+      required:
+        - owner_bid
+      properties:
+        owner_bid:
+          $ref: '#/components/schemas/OwnerBid'
+        customer_information:
+          $ref: '#/components/schemas/ClickToPayCustomerInfo'
+    ClickToPayUpdateCustomerBillingRequest:
+      type: object
+      required:
+        - cards
+      properties:
+        cards:
+          type: array
+          items:
+            type: object
+            description: Form of identification
+            required:
+              - card_id
+              - owner_bid
+            properties:
+              owner_bid:
+                $ref: '#/components/schemas/OwnerBid'
+              card_id:
+                $ref: '#/components/schemas/CardID'
+              billing_address:
+                $ref: '#/components/schemas/ClickToPayAddress'
+    Contact:
+      type: object
+      description: Contact object
+      properties:
+        email_address:
+          type: string
+          description: Email address
+          format: email
+          maxLength: 320
+          example: barbie_kew@roadhouse.com
+        country_dial_in_code:
+          type: string
+          description: |
+            International dial-in prefix code associated with country.
+          maxLength: 4
+          example: '1'
+        phone_number:
+          type: string
+          description: Phone number following `country_dial_in_code` prefix.
+          maxLength: 20
+          example: '4155551234'
+    CustomerId:
+      type: number
+      description: Customer ID
+      example: 6743052
+    DigitalizationDeviceID:
+      type: number
+      description: Digitalization device ID
+      example: 999
+    EncryptedDataObject:
+      type: object
+      description: Encrypted data object
+      properties:
+        push_data:
+          $ref: '#/components/schemas/PushData'
+        additional_info:
+          $ref: '#/components/schemas/AdditionalInfo'
+        has_address_info:
+          $ref: '#/components/schemas/HasAddressInfo'
+        has_phone_info:
+          $ref: '#/components/schemas/HasPhoneInfo'
+    EncryptedDataObjectRequest:
+      type: object
+      properties:
+        client_wallet_account_id:
+          type: string
+          description: >-
+            Client-provided wallet account holder ID. **REQUIRED** for Visa. See
+            Visa documentation for more information.
+          example: ABC-198
+        client_device_id:
+          type: string
+          description: >-
+            Stable device identifcation from wallet provider.  **REQUIRED** for
+            Visa. See Visa documentation for more information.
+          example: ABC-198
+        client_app_id:
+          type: string
+          description: >-
+            Client application unique ID from Visa.  **REQUIRED** for Visa.  See
+            Visa documentation for more information.
+          example: ABC-198
+        client_wallet_provider:
+          type: string
+          description: >-
+            Client wallet provider - the token requestor's ID (TRID) given to
+            the wallet provider during onboarding.  **REQUIRED** for Visa.
+          example: ABC-198
+        tav_version:
+          $ref: '#/components/schemas/TAVversion'
+        key_alias:
+          $ref: '#/components/schemas/TokenKeyAlias'
+    HolderDetails:
+      type: object
+      description: Account holder details object
+      properties:
+        name:
+          type: string
+          description: >-
+            Account holder name in the format Last name/First name or first name
+            last name.
+          maxLength: 27
+          example: Cee Biskit
+        address:
+          $ref: '#/components/schemas/Address'
+        contact:
+          $ref: '#/components/schemas/Contact'
+    Locale:
+      type: string
+      description: >
+        Consumer preferred locale (language and country). 
+
+
+        **Format**: two-letter ISO-639-1 language in lowercase + underscore
+        ("_") + two-letter ISO 3166-1 country code in uppercase.
+      example: en_US
+    PushProvisioningSamsungObjectRequest:
+      type: object
+      properties:
+        client_wallet_account_id:
+          type: string
+          description: >-
+            Client-provided wallet account holder ID. **REQUIRED** for Visa. See
+            Visa documentation for more information.
+          example: ABC-198
+        client_device_id:
+          type: string
+          description: >-
+            Stable device identifcation from wallet provider.  **REQUIRED** for
+            Visa. See Visa documentation for more information.
+          example: ABC-198
+        client_app_id:
+          type: string
+          description: >-
+            Client application unique ID from Visa.  **REQUIRED** for Visa.  See
+            Visa documentation for more information.
+          example: ABC-198
+        client_wallet_provider:
+          type: string
+          description: >-
+            Client wallet provider - the token requestor's ID (TRID) given to
+            the wallet provider during onboarding.  **REQUIRED** for Visa.
+          example: ABC-198
+    ErrorObject:
+      type: object
+      description: Standard error object
+      properties:
+        error_code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Error message
+    GetAssetResponse:
+      type: object
+      properties:
+        media_contents:
+          type: array
+          description: List of media content items
+          items:
+            $ref: '#/components/schemas/MediaContent'
+          example:
+            - type: image/png
+              data: base64EncodedImageData...
+              height: '100'
+              width: '100'
+    GetCardConfigCardResponse:
+      type: object
+      properties:
+        google_try_counter:
+          type: integer
+          description: Google wallet CVV try counter
+          example: 0
+        apple_try_counter:
+          type: integer
+          description: Apple wallet CVV try counter
+          example: 3
+        samsung_try_counter:
+          type: integer
+          description: Samsung wallet CVV try counter
+          example: 1
+    HasAddressInfo:
+      type: boolean
+      description: >
+        If `true`,  cardholder address information exists on Pismo platform.  If
+        `false`, some fields inside `additional_info` are not returned. 
+    HasPhoneInfo:
+      type: boolean
+      description: >
+        If `true`, cardholder phone information exists on Pismo platform. If
+        `false`, some fields inside `additional_info` are not returned. 
+    MediaContent:
+      type: object
+      required:
+        - type
+        - data
+      properties:
+        type:
+          type: string
+          description: |
+
+            Media content MIME type
+
+            * `application/pdf` - For images (must be a vector PDF image)
+            * `image/png` -  Includes alpha channel
+            * `image/svg+xml` -  Image in SVG format
+            * `text/plain` - Plain text
+            * `text/html` - HTML text
+          enum:
+            - application/pdf
+            - image/png
+            - image/svg+xml
+            - text/plain
+            - text/html
+          example: image/png
+        data:
+          type: string
+          description: Base64 encoded media data.
+          example: base64EncodedImageData...
+        height:
+          type: string
+          description: |
+            For non-SVG image assets, the image height in pixels.
+          maxLength: 6
+          example: '100'
+        width:
+          type: string
+          description: |
+            For non-SVG image assets, the image width in pixels.
+          maxLength: 6
+          example: '100'
+    NetworkCardProfile:
+      type: string
+      description: >-
+        Network card profile that you, the issuer, have already configured with
+        the card network.
+    NetworkCardProfileObject:
+      type: object
+      description: Network card profile object
+      required:
+        - network_card_profile
+      properties:
+        network_card_profile:
+          $ref: '#/components/schemas/NetworkCardProfile'
+        update_previous_tokens:
+          type: boolean
+          description: >-
+            Should previously issued tokens on the network be updated?  **ONLY**
+            for VISA and Mastercard. Default is `false`.
+          default: false
+    NetworkDetails:
+      type: object
+      description: Dynamic data that varies according to network
+    OperatorID:
+      type: string
+      description: >-
+        Client-generated ID for person or system performing the operation. This
+        is for client monitoring and internal record-keeping.
+      maxLength: 16
+    OperationReason:
+      type: string
+      description: >
+        Operation reason. Be descriptive, it should be clear what the customer
+        needs to do. For a suspended token, for example, the reason could say
+        "Suspended due to lost device."
+      example: Suspended due to lost device
+      maxLength: 254
+    OperationType:
+      type: string
+      description: >
+        Operation type: 
+
+
+        * `DELETE` - Delete token 
+
+
+        * `SUSPEND` - Suspend token 
+
+
+        * `RESUME` - Resume suspended token 
+
+
+        * `CALL_CENTER_ACTIVATION` - Call center verification 
+
+
+        * `CARDHOLDER_STEPUP_APP_TO_APP` - App2App verification
+
+
+        * `TOKEN_DEVICE_BIDING_APPROVE` - Device verification
+
+
+        **Note**: For App2App token activation, set this field to
+        `CARDHOLDER_STEPUP_APP_TO_APP` (Mastercard) and `CALL_CENTER_ACTIVATION`
+        (Visa).
+      example: DELETE
+      enum:
+        - DELETE
+        - SUSPEND
+        - RESUME
+        - CALL_CENTER_ACTIVATION
+        - CARDHOLDER_STEPUP_APP_TO_APP
+        - TOKEN_DEVICE_BIDING_APPROVE
+    OrgID:
+      type: string
+      description: Pismo organiztion/tenant ID
+      example: TN-ddce7e50-0485-49ec-a910-866dff0bfd0f
+    OwnerBid:
+      type: string
+      description: >
+        Owner business ID. Identifies the issuing entity creating or managing
+        enrollment in Click to Pay.
+      example: '1000052'
+    PaymentAppInstanceID:
+      type: string
+      description: Payment app instance ID
+    ProgramID:
+      type: string
+      description: Pismo program ID
+      example: '8675'
+    PushAccountReceipt:
+      type: object
+      description: Push account receipts object
+      required:
+        - push_account_id
+        - push_account_receipt
+      properties:
+        push_account_id:
+          type: string
+          description: Push account ID
+          maxLength: 36
+          example: pa_123456789
+        push_account_receipt:
+          type: string
+          description: >
+            Push account receipt to token requestor. Contains pushed account
+            details and expires after 15 minutes. 
+
+
+            A valid receipt =  3-character prefix identifying product associated
+            with funding account + UUID.
+
+
+            Prefic values: 
+              * `MCC` - Mastercard credit 
+              * `DMC` - Mastercard debit 
+              * `MSI` - Maestro 
+              * `PVL` - Private label
+          maxLength: 64
+          example: MCC-C307FOAE-298E-48EB-AA43-A7C40B32DDDE
+        issuer_initiated_digitization_data:
+          type: string
+          description: >
+            Base64 encoded string issuer can pass to token requestor proprietary
+            communication. Present if
+            `request_issuer_initiated_digitization_data` is `true` in the
+            request.
+          maxLength: 256000
+    PushAccountsRequest:
+      type: object
+      required:
+        - card_id
+        - accounts
+        - token_requestor_id
+        - locale
+      properties:
+        card_id:
+          $ref: '#/components/schemas/CardID'
+        accounts:
+          $ref: '#/components/schemas/AccountData'
+        token_requestor_id:
+          $ref: '#/components/schemas/TokenRequestorId'
+        locale:
+          $ref: '#/components/schemas/Locale'
+        callback_url:
+          type: string
+          description: >
+            Callback URL token requestor uses to pass control back to the
+            issuer.
+          maxLength: 256
+          example: https://callback.example.com
+        complete_issuer_app_activation:
+          type: boolean
+          description: >
+            Should token requestor complete app activation if provisioning
+            request receives a `REQUIRE_ADDITIONAL_AUTHENTICATION` and the
+            cardholder chooses the `CARDHOLDER_TO_USE_ISSUER_MOBILE_APP`
+            authentication method?
+          default: false
+        complete_website_activation:
+          type: boolean
+          description: >
+            Should token requestor complete website activation if provisioning
+            request receives a `REQUIRE_ADDITIONAL_AUTHENTICATION` and the
+            cardholder chooses the `CARDHOLDER_TO_VISIT_WEBSITE` authentication
+            method?
+          default: false
+        account_holder_data_supplied:
+          type: boolean
+          description: >-
+            Is cardholder information stored in MDES along with funding account
+            information?
+          default: false
+        request_issuer_initiated_digitization_data:
+          type: boolean
+          description: Return issuer initiated digitization data?
+          default: false
+        push_account_receipts_validity_period:
+          type: number
+          description: >
+            Push account receipts validity period in minutes. If issuer is
+            pushing more than one account, the provided value is applicable to
+            all receipts.
+
+
+            Default is `15`. **Must** be greater or equal to `5` and less than
+            or equal to `15`. 
+          enum:
+            - 5
+            - 6
+            - 7
+            - 8
+            - 9
+            - 10
+            - 11
+            - 12
+            - 13
+            - 14
+            - 15
+          minimum: 5
+          maximum: 15
+          default: 15
+          example: 15
+    PushAccountsResponse:
+      type: object
+      properties:
+        push_account_receipts:
+          type: array
+          description: Push account receipts
+          items:
+            $ref: '#/components/schemas/PushAccountReceipt'
+        available_push_methods:
+          type: array
+          description: Available push methods
+          items:
+            $ref: '#/components/schemas/PushMethod'
+        signature:
+          type: string
+          description: >
+            JWS signature output. **REQUIRED** if
+            `token_reqiest_signature_support` is `true` and at least one push
+            account receipt is returned.
+        token_requestor_signature_support:
+          type: boolean
+          description: Does token requestor support signature verification?
+    PushData:
+      type: object
+      description: Encrypted data
+    PushMethod:
+      type: object
+      required:
+        - type
+        - uri
+      properties:
+        type:
+          type: string
+          description: |
+            Push method type
+
+            * `ANDROID` - Android app intent URI
+            * `IOS` - iOS app intent URI
+            * `WEB` - Browser URL
+          enum:
+            - ANDROID
+            - IOS
+            - WEB
+          example: WEB
+        uri:
+          type: string
+          description: URI to open the token requestor's application or website.
+          maxLength: 128
+          format: uri
+          example: https://tokenize.example.com
+    Requestor:
+      type: string
+      description: >
+        Token requestor value. A token requestor is an entity that initiates the
+        tokenization process. Wallets, merchants, payments service providers
+        (PSPs) are collectively referred to as **token requestors**.
+      example: '12345678'
+    ResetCvv2TryCounterRequest:
+      type: object
+      properties:
+        wallet:
+          type: string
+          description: |
+            Wallet identifier:
+              Google Pay -  `216`
+              Apple Pay - `103` 
+              Samsung Pay - `217`
+          enum:
+            - '216'
+            - '103'
+            - '217'
+          example: '216'
+    RetrieveWithDeviceRequest:
+      type: object
+      required:
+        - card_id
+        - token
+        - token_requestor
+      properties:
+        card_id:
+          $ref: '#/components/schemas/CardID'
+        token:
+          $ref: '#/components/schemas/Token'
+        token_requestor:
+          $ref: '#/components/schemas/Requestor'
+    TAVversion:
+      type: string
+      description: >
+        The Token Authorization Value (TAV) version. The TAV value contains the
+        issuer's digital signature that approves the token digitization for a
+        Primary Account Number (PAN). **REQUIRED** for Mastercard if the issuer
+        wants to use model `TAV4`.
+      enum:
+        - TAV3
+        - TAV4
+      example: TAV4
+    Token:
+      type: string
+      description: Network token
+      example: PISMOMOCK000007767550841
+    TokenByTokenIdResponse:
+      type: object
+      properties:
+        token_id:
+          $ref: '#/components/schemas/TokenID'
+        wallet_id:
+          $ref: '#/components/schemas/WalletID'
+        token_type:
+          $ref: '#/components/schemas/TokenType'
+    TokenDigitalizationDeviceResponse:
+      type: object
+      properties:
+        token:
+          $ref: '#/components/schemas/Token'
+        token_id:
+          $ref: '#/components/schemas/TokenID'
+        wallet_id:
+          $ref: '#/components/schemas/WalletID'
+        token_type:
+          $ref: '#/components/schemas/TokenType'
+        token_status:
+          $ref: '#/components/schemas/TokenStatus'
+        device_id:
+          $ref: '#/components/schemas/DigitalizationDeviceID'
+        card_id:
+          $ref: '#/components/schemas/CardID'
+    TokenID:
+      type: string
+      description: Pismo token ID
+      example: '412'
+    TokenInfoCardResponse:
+      type: object
+      properties:
+        tokens:
+          type: array
+          items:
+            type: object
+            properties:
+              token:
+                $ref: '#/components/schemas/TokenObject'
+              token_id:
+                $ref: '#/components/schemas/TokenID'
+              card_id:
+                $ref: '#/components/schemas/CardID'
+              wallet_id:
+                $ref: '#/components/schemas/WalletID'
+              account_id:
+                $ref: '#/components/schemas/AccountID'
+              program_id:
+                $ref: '#/components/schemas/ProgramID'
+              org_id:
+                $ref: '#/components/schemas/OrgID'
+              payment_app_instance_id:
+                $ref: '#/components/schemas/PaymentAppInstanceID'
+              tracking_id:
+                $ref: '#/components/schemas/TrackingID'
+              status:
+                $ref: '#/components/schemas/TokenStatus'
+        network_data:
+          type: object
+    TokenInfoCardTokenResponse:
+      type: object
+      properties:
+        token:
+          $ref: '#/components/schemas/TokenObject'
+        token_id:
+          $ref: '#/components/schemas/TokenID'
+        card_id:
+          $ref: '#/components/schemas/CardID'
+        wallet_id:
+          $ref: '#/components/schemas/WalletID'
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        program_id:
+          $ref: '#/components/schemas/ProgramID'
+        org_id:
+          $ref: '#/components/schemas/OrgID'
+        payment_app_instance_id:
+          $ref: '#/components/schemas/PaymentAppInstanceID'
+        tracking_id:
+          $ref: '#/components/schemas/TrackingID'
+        status:
+          $ref: '#/components/schemas/TokenStatus'
+        network_data:
+          $ref: '#/components/schemas/NetworkDetails'
+    TokenKeyAlias:
+      type: string
+      description: >
+        Mastercard provided Key alias value used to generate the signature on a
+        TAV body request. **REQUIRED** if Mastercard and `TAV4` version.
+      example: 2023-abd-deeg
+    TokenObject:
+      type: object
+      properties:
+        key:
+          type: object
+          properties:
+            token_ref:
+              type: string
+              description: Identifies the token on the network.
+              example: PISMOMOCK000007767550841
+            pan_ref:
+              type: string
+              description: PAN reference - identifies the card on the network.
+              example: V-2271272911360823654091
+            payment_network:
+              type: string
+              description: Payment network - `vts` (VISA) or `mdes` (Mastercard)
+              enum:
+                - vts
+                - mdes
+              example: mdes
+    TokenOperationByCard:
+      type: object
+      required:
+        - operation_reason
+        - operation_type
+      properties:
+        operation_reason:
+          type: string
+          description: >-
+            Token operation reason. Be descriptive, it should be clear what the
+            customer needs to do.
+          maxLength: 255
+          example: Suspended due to lost device.
+        operation_type:
+          type: string
+          description: Token operation to execute
+          enum:
+            - SUSPEND
+            - RESUME
+            - DELETE
+          example: SUSPEND
+        operator_id:
+          type: string
+          description: Client-generated ID for person or system performing the operation.
+          example: NbChEH
+    TokenOperationRequest:
+      type: object
+      required:
+        - operation_reason
+        - operation_type
+      properties:
+        operation_reason:
+          $ref: '#/components/schemas/OperationReason'
+        operation_type:
+          $ref: '#/components/schemas/OperationType'
+        activation_code:
+          $ref: '#/components/schemas/ActivationCode'
+        operator_id:
+          $ref: '#/components/schemas/OperatorID'
+    TokenRequestor:
+      type: object
+      description: >-
+        Token requestor information. Wallets, Merchants, Payment Service
+        Providers are collectively referred to as token requestors
+      required:
+        - token_requestor_id
+        - name
+        - consumer_facing_entity_name
+        - token_requestor_type
+        - enabled_account_ranges
+      properties:
+        token_requestor_id:
+          $ref: '#/components/schemas/TokenRequestorId'
+        name:
+          type: string
+          description: Token requestor legal name
+          maxLength: 64
+          example: Acme Widgets, Inc.
+        consumer_facing_entity_name:
+          type: string
+          description: Consumer facing entity name. Token requestor display name.
+          maxLength: 100
+          example: Acme Widgets Online
+        token_requestor_type:
+          $ref: '#/components/schemas/TokenRequestorType'
+        enabled_account_ranges:
+          type: array
+          description: >
+            Array of account range start numbers enabled for token requestor.
+            The start numbers are 19 digits in length.
+          items:
+            type: integer
+            format: int64
+        image_asset_id:
+          type: string
+          description: >
+            Token requestor image (for instance a logo) asset ID. 
+
+            Call the [Get asset](ref:token_connect_get_asset) endpoint to
+            retrieve the image.
+        wallet_id:
+          $ref: '#/components/schemas/WalletID2'
+        supported_push_methods:
+          type: array
+          description: >
+            Web-to-web or app-to-web push methods token requestor supports. Not
+            returned if the token requestor does not participate in the MDES
+            Token Connect program. 
+          items:
+            type: string
+            enum:
+              - ANDROID
+              - IOS
+              - WEB
+        supports_multiple_pushed_cards:
+          type: boolean
+          description: >
+            Does token requestor support up to 5 push account receipts in a
+            single request?  Present if the token requestor participates in MDES
+            Token Connect program. 
+        supported_account_holder_data:
+          type: array
+          description: >
+
+            Account holder data elements the token requestor expects to receive
+            from the issuer with a pushed card or account. 
+
+
+            Only returned if the token requestor participates in MDES Token
+            Connect. 
+
+
+            If the token requestor participates but doesn't accept account
+            holder data, then an empty array is returned. To ensure
+            forward-compatibility, all API client implementations must be
+            resilient to new data element values being added to responses from
+            MDES. 
+
+
+            *  `NAME` - Account holder first and last name
+
+            *  `ADDRESS` - Account holder billing address
+
+            *  `EMAIL_ADDRESS` - Account holder email address
+
+            *  `MOBILE_PHONE_NUMBER` - Account holder mobile phone number
+          items:
+            type: string
+            enum:
+              - NAME
+              - ADDRESS
+              - EMAIL_ADDRESS
+              - MOBILE_PHONE_NUMBER
+        supports_card_holder_authentication:
+          type: boolean
+          description: >
+            Does token requestor support cardholder authentication after the
+            token is activated?
+        supports_token_connect:
+          type: boolean
+          description: |
+            Does token requestor support Token Connect? 
+        available_push_methods:
+          type: array
+          description: Available push methods
+          items:
+            $ref: '#/components/schemas/PushMethod'
+        support_issuer_initiated_digitization_data:
+          type: boolean
+          description: |
+            Does token requestor support Issuer Initiated Digitization Data?
+    TokenRequestorId:
+      type: string
+      description: >
+        Token requestor ID (TRID), a numeric 11-digit value. 
+
+
+        A token requestor is an entity that initiates the tokenization process.
+        Wallets, merchants, payments service providers (PSPs) are collectively
+        referred to as **token requestors**. 
+
+
+        Card networks use TRIDs to enforce usage boundaries at the network
+        level, know who is reponsible if fraud occurs, and to prevent tokens
+        from being used elsewhere. 
+      maxLength: 11
+      example: '01234567890'
+    TokenRequestorRequest:
+      type: object
+      required:
+        - accounts
+      properties:
+        accounts:
+          type: array
+          description: >
+            Account ranges to check for eligibility. 
+
+
+            The starting numbers are numeric strings between 9 and 19 in length.
+            If the starting numbers are less than 19, MDES  zero pads the
+            starting numbers to 19 in length. The padded value must exactly
+            match the account range start number enabled for the token
+            requestor.
+          items:
+            type: string
+          example:
+            - '5412346789'
+            - '5412346780'
+    TokenRequestorResponse:
+      type: object
+      properties:
+        token_requestors:
+          type: array
+          items:
+            $ref: '#/components/schemas/TokenRequestor'
+    TokenRequestorType:
+      type: string
+      description: >
+        Token requestor type
+
+
+        * `MERCHANT` - Merchant token requestor. For example - Netflix, Uber,
+        Amazon, and so on. 
+
+
+        * `WALLET`- Wallet or commerce platform token requestor. For example -
+        Apple Pay, Google Wallet, Samsung Pay, and so on. 
+      enum:
+        - MERCHANT
+        - WALLET
+      example: MERCHANT
+    TokenStatus:
+      type: string
+      description: Token status
+      enum:
+        - ACTIVE
+        - SUSPENDED
+        - DEACTIVATED
+        - INACTIVE
+      example: ACTIVE
+    TokenType:
+      type: string
+      description: Pismo token type
+      example: ECOMMERCE
+    TrackingID:
+      type: string
+      description: Tracking ID
+    ValidityDetails:
+      type: object
+      properties:
+        data_valid_until_timestamp:
+          type: string
+          description: >
+            Data valid until timestamp. 
+
+            Format: ISO 8601 extended format as one of the following: *
+            YYYY-MM-DDThh:mm:ss[.sss]Z * YYYY-MM-DDThh:mm:ss[.sss]±hh:mm where
+            [.sss] is optional and can be 1 to 3 digits
+          format: date-time
+          maxLength: 29
+          example: '2025-12-31T23:59:59Z'
+    WalletID:
+      type: string
+      description: >-
+        Wallet ID. Identifies the wallet (Samsung Pay, Google Pay, and so on) on
+        the network.
+      example: ANDROID_PAY
+    WalletID2:
+      type: string
+      description: >
+        Wallet provider ID. Returned if token requestor is a wallet like Google
+        Pay or Samsung Pay. 
+      maxLength: 3
+      example: '123'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account token - token encoded with a Pismo account ID. Tokens can expire
+        quickly, which can result in a "**401 Unauthorized**" error.
+      bearerFormat: JWT
+  responses:
+    200MasterApplePayPushProvisioning:
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApplePayEncryptedDataResponse'
+          example:
+            push_data:
+              ephemeralPublicKey: >-
+                BLv5wb8HKPTlabxWW6z2at67jDqLZlFbGrOmq0bc2A0BbhRCmwWpzcf8ST2kEBctYX1nNZ9fE5MRSPf/4Tpz698=
+              encryptedData: uOt1....T9TOebjAM6DI43juahDiaMvpUaQZU2KNaICA==
+              activationData: ewogICJmdW5...PSIKfQ==
+            additional_info:
+              name: Ron Rico
+              address: 221B Baker Street
+              country: Elbonia
+              city: Raccoon
+              phone: 867-5309
+              state: Siege
+              zip_code: '8675309'
+              printed_name: Tupper Weir
+              last_4_digits: '9999'
+              has_address_info: false
+              has_phone_info: true
+    400BadRequestWithoutErrorCode:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorObject'
+          examples:
+            example-1:
+              value:
+                message: Card profile can't be null
+    400BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorObject'
+          examples:
+            example-1:
+              value:
+                error_code: ERR93836
+                message: Card profile can't be null
+    401Unauthorized:
+      description: Access token is missing or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorObject'
+          examples:
+            example-1:
+              value:
+                error_code: ERR9786
+                message: Access token is missing or invalid
+    404NotFound:
+      description: Token not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorObject'
+          examples:
+            example-1:
+              value:
+                error_code: ERR4133
+                message: Token not found
+    500InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorObject'
+          examples:
+            example-1:
+              value:
+                error_code: ERR5446
+                message: Internal server error
+    500InternalServerErrorWithoutErrorCode:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorObject'
+          examples:
+            example-1:
+              value:
+                message: Internal server error
+security:
+  - BearerAuth: []
+paths:
+  /v1/cards/{cardId}/network-tokens/profile:
+    parameters:
+      - $ref: '#/components/parameters/CardIDpath'
+    post:
+      summary: Assign network card profile
+      description: >
+        Binds a network card profile to specified card. Pass the network profile
+        identifier as a string. The network card profile determines such things
+        as how the card is visually displayed in a mobile payment app. As the
+        issuer, you need to configure network profiles with the card network.
+
+
+        **Notes**: 
+         * This is a PCI endpoint, use the https://gw-pci.pismolabs.io/cards-tokenization environment.
+         * This endpoint takes an account token - an access token encoded with a Pismo account ID.
+      operationId: post-v1-cards-card-id-network-tokens-profile
+      tags:
+        - Network card profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NetworkCardProfileObject'
+            examples:
+              example-1:
+                value:
+                  network_card_profile: XYZ-123
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    get:
+      summary: Get network card profile
+      operationId: get-v1-cards-card-id-network-tokens-profile
+      description: |
+        Gets the card's associated network card profile identifier.
+
+        **Notes**: 
+         * This is a PCI endpoint, use the https://gw-pci.pismolabs.io/cards-tokenization environment.
+         * This endpoint takes an account token - an access token encoded with a Pismo account ID.
+      tags:
+        - Network card profile
+      parameters:
+        - $ref: '#/components/parameters/CustomerIDheader'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkCardProfileObject'
+              examples:
+                example-1:
+                  value:
+                    network_card_profile: XYZ-123
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    put:
+      summary: Update network card profile
+      operationId: put-v1-cards-card-id-network-tokens-profile
+      description: >
+        Update an existing network card profile with a different one. This
+        affects the display at the next tokenization (after deleting the token
+        and creating another one).
+
+
+        **Notes**: 
+         * This is a PCI endpoint, use the https://gw-pci.pismolabs.io/cards-tokenization environment.
+         * This endpoint takes an account token - an access token encoded with a Pismo account ID.
+      tags:
+        - Network card profile
+      parameters:
+        - $ref: '#/components/parameters/CustomerIDheader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NetworkCardProfileObject'
+            examples:
+              example-1:
+                value:
+                  network_card_profile: XYZ-123
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/cards/{cardId}/network-tokens/push-provisioning/wallets/googlepay:
+    parameters:
+      - $ref: '#/components/parameters/CardIDpath'
+    post:
+      summary: Create encrypted card data for Google Pay
+      description: >
+
+        Get encrypted card data to provision a token via Goodle SDK
+        push-provisioning. Also returned is cardholder identifying information.
+
+
+        **Notes**: 
+          * This is a PCI endpoint, use the https://gw-pci.pismolabs.io/cards-tokenization environment.
+          * This endpoint takes an account token - an access token encoded with a Pismo account ID.
+      operationId: post-wallet-data
+      tags:
+        - Pre-digitalization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EncryptedDataObjectRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncryptedDataObject'
+              examples:
+                visa:
+                  summary: VISA sample response
+                  value:
+                    push_data:
+                      Token: eyJhbGciOiJBMjU2R0NNS1ciLCJjaGFu...
+                    additional_info:
+                      name: Colab Org Antiga Empresa"
+                      address: ''
+                      country: ''
+                      city: ''
+                      state: ''
+                      phone: ''
+                      printed_name: Colab Org Antiga Empresa
+                      last_4_digits: '5112'
+                    has_address_info: false
+                    has_phone_info: false
+                mastercard:
+                  summary: Mastercard sample response
+                  value:
+                    push_data:
+                      base64_issuer_initiated_digitization_data: ewogICJmdW5kaW5nQWNjb3VudEluZm8iOiB7...
+                      additional_info:
+                        name: Ron Rico
+                        address: 221B Baker Street
+                        country: Elbonia
+                        city: Raccoon
+                        phone: 867-5309
+                        state: Siege
+                        zip_code: '8675309'
+                        printed_name: Tupper Weir
+                        last_4_digits: '9999'
+                      has_address_info: false
+                      has_phone_info: true
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/cards/{cardId}/network-tokens/push-provisioning/wallets/samsungpay:
+    parameters:
+      - $ref: '#/components/parameters/CardIDpath'
+    post:
+      summary: Create encrypted card data for Samsung Pay
+      description: >
+
+        Get encrypted card data to provision a token via Samsung SDK
+        push-provisioning. Also returned is cardholder identifying information.
+
+
+        **Notes**: 
+          * This is a PCI endpoint, use the https://gw-pci.pismolabs.io/cards-tokenization environment.
+          * This endpoint takes an account token - an access token encoded with a Pismo account ID.
+          * Currently only available for Visa
+      operationId: post-wallet-data-samsung
+      tags:
+        - Pre-digitalization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushProvisioningSamsungObjectRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncryptedDataObject'
+              examples:
+                visa:
+                  summary: VISA sample response
+                  value:
+                    push_data:
+                      Token: eyJhbGciOiJBMjU2R0NNS1ciLCJjaGFu...
+                    additional_info:
+                      name: Colab Org Antiga Empresa"
+                      address: ''
+                      country: ''
+                      city: ''
+                      state: ''
+                      phone: ''
+                      printed_name: Colab Org Antiga Empresa
+                      last_4_digits: '5112'
+                    has_address_info: false
+                    has_phone_info: false
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/cards/{cardId}/network-tokens/push-provisioning/wallets/applepay:
+    post:
+      summary: Create encrypted card data for Apple Pay
+      description: >
+        Generate encrypted card data to provision a token via push-provisioning
+        and the Apple SDK. Also returned is cardholder identifying information.
+
+
+        **Notes:** 
+          * This is a PCI endpoint, use the https://gw-pci.pismolabs.io/cards-tokenization environment.
+          * This endpoint takes an account token - an access token encoded with a Pismo account ID.
+      operationId: post-encrypted-applepay-data
+      tags:
+        - Pre-digitalization
+      parameters:
+        - $ref: '#/components/parameters/CardIDpath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplePayEncryptedDataRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/200MasterApplePayPushProvisioning'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/cards/{cardId}/network-tokens/pan-update:
+    post:
+      summary: Transfer card tokens to other card
+      description: >
+        Transfer all active tokens (activated/suspended) from one card to
+        another
+
+
+        This endpoint generates a [PAN
+        updated](https://developers.pismo.io/events/docs/cards-tokenization-pan-update-1)
+        event.
+
+
+
+        **Notes**: 
+          * This endpoint requires an account token - an access token encoded with a Pismo account ID.
+
+          * This is a PCI endpoint, use the https://gw-pci.pismolabs.io/cards-tokenization environment.
+      operationId: transfertokens
+      tags:
+        - Card lifecycle
+      parameters:
+        - $ref: '#/components/parameters/CardIDpath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                new_card_id:
+                  type: number
+                  description: ID of card to receive tokens
+                  example: 51331
+      responses:
+        '202':
+          description: Success
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/cards/{cardId}/network-tokens:
+    parameters:
+      - $ref: '#/components/parameters/CardIDpath'
+    get:
+      summary: Get card tokens
+      description: |
+        Gets token information given a card ID in the path.
+
+        **Notes**: 
+
+          * This is a PCI endpoint, use the https://gw-pci.pismolabs.io/cards-tokenization environment.
+          * This endpoint takes an account token - an access token encoded with a Pismo account ID.
+      operationId: get-card-token-info
+      tags:
+        - Card lifecycle
+      parameters:
+        - $ref: '#/components/parameters/CardIDpath'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenInfoCardResponse'
+              examples:
+                visa:
+                  summary: Example Visa response
+                  value:
+                    tokens:
+                      - key:
+                          token_ref: DNITHE302414169033123456
+                          pan_ref: V-3024135706614877123456
+                          payment_network: vts
+                        token_id: '101178'
+                        card_id: 71298
+                        wallet_id: '40000000045'
+                        account_id: 127020000
+                        program_id: '10000'
+                        org_id: TN-542d1ef4-ed10-4be2-a4e1-4ac00000000
+                        payment_app_instance_id: PISMOMOCKK3XvRHPjIDWFZErHEDytVg2MPJ6P7OM4JUq
+                        tracking_id: D0000203850882
+                        status: ACTIVE
+                        updated_at: '2024-05-10T16:40:20-03:00'
+                      - key:
+                          token_ref: DNITHE3024141600000000
+                          pan_ref: V-3024135706600000000000
+                          payment_network: vts
+                        token_id: '101000000'
+                        card_id: 71200000
+                        wallet_id: '40010075338'
+                        account_id: 1270000
+                        program_id: '10000'
+                        org_id: TN-542d1ef4-ed10-4be2-a4e1-400000000
+                        payment_app_instance_id: ''
+                        tracking_id: ''
+                        status: ACTIVE
+                      - key:
+                          token_ref: DNITHE30241416000000000
+                          pan_ref: V-30241357066148777000000
+                          payment_network: vts
+                        token_id: '1011'
+                        card_id: 7129
+                        wallet_id: '40000000044'
+                        account_id: 12701
+                        program_id: '10000'
+                        org_id: TN-542d1ef4-ed10-4be2-a4e1-40000000000
+                        payment_app_instance_id: ''
+                        tracking_id: ''
+                        status: ACTIVE
+                      - key:
+                          token_ref: DNITHE3024141700000000
+                          pan_ref: V-3024135706614000000000
+                          payment_network: vts
+                        token_id: '1011'
+                        card_id: 7125
+                        wallet_id: '40010075001'
+                        account_id: 12750000
+                        program_id: 100000,
+                        org_id: TN-542d1ef4-ed10-4be2-a4e1-00000000
+                        payment_app_instance_id: ''
+                        tracking_id: ''
+                        status: DEACTIVATED
+                    network_data:
+                      tokenDetails:
+                        - tokenRequestorID: 40000000045
+                          tokenReferenceID: DNITHE30241416900000000
+                          panReferenceID: V-3024135706614800000000
+                          entityOfLastAction: TOKEN_REQUESTOR
+                          walletAccountEmailAddressHash: >-
+                            CE62283F46849994E08CADB975A95565C14F86FEE9792907B13A700000000
+                          clientWalletAccountID: '40000000045'
+                          panSource: KEY_ENTERED
+                          tokenType: CARD_ON_FILE
+                          tokenStatus: ACTIVE
+                          lastFourOfPAN: '6893'
+                        - tokenRequestorID: 40010075338
+                          tokenReferenceID: DNITHE30241416900000000
+                          panReferenceID: V-3024135706614800000000
+                          entityOfLastAction: TOKEN_REQUESTOR
+                          walletAccountEmailAddressHash: >-
+                            CE62283F46849994E08CADB975A95565C14F86FEE9792907B1300000000
+                          clientWalletAccountID: PM123
+                          panSource: KEY_ENTERED
+                          tokenType: ECOMMERCE
+                          tokenStatus: ACTIVE
+                          lastFourOfPAN: '6893'
+                        - tokenRequestorID: 40000000044
+                          tokenReferenceID: DNITHE30241416900000000
+                          panReferenceID: V-3024135706614800000000
+                          entityOfLastAction: TOKEN_REQUESTOR
+                          walletAccountEmailAddressHash: >-
+                            CE62283F46849994E08CADB975A95565C14F86FEE9792907B13A000000008
+                          clientWalletAccountID: Muj00000000
+                          panSource: KEY_ENTERED
+                          tokenType: ECOMMERCE
+                          tokenStatus: ACTIVE
+                          lastFourOfPAN: '6893'
+                mastercard:
+                  summary: Example Mastercard response
+                  value:
+                    tokens:
+                      - key:
+                          token_ref: DSHRMC1BR0000000481138760dec4cf8a00000000
+                          pan_ref: FSHRMC1BR0000000c790c134701d4ba48c9d00000000
+                        payment_network: mdes
+                        token_id": 10117
+                        card_id: 9024
+                        wallet_id: '216'
+                        account_id: 18
+                        program_id: '9000'
+                        org_id: TN-d9abe1c7-f6b4-4b0a-b796-00000000
+                        payment_app_instance_id: jHfrTg8qRRS8ZK3XvRHPjIDWFZErHEDytV00000000
+                        tracking_id: D0000203850882
+                        status: ACTIVE
+                    network_data:
+                      SearchResponse:
+                        Accounts:
+                          Account:
+                            AccountPanSuffix": '3733'
+                            ExpirationDate": '0729'
+                            Tokens:
+                              Token:
+                                - AccountPanSequenceNumber: '000'
+                                  CorrelationId: D00000000000
+                                  CurrentStatusCode: D
+                                  CurrentStatusDateTime: '2024-07-01T15:52:39-05:00'
+                                  CurrentStatusDescription: Deleted
+                                  Device:
+                                    DeviceType: '21'
+                                  DigitizationRequestDateTime: '2024-07-01T15:18:09-05:00'
+                                  ExpirationDate: '0827'
+                                  FinalTokenizationDecision: A
+                                  LastCommentId: '676521782'
+                                  PaymentAppInstanceId": >-
+                                    jHfrTg8qRRS8ZK3XvRHPjIDWFZErHEDytVg2MP00000000
+                                  PrimaryAccountNumberUniqueReference: FSHRMC1BR0000000c790c13470100000000
+                                  ProvisioningStatusCode: S
+                                  ProvisioningStatusDescription: Provisioning successful
+                                  Source: ACCOUNT_ADDED_VIA_APPLICATION
+                                  StorageTechnology: D
+                                  Suspenders: {}
+                                  TokenActivatedDateTime: '2024-07-01T15:18:31-05:00'
+                                  TokenDeletedFromConsumerApp: 'false'
+                                  TokenRequestorId: '50120834693'
+                                  TokenRequestorName: GOOGLE
+                                  TokenSuffix: '5740'
+                                  TokenType: C
+                                  TokenUniqueReference: DSHRMC1BR0000000481138760dec4cf800000000
+                                  WalletId: '216'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/cards/{card_id}:
+    post:
+      summary: Card token operation
+      description: |
+        Perform token operation for card identified in path.
+      operationId: card-token-operation
+      tags:
+        - Card lifecycle
+      parameters:
+        - $ref: '#/components/parameters/CardIDpath2'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenOperationByCard'
+      responses:
+        '200':
+          description: No Content
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorObject'
+              examples:
+                example-1:
+                  summary: example errors
+                  value:
+                    message: Fail on send event
+                example-2:
+                  summary: 400BadRequest
+                  value:
+                    message: network respond bad request error
+                    error_code: ERR4021
+                example-3:
+                  summary: 404NotFound
+                  value:
+                    message: Token not found
+                    error_code: ERR4091
+        '500':
+          description: Internal server error
+  /v1/cards/{cardId}/network-tokens/{tokenId}:
+    parameters:
+      - $ref: '#/components/parameters/CardIDpath'
+      - $ref: '#/components/parameters/TokenIDpath'
+    post:
+      tags:
+        - Token lifecycle
+      summary: Perform token operation
+      description: |
+        Perform token operation.
+
+        **Notes**: 
+         * This is a PCI endpoint, use the https://gw-pci.pismolabs.io/cards-tokenization environment.
+         * This endpoint takes an account token - an access token encoded with a Pismo account ID
+      operationId: performtokenop
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenOperationRequest'
+      responses:
+        '200':
+          description: Success
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    get:
+      summary: Get token information
+      description: |
+        Gets token information given a card ID and token ID in the path.
+
+        **Notes**: 
+          * This is a PCI endpoint, use the https://gw-pci.pismolabs.io/cards-tokenization environment.
+          * This endpoint takes an account token - an access token encoded with a Pismo account ID.
+      operationId: gettokeninfo
+      tags:
+        - Token lifecycle
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenInfoCardTokenResponse'
+              examples:
+                mastercard:
+                  summary: Example Mastercard response
+                  value:
+                    token:
+                      key:
+                        token_ref: PISMOMOCK481138760dec4cf8ad407deeff4d8a3d
+                        pan_ref: PISMOMOCK00000c790c134701d4ba48c9dc3003ba433c8
+                        payment_network: mdes
+                    token_id: '1011781234'
+                    card_id: 90241234
+                    wallet_id: '216'
+                    account_id: 183701234
+                    program_id: '4321'
+                    org_id: TN-d9abe1c7-f6b4-4b0a-b796-d3b512341234
+                    payment_app_instance_id: PISMOMOCKK3XvRHPjIDWFZErHEDytVg2MPJ6P7OM4JUq
+                    tracking_id: D0000203850882
+                    status: ACTIVE
+                    updated_at: '2024-05-10T16:40:20-03:00'
+                    network_data:
+                      AccountPanSequenceNumber: '000'
+                      CorrelationId: D0000203851234
+                      CurrentStatusCode: D
+                      CurrentStatusDateTime: '2024-07-01T15:52:39-05:00'
+                      CurrentStatusDescription: Deleted
+                      Device:
+                        DeviceType: '21'
+                      DigitizationRequestDateTime: '2024-07-01T15:18:09-05:00'
+                      ExpirationDate: '0827'
+                      FinalTokenizationDecision: A
+                      LastCommentId: '676521782'
+                      PaymentAppInstanceId: PISMOMOCKRRS8ZK3XvRHPjIDWFZErHEDytVg2MPJ6P7OM4JUq
+                      PrimaryAccountNumberUniqueReference: PISMOMOCK0000000c790c134701d4ba48c9dc3003ba433c8
+                      ProvisioningStatusCode: S
+                      ProvisioningStatusDescription: Provisioning successful
+                      Source: ACCOUNT_ADDED_VIA_APPLICATION
+                      StorageTechnology: D
+                      Suspenders: {}
+                      TokenActivatedDateTime: '2024-07-01T15:18:31-05:00'
+                      TokenDeletedFromConsumerApp: 'false'
+                      TokenRequestorId: '50120834693'
+                      TokenRequestorName: GOOGLE
+                      TokenSuffix: '5740'
+                      TokenType: C
+                      TokenUniqueReference: DSHRMC1BR0000000481138760dec4cf8ad407dee12345678
+                      WalletId: '216'
+                visa:
+                  summary: Example VISA response
+                  value:
+                    token:
+                      key:
+                        token_ref: DNITHE302414169012345678
+                        pan_ref: V-3024135706614812345678
+                        payment_network: vts
+                    token_id: '1011781234'
+                    card_id: 71291234
+                    wallet_id: '40000000045'
+                    account_id: 127021234
+                    program_id: '11234'
+                    org_id: TN-542d1ef4-ed10-4be2-a4e1-4ac123456789
+                    payment_app_instance_id: ''
+                    tracking_id: ''
+                    status: ACTIVE
+                    network_data:
+                      panReferenceID: V-3024135706614812345678
+                      entityOfLastAction: TOKEN_REQUESTOR
+                      walletAccountEmailAddressHash: >-
+                        PISMOMOCK6849994E08CADB975A95565C14F86FEE9792907B13A7D7332402988
+                      clientWalletAccountID: '40000000045'
+                      panSource: KEY_ENTERED
+                      lastFourOfPAN: '6893'
+                      tokenInfo:
+                        token: '123456789'
+                        tokenType: CARD_ON_FILE
+                        tokenStatus: ACTIVE
+                        tokenExpirationDate:
+                          month: '4'
+                          year: '2029'
+                      tokenAssuranceMethod: '10'
+                      lastTokenStatusUpdatedTime: '2024-05-22T19:38:24.000Z'
+                      deviceInfo: {}
+                      riskInfo: {}
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/cards/{cardId}/config:
+    get:
+      summary: Get card configuration
+      description: |
+        Get card configuration. 
+
+        **Notes**: 
+         * This is a PCI endpoint, use the https://gw-pci.pismolabs.io/cards-tokenization environment.
+         * This endpoint takes an account token - an access token encoded with a Pismo account ID
+      operationId: get-card-config
+      tags:
+        - Card lifecycle
+      parameters:
+        - $ref: '#/components/parameters/CardIDpath'
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCardConfigCardResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequestWithoutErrorCode'
+        '500':
+          $ref: '#/components/responses/500InternalServerErrorWithoutErrorCode'
+  /v1/cards/{cardId}/config/reset-cvv2-try-counter:
+    patch:
+      summary: Reset CVV2 retry counter
+      description: |
+        Reset card and wallet CVV2 try counter to zero.
+
+        **Notes**: 
+         * This is a PCI endpoint, use the https://gw-pci.pismolabs.io/cards-tokenization environment.
+         * This endpoint takes an account token - an access token encoded with a Pismo account ID
+      operationId: patch-card-config-reset-cvv2-try-counter
+      tags:
+        - Card lifecycle
+      x-internal: false
+      parameters:
+        - $ref: '#/components/parameters/CardIDpath'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetCvv2TryCounterRequest'
+      responses:
+        '204':
+          description: ''
+        '400':
+          $ref: '#/components/responses/400BadRequestWithoutErrorCode'
+        '500':
+          $ref: '#/components/responses/500InternalServerErrorWithoutErrorCode'
+  /internal/v1/authorizations/tokens/{tokenId}:
+    parameters:
+      - $ref: '#/components/parameters/TokenIDpath'
+  /internal/v1/authorizations/network-tokens/retrieve-with-device:
+    parameters:
+      - $ref: '#/components/parameters/TenantHeader'
+      - $ref: '#/components/parameters/CidHeader'
+  /v1/clicktopay/visa/enroll/customer:
+    post:
+      summary: Enroll customer and card in Visa CTP [Beta]
+      description: >
+        Enroll a customer and card in <a
+        href="https://usa.visa.com/products/click-to-pay/consumers.html"
+        target="_blank">Visa's Click to Pay</a> service. Click to Pay is a
+        secure, streamlined online checkout solution using tokenization. 
+
+         For more information, refer to [Click to Pay](doc:click-to-pay).
+         
+         This endpoint generates a [Click to Pay event generated](https://developers.pismo.io/events/docs/cards-tokenization-click-to-pay-1) event.
+
+        **Notes**:
+
+
+        - The following fields are **mandatory** to enroll a customer/card into
+        Visa's Click to Pay: `first_name`, `last_name`, `emails`, `phones` and
+        `billing_address`. If not passed and not found internally, an error is
+        returned.
+
+
+        - The process is asynchronous, success or failure is indicated in the
+        generated event.
+
+
+        - This endpoint takes an account token - an access token encoded with a
+        Pismo account ID.
+
+
+        - This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: post-v1-clicktopay-enroll_customer
+      tags:
+        - Visa Click to Pay [Beta]
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CustomerIDheader'
+        - $ref: '#/components/parameters/CidHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClickToPayEnrollData'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayBadRequest'
+              examples:
+                bad_request:
+                  value:
+                    code: 400
+                    message: bad request
+                bad_request_detailed:
+                  value:
+                    code: 400
+                    message: bad request
+                    details:
+                      - 'AccountID: cannot be blank'
+                      - 'CustomerID: cannot be blank'
+                      - 'OrgID: cannot be blank.'
+                      - 'cardId: cannot be blank.'
+                customer_already_on_click_to_pay:
+                  value:
+                    code: 400
+                    message: customer already on click to pay
+                click_to_pay_not_enabled_to_tenant:
+                  value:
+                    code: 400
+                    message: click to pay is not enabled to tenant
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayInternalServerError'
+              examples:
+                internal_server_error:
+                  value:
+                    code: 500
+                    message: internal server error
+  /v1/clicktopay/visa/enroll/card:
+    post:
+      summary: Enroll card in Visa CTP [Beta]
+      description: >
+        Enroll a customer card in Visa Click to Pay.
+
+
+        This endpoint generates a [Click to Pay event
+        generated](https://developers.pismo.io/events/docs/cards-tokenization-click-to-pay-1)
+        event.
+
+         **Notes**:
+
+        - If `billing_address` is not passed,  it is looked for internally. If
+        not found, an error is returned. 
+
+
+        - This endpoint takes an account token - an access token encoded with a
+        Pismo account ID.
+
+
+        - The process is asynchronous, success or failure is indicated in the
+        generated event.
+
+
+        - This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: post-v1-clicktopay-enroll_card
+      tags:
+        - Visa Click to Pay [Beta]
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CustomerIDheader'
+        - $ref: '#/components/parameters/CidHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClickToPayEnrollCardRequest'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayBadRequest'
+              examples:
+                bad_request:
+                  value:
+                    code: 400
+                    message: bad request
+                invalid_network:
+                  value:
+                    code: 400
+                    message: invalid network
+                bad_request_detailed:
+                  value:
+                    code: 400
+                    message: bad request
+                    details:
+                      - 'AccountID: cannot be blank'
+                      - 'CustomerID: cannot be blank'
+                      - 'OrgID: cannot be blank.'
+                customer_not_in_click_to_pay:
+                  value:
+                    code: 400
+                    message: customer not enabled to click to pay
+                click_to_pay_not_enabled_to_tenant:
+                  value:
+                    code: 400
+                    message: click to pay is not enabled to tenant
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayInternalServerError'
+              examples:
+                internal_server_error:
+                  value:
+                    code: 500
+                    message: internal server error
+  /v1/clicktopay/visa/data:
+    get:
+      summary: Get Visa CTP customer cards status [Beta]
+      description: >
+        Returns customer's cards statuses (active or inactive) in the Visa Click
+        to Pay service.
+
+
+        **Notes**:
+
+
+        - This endpoint takes an account token - an access token encoded with a
+        Pismo account ID.
+
+
+        - This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: post-v1-clicktopay-get_data
+      tags:
+        - Visa Click to Pay [Beta]
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CustomerIDheader'
+        - $ref: '#/components/parameters/OwnerBidHeader2'
+        - $ref: '#/components/parameters/CidHeader'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayGetCustomerCardStatusResponse'
+        '204':
+          description: No Content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Code:
+                    type: number
+                    description: HTTP response code
+                    example: 204
+                  message:
+                    type: string
+                    description: response message
+                    example: no content
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayBadRequest'
+              examples:
+                bad_request:
+                  value:
+                    code: 400
+                    message: bad request
+                invalid_network:
+                  value:
+                    code: 400
+                    message: invalid network
+                customer_not_in_click_to_pay:
+                  value:
+                    code: 400
+                    message: customer not enabled to click to pay
+                click_to_pay_not_enabled_to_tenant:
+                  value:
+                    code: 400
+                    message: click to pay is not enabled to tenant
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayInternalServerError'
+              examples:
+                internal_server_error:
+                  value:
+                    code: 500
+                    message: internal server error
+  /v1/clicktopay/visa/manage/customer:
+    put:
+      summary: Update Visa CTP customer [Beta]
+      description: >
+        Update customer data in the Visa Click to Pay service.
+
+
+        This endpoint generates a [Click to Pay event
+        generated](https://developers.pismo.io/events/docs/cards-tokenization-click-to-pay-1)
+        event.
+
+
+        **Notes**:
+
+
+        - Any field not passed is not updated.
+
+
+        - This endpoint takes an account token - an access token encoded with a
+        Pismo account ID.
+
+
+        - The process is asynchronous, success or failure is indicated in the
+        generated event.
+
+
+        - This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: post-v1-clicktopay-manage_customer
+      tags:
+        - Visa Click to Pay [Beta]
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CustomerIDheader'
+        - $ref: '#/components/parameters/CidHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClickToPayUpdateCustomerRequest'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayBadRequest'
+              examples:
+                bad_request:
+                  value:
+                    code: 400
+                    message: bad request
+                invalid_network:
+                  value:
+                    code: 400
+                    message: invalid network
+                bad_request_detailed:
+                  value:
+                    code: 400
+                    message: bad request
+                    details:
+                      - 'AccountID: cannot be blank'
+                      - 'CustomerID: cannot be blank'
+                      - 'OrgID: cannot be blank.'
+                customer_not_in_click_to_pay:
+                  value:
+                    code: 400
+                    message: customer not enabled to click to pay
+                click_to_pay_not_enabled_to_tenant:
+                  value:
+                    code: 400
+                    message: click to pay is not enabled to tenant
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayInternalServerError'
+              examples:
+                internal_server_error:
+                  value:
+                    code: 500
+                    message: internal server error
+  /v1/clicktopay/visa/manage/card:
+    put:
+      summary: Update Visa CTP customer billing address [Beta]
+      description: >
+        Update the billing address for customer cards in Visa Click to Pay.
+
+
+        This endpoint generates a [Click to Pay event
+        generated](https://developers.pismo.io/events/docs/cards-tokenization-click-to-pay-1)
+        event.
+
+         **Notes**:
+
+        - If billing address information is not passed, it is looked for
+        internally. If not found, an error is returned.
+
+
+        - The process is asynchronous, success or failure is indicated in the
+        generated event.
+
+
+        - This endpoint takes an account token - an access token encoded with a
+        Pismo account ID.
+
+
+        - This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: put-v1-clicktopay-manage_card
+      tags:
+        - Visa Click to Pay [Beta]
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CustomerIDheader'
+        - $ref: '#/components/parameters/CidHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClickToPayUpdateCustomerBillingRequest'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayBadRequest'
+              examples:
+                bad_request:
+                  value:
+                    code: 400
+                    message: bad request
+                invalid_network:
+                  value:
+                    code: 400
+                    message: invalid network
+                bad_request_detailed:
+                  value:
+                    code: 400
+                    message: bad request
+                    details:
+                      - 'AccountID: cannot be blank'
+                      - 'CustomerID: cannot be blank'
+                      - 'OrgID: cannot be blank.'
+                      - 'CardI: cannot be blank.'
+                customer_not_in_click_to_pay:
+                  value:
+                    code: 400
+                    message: customer not enabled to click to pay
+                click_to_pay_not_enabled_to_tenant:
+                  value:
+                    code: 400
+                    message: click to pay is not enabled to tenant
+                cards_not_found:
+                  value:
+                    code: 400
+                    message: cards not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayInternalServerError'
+              examples:
+                internal_server_error:
+                  value:
+                    code: 500
+                    message: internal server error
+  /v1/clicktopay/visa/delete/customer:
+    post:
+      summary: Delete Visa CTP customer [Beta]
+      description: >
+        Delete the customer and all their cards from the Visa Click to Pay
+        service,
+
+
+        This endpoint generates a [Click to Pay event
+        generated](https://developers.pismo.io/events/docs/cards-tokenization-click-to-pay-1)
+        event.
+
+
+        **Notes**:
+
+
+        - This endpoint takes an account token - an access token encoded with a
+        Pismo account ID.
+
+
+        - The process is asynchronous, success or failure is indicated in the
+        generated event.
+
+
+        - This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: post-v1-clicktopay-delete_customer
+      tags:
+        - Visa Click to Pay [Beta]
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CustomerIDheader'
+        - $ref: '#/components/parameters/CidHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClickToPayDeleteCustomerRequest'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayBadRequest'
+              examples:
+                bad_request:
+                  value:
+                    code: 400
+                    message: bad request
+                invalid_network:
+                  value:
+                    code: 400
+                    message: invalid network
+                bad_request_detailed:
+                  value:
+                    code: 400
+                    message: bad request
+                    details:
+                      - 'AccountID: cannot be blank'
+                      - 'CustomerID: cannot be blank'
+                      - 'OrgID: cannot be blank.'
+                customer_not_in_click_to_pay:
+                  value:
+                    code: 400
+                    message: customer not enabled to click to pay
+                click_to_pay_not_enabled_to_tenant:
+                  value:
+                    code: 400
+                    message: click to pay is not enabled to tenant
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayInternalServerError'
+              examples:
+                internal_server_error:
+                  value:
+                    code: 500
+                    message: internal server error
+  /v1/clicktopay/visa/delete/card:
+    post:
+      summary: Delete Visa CTP card [Beta]
+      description: >
+        Remove a customer's card from Visa Click to Pay service.
+
+
+        This endpoint generates a [Click to Pay event
+        generated](https://developers.pismo.io/events/docs/cards-tokenization-click-to-pay-1)
+        event.
+
+         **Notes**:
+
+        - This endpoint takes an account token - an access token encoded with a
+        Pismo account ID.
+
+
+        - The process is asynchronous, success or failure is indicated in the
+        generated event.
+
+
+        - This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: post-v1-clicktopay-delete_card
+      tags:
+        - Visa Click to Pay [Beta]
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CustomerIDheader'
+        - $ref: '#/components/parameters/CidHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClickToPayDeleteCardRequest'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayBadRequest'
+              examples:
+                bad_request:
+                  value:
+                    code: 400
+                    message: bad request
+                invalid_network:
+                  value:
+                    code: 400
+                    message: invalid network
+                bad_request_detailed:
+                  value:
+                    code: 400
+                    message: bad request
+                    details:
+                      - 'AccountID: cannot be blank'
+                      - 'CustomerID: cannot be blank'
+                      - 'OrgID: cannot be blank.'
+                      - 'CardI: cannot be blank.'
+                customer_not_in_click_to_pay:
+                  value:
+                    code: 400
+                    message: customer not enabled to click to pay
+                click_to_pay_not_enabled_to_tenant:
+                  value:
+                    code: 400
+                    message: click to pay is not enabled to tenant
+                cards_not_found:
+                  value:
+                    code: 400
+                    message: cards not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickToPayInternalServerError'
+              examples:
+                internal_server_error:
+                  value:
+                    code: 500
+                    message: internal server error
+  /v1/token-connect/push-multiple-accounts:
+    post:
+      summary: Push multiple accounts
+      description: >
+        Push card and account(s) to a token requestor. 
+
+
+        A token requestor is an entity that initiates the tokenization process.
+        Wallets, merchants, payments service providers (PSPs) are collectively
+        referred to as **token requestors**. 
+
+
+        **Notes:**
+
+          * Pismo acts as a proxy for the <a href="https://developer.mastercard.com/mdes-token-connect/documentation/api-reference/" target="_blank">Mastercard Token Connect API</a>
+
+          * This endpoint does not generate an event
+
+          * For more information, refer to the [MDES Token Connect](doc:mdes-token-connect) guide.
+      operationId: token_connet_push_multiple_accounts
+      tags:
+        - MDES Token Connect [Beta]
+      parameters:
+        - $ref: '#/components/parameters/accessTokenHeader'
+        - $ref: '#/components/parameters/AccountIdHeader'
+        - $ref: '#/components/parameters/CustomerIDheader'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushAccountsRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushAccountsResponse'
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error
+  /v1/token-connect:
+    post:
+      summary: Get eligible token requestors
+      description: >
+        Retrieve information about token requestors that have been enabled for
+        one or more of the issuer's account ranges.
+
+
+        Pismo acts as a proxy for the <a
+        href="https://developer.mastercard.com/mdes-token-connect/documentation/api-reference/"
+        target="_blank">Mastercard Token Connect API</a>
+
+
+        For more information, refer to the [MDES Token
+        Connect](doc:mdes-token-connect) guide.
+      operationId: token_connect_get_eligible_token_requestors
+      tags:
+        - MDES Token Connect [Beta]
+      parameters:
+        - $ref: '#/components/parameters/accessTokenHeader'
+        - $ref: '#/components/parameters/TenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequestorRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRequestorResponse'
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error
+  /v1/token-connect/assets/{assetId}:
+    get:
+      summary: Get asset
+      description: >
+        Returns a token requestor's logo, in `PNG` and `SVG` format.
+
+
+        For more information, refer to the <a
+        href="https://developer.mastercard.com/mdes-token-connect/documentation/api-reference/"
+        target="_blank">Mastercard Token Connect API</a>.
+
+
+        Pismo acts as a proxy for the Mastercard Token Connect API. 
+
+
+        For more information, refer to the [MDES Token
+        Connect](doc:mdes-token-connect) guide.
+      operationId: token_connect_get_asset
+      tags:
+        - MDES Token Connect [Beta]
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/AssetID'
+        - $ref: '#/components/parameters/accessTokenHeader'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAssetResponse'
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error

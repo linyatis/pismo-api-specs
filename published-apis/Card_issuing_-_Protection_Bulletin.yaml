@@ -1,0 +1,1867 @@
+openapi: 3.1.0
+info:
+  title: Card issuing - Protection Bulletin
+  version: 2.0.3
+  description: Bulletin API endpoints
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/protection-bulletin
+    description: Sandbox API server for testing
+security:
+  - BearerAuth: []
+tags:
+  - name: Bulletin
+    description: Endpoints to manage cards with the Protection Bulletin
+  - name: Rules
+    description: Endpoints to manage Protection Bulletin rules
+components:
+  parameters:
+    AuthHeader:
+      in: header
+      name: Authorization
+      required: true
+      description: >-
+        Account token - an access token encoded with a Pismo account ID. Tokens
+        can expire quickly, which can result in a <b>401 Unauthorized</b>
+        message.
+      schema:
+        type: string
+        example: Bearer eyJhbGci...IUzUx
+    BeginDateQuery:
+      name: begin_date
+      in: query
+      description: Beginning date filter, format = `yyyy-mm-dd`
+      required: true
+      schema:
+        type: string
+        example: '2025-01-01'
+    CardIdPath:
+      name: card_id
+      in: path
+      description: Pismo card ID.
+      required: true
+      schema:
+        type: number
+      example: 10203040
+    EndDateQuery:
+      name: end_date
+      in: query
+      description: End date filter, format = `yyyy-mm-dd`
+      required: true
+      schema:
+        type: string
+        example: '2025-01-30'
+    NetworkBrandTypeQuery:
+      name: network_brand_type
+      in: query
+      description: Card network brand.
+      required: false
+      schema:
+        type: string
+        enum:
+          - ELO
+          - MASTERCARD
+          - VISA
+        example: ELO
+    PageQuery:
+      name: page
+      in: query
+      description: Page to return. Default is `1`.
+      required: false
+      schema:
+        type: integer
+        default: 1
+        example: 2
+        minimum: 1
+    PerPageQuery:
+      name: per_page
+      in: query
+      description: Number of items per page to return. Default is `10`.
+      required: false
+      schema:
+        type: integer
+        default: 10
+        example: 20
+        minimum: 1
+    ProgramIdPath:
+      name: program_id
+      in: path
+      description: Pismo program ID.
+      required: true
+      schema:
+        type: number
+        example: 8765
+    ProgramIdQuery:
+      name: program_id
+      in: query
+      description: Pismo program ID
+      required: false
+      schema:
+        type: number
+        example: 1010
+    StateQuery:
+      name: state
+      in: query
+      description: >
+        Is card blocked or not in the network brand? 
+
+
+        When empty, it means the network did not successfully receive the
+        action.
+      required: false
+      schema:
+        type: string
+        enum:
+          - ''
+          - BLOCKED
+          - UNBLOCKED
+        example: BLOCKED
+    StatusQuery:
+      name: status
+      in: query
+      description: Request processing status.
+      required: false
+      schema:
+        type: string
+        enum:
+          - PENDING
+          - SUCCESS
+          - FAILED
+        example: PENDING
+    XCidHeader:
+      name: x-cid
+      in: header
+      description: >
+        The Correlation IDentifier UUID field links related API requests and
+        events. The x-cid can help the Pismo engineering team track everything
+        related to a call. If not passed, this field is automatically generated.
+      required: false
+      schema:
+        type: string
+        maxLength: 36
+    XCustomerIdHeader:
+      name: x-customer-id
+      in: header
+      description: >
+        Pismo customer ID. Must be associated with account whose ID is embedded
+        in the access token.
+      required: true
+      schema:
+        type: number
+    XTenantHeader:
+      name: x-tenant
+      in: header
+      description: Pismo organization/tenant ID.
+      required: true
+      schema:
+        type: string
+      example: TN-123XXX-XXXXXX-XXXXXXX
+  schemas:
+    AllowedStatusEloModel:
+      type: array
+      description: >
+        If `allowed_status` is passed, the Pismo Protection Bulletin service
+        starts monitoring [Card updated
+        events](https://developers.pismo.io/events/docs/cards-update-1). 
+
+
+        The `status_pismo` status determines if the card is sent to the network
+        via the Protection Bulletin.
+      items:
+        type: object
+        properties:
+          status_pismo:
+            $ref: '#/components/schemas/StatusPismo'
+          default_purge_days:
+            $ref: '#/components/schemas/DefaultPurgeDays'
+    AllowedStatusMastercardModel:
+      type: array
+      description: >
+        If `allowed_status` is provided, the Pismo Protection Bulletin service
+        starts monitoring [Card updated
+        events](https://developers.pismo.io/events/docs/cards-update-1). 
+
+
+        The `status_pismo` status determines if the card is sent to the network
+        via the Protection Bulletin.
+      items:
+        type: object
+        properties:
+          status_pismo:
+            $ref: '#/components/schemas/StatusPismo'
+          status_network:
+            $ref: '#/components/schemas/StatusNetworkMastercard'
+          default_purge_days:
+            $ref: '#/components/schemas/DefaultPurgeDays'
+    AllowedStatusVisaModel:
+      description: >
+        When passed, the Pismo Protection Bulletin service starts monitoring
+        [Card updated
+        events](https://developers.pismo.io/events/docs/cards-update-1). 
+         
+         The `status_pismo` status determines if the card is sent to the network via the Protection Bulletin.
+      type: array
+      items:
+        type: object
+        required:
+          - status_pismo
+          - status_network
+          - default_purge_days
+        properties:
+          status_pismo:
+            $ref: '#/components/schemas/StatusPismo'
+          status_network:
+            $ref: '#/components/schemas/StatusNetworkVisa'
+          default_purge_days:
+            $ref: '#/components/schemas/DefaultPurgeDaysVisa'
+    BulletinPostEloModel:
+      type: object
+      description: Register a Elo card.
+      required:
+        - card_id
+      properties:
+        card_id:
+          $ref: '#/components/schemas/CardID'
+    BulletinPostMastercardModel:
+      type: object
+      description: Register a Mastercard card.
+      required:
+        - card_id
+        - reason
+      properties:
+        card_id:
+          $ref: '#/components/schemas/CardID'
+        reason:
+          $ref: '#/components/schemas/ReasonMastercard'
+        purge_date:
+          $ref: '#/components/schemas/PurgeDateMastercard'
+    BulletinPostVisaModel:
+      type: object
+      description: Register a Visa card.
+      required:
+        - card_id
+        - reason
+        - region_code
+        - card_track_number
+        - purge_date
+      properties:
+        card_id:
+          $ref: '#/components/schemas/CardID'
+        reason:
+          $ref: '#/components/schemas/ReasonVisa'
+        region_code:
+          $ref: '#/components/schemas/RegionCode'
+        card_track_number:
+          $ref: '#/components/schemas/CardTrackNumberVisa'
+        purge_date:
+          $ref: '#/components/schemas/PurgeDateVisa'
+    BulletinResponseHistoryModel:
+      type: array
+      description: Response history model for the Bulletin API.
+      items:
+        type: object
+        properties:
+          event:
+            $ref: '#/components/schemas/Event'
+          event_date:
+            $ref: '#/components/schemas/EventDate'
+          status:
+            $ref: '#/components/schemas/Status'
+          reason:
+            $ref: '#/components/schemas/Reason'
+          network_track_number:
+            $ref: '#/components/schemas/NetworkTrackNumber'
+          was_automatically_purged:
+            $ref: '#/components/schemas/WasAutomaticallyPurged'
+          card_track_number:
+            $ref: '#/components/schemas/CardTrackNumber'
+          network_response_data:
+            $ref: '#/components/schemas/NetworkResponseData'
+          region_code:
+            $ref: '#/components/schemas/RegionCode'
+    BulletinResponseListModel:
+      type: object
+      description: Response model for the Bulletin API list.
+      properties:
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        pages:
+          $ref: '#/components/schemas/Pages'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        total_items:
+          $ref: '#/components/schemas/TotalItems'
+        items:
+          $ref: '#/components/schemas/Items'
+    BulletinResponseModel:
+      type: object
+      description: Response model for the Bulletin API.
+      properties:
+        card_id:
+          $ref: '#/components/schemas/CardID'
+        org_id:
+          $ref: '#/components/schemas/OrgID'
+        program_id:
+          $ref: '#/components/schemas/ProgramID'
+        network_brand_type:
+          $ref: '#/components/schemas/NetworkBrandType'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
+        network_track_number:
+          $ref: '#/components/schemas/NetworkTrackNumber'
+        state:
+          $ref: '#/components/schemas/State'
+        status:
+          $ref: '#/components/schemas/Status'
+        purge_date:
+          $ref: '#/components/schemas/PurgeDate'
+        was_automatically_purged:
+          $ref: '#/components/schemas/WasAutomaticallyPurged'
+        card_track_number:
+          $ref: '#/components/schemas/CardTrackNumber'
+        region_code:
+          $ref: '#/components/schemas/RegionCode'
+        histories:
+          $ref: '#/components/schemas/BulletinResponseHistoryModel'
+    BulletinSetupEloModel:
+      type: object
+      description: Register a Elo Protection Bulletin setup.
+      required:
+        - active
+        - program_id
+      properties:
+        active:
+          $ref: '#/components/schemas/Active'
+        program_id:
+          $ref: '#/components/schemas/ProgramID'
+        allowed_status:
+          $ref: '#/components/schemas/AllowedStatusEloModel'
+    BulletinSetupMastercardModel:
+      type: object
+      description: Register a Mastercard Protection Bulletin setup.
+      required:
+        - active
+        - ica
+        - program_id
+      properties:
+        active:
+          $ref: '#/components/schemas/Active'
+        ica:
+          $ref: '#/components/schemas/Ica'
+        program_id:
+          $ref: '#/components/schemas/ProgramID'
+        allowed_status:
+          $ref: '#/components/schemas/AllowedStatusMastercardModel'
+    BulletinSetupVisaModel:
+      type: object
+      description: Register a Visa Protection Bulletin setup.
+      required:
+        - active
+        - bid
+        - program_id
+        - region_code
+        - allowed_status
+      properties:
+        active:
+          $ref: '#/components/schemas/Active'
+        bid:
+          $ref: '#/components/schemas/Bid'
+        program_id:
+          $ref: '#/components/schemas/ProgramID'
+        region_code:
+          $ref: '#/components/schemas/RegionCode'
+        allowed_status:
+          $ref: '#/components/schemas/AllowedStatusVisaModel'
+    ErrorDetailMessageModel:
+      description: Detailed information about the error.
+      type: object
+      properties:
+        payload:
+          type: array
+          description: List of payload-related error details.
+          items:
+            $ref: '#/components/schemas/ErrorPayloadMessageModel'
+        header:
+          type: array
+          description: List of header-related error details.
+          items:
+            $ref: '#/components/schemas/ErrorHeaderMessageModel'
+        parameters:
+          type: array
+          description: List of parameter-related error details.
+          items:
+            $ref: '#/components/schemas/ErrorParameterMessageModel'
+    ErrorHeaderMessageModel:
+      description: Details about header-related errors.
+      type: object
+      properties:
+        field:
+          type: string
+          description: Header name related to the error.
+          example: x-field
+        message:
+          type: string
+          description: Error message for the header.
+          example: Generic error
+    ErrorMessageModel:
+      title: ErrorModel
+      type: object
+      description: API generic returned error.
+      properties:
+        code:
+          type: string
+          description: Error code.
+        message:
+          type: string
+          description: Error description.
+        http_status_code:
+          type: integer
+          description: HTTP status code.
+        details:
+          $ref: '#/components/schemas/ErrorDetailMessageModel'
+    ErrorParameterMessageModel:
+      description: Details about parameter-related errors.
+      type: object
+      properties:
+        field:
+          type: string
+          description: Parameter name related to the error.
+          example: query_parameter
+        message:
+          type: string
+          description: Parameter error message
+    ErrorPayloadMessageModel:
+      description: Details about payload-related errors.
+      type: object
+      properties:
+        field:
+          type: string
+          description: Field name related to the error.
+          example: field
+        message:
+          type: string
+          description: Error message for the field.
+          example: Generic error
+    Active:
+      type: boolean
+      description: |
+        Is rule active? An inactive rule is not applied to transactions.
+      example: true
+    Bid:
+      type: string
+      description: >
+        Business ID (BID) number - a six-digit account number through which Visa
+        bills their clients. **REQUIRED** for Visa.
+
+
+        It **must** be padded with leading zeros.
+      example: '012345'
+    CardID:
+      description: Pismo card ID.
+      type: number
+      example: 10203040
+    CardTrackNumber:
+      description: Pismo card track number.
+      type: number
+      example: 1
+    CardTrackNumberVisa:
+      description: >
+        Pismo card track number.
+
+
+        The card track number sent to the Account Screen Authorization File
+        (ASAF). If `1`, the first copy is sent. If `2`, the second copy is sent.
+        If `0`, all copies are sent. A card might be added to the Protection
+        Bulletin, before being voided and reissued, resulting in more than one
+        copy. 
+
+
+        Visa documentation: VisaNet Authorization-Only Online Messages –
+        Technical Specifications - Field 23: Card Sequence Number
+      type: number
+      example: 1
+    CreatedAt:
+      type: string
+      description: >-
+        Date and time when the Protection Bulletin registration was created.
+        Format = ISO 8601.
+      format: yyyy-mm-dd hh:mm:ss
+      example: '2025-04-22 20:31:50'
+    CurrentPage:
+      type: integer
+      example: 1
+      description: Current page.
+    DefaultPurgeDays:
+      type: number
+      description: >
+        After the specified number of days, a request to remove the card will be
+        automatically sent to the network through the Protection Bulletin.
+
+
+        The `default_purge_days` field is optional, and if not provided, no
+        action will be taken to remove this card from the Protection Bulletin.
+      example: 30
+    DefaultPurgeDaysVisa:
+      type: number
+      description: >
+        After the specified number of days, a request to remove the card is
+        automatically sent to the Protection Bulletin.
+      example: 30
+    Event:
+      type: string
+      description: Event performed in the request
+      enum:
+        - POST
+        - UPDATE
+        - DELETE
+      example: POST
+    EventDate:
+      type: string
+      description: Date and time when the event was received in the Protection Bulletin.
+      format: yyyy-mm-dd hh:mm:ss
+      example: '2025-04-22 20:31:50'
+    Ica:
+      type: string
+      description: >
+        Interbank Card Association (ICA) number - a six-digit account number
+        that identifies a financial institution or third-party processor
+        operating in the Mastercard network. **REQUIRED** for Mastercard.
+
+
+        It must be padded with leading zeros.
+      example: '012345'
+    Items:
+      type: array
+      description: List of Bulletin Cards
+      items:
+        type: object
+        description: Response model for the Bulletin API.
+        properties:
+          card_id:
+            $ref: '#/components/schemas/CardID'
+          org_id:
+            $ref: '#/components/schemas/OrgID'
+          program_id:
+            $ref: '#/components/schemas/ProgramID'
+          network_brand_type:
+            $ref: '#/components/schemas/NetworkBrandType'
+          created_at:
+            $ref: '#/components/schemas/CreatedAt'
+          updated_at:
+            $ref: '#/components/schemas/UpdatedAt'
+          network_track_number:
+            $ref: '#/components/schemas/NetworkTrackNumber'
+          state:
+            $ref: '#/components/schemas/State'
+          status:
+            $ref: '#/components/schemas/Status'
+          purge_date:
+            $ref: '#/components/schemas/PurgeDate'
+          was_automatically_purged:
+            $ref: '#/components/schemas/WasAutomaticallyPurged'
+          card_track_number:
+            $ref: '#/components/schemas/CardTrackNumber'
+          region_code:
+            $ref: '#/components/schemas/RegionCode'
+    NetworkBrandType:
+      type: string
+      description: Card network brand.
+      enum:
+        - ELO
+        - MASTERCARD
+        - VISA
+      example: ELO
+    NetworkResponseData:
+      type: string
+      description: >
+        Response JSON data received from the network brand.
+
+
+        The content of this field will indicate the original response from the
+        network brand, whether success or failure. The example provided in this
+        model is for illustrative purposes only.
+      example: '{"status":"SUCCESS","message":"Card added to Protection Bulletin"}'
+    NetworkTrackNumber:
+      type: string
+      description: >-
+        Created in the internal system to track the card's event history. This
+        is a combination between the tenant and the truncated random uuid.
+      example: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+    OrgID:
+      description: Pismo organization/tenant ID.
+      type: string
+      example: TN-123XXX-XXXXXX-XXXXXXX
+    Pages:
+      type: integer
+      example: 1
+      description: Total number of pages.
+    PerPage:
+      type: integer
+      example: 100
+      description: Items per page.
+    ProgramID:
+      description: Pismo program ID.
+      type: number
+      example: 1010
+    PurgeDate:
+      type: string
+      description: >
+        Date when the card will be removed from the Protection Bulletin in the
+        network brand. Format = yyyy-mm-dd.
+      format: yyyy-mm-dd
+      example: '2025-04-22'
+    PurgeDateMastercard:
+      type: string
+      description: >
+        Date when the card should be removed from the Protection Bulletin.
+        Format = yyyy-mm-dd.
+
+
+        Mastercard documentation: Customer Interface Specification - DE 120
+        (Record Data) Layout for MCC102 - Field ID 8 (Issuer-defined Purge Date)
+      example: '2024-10-22'
+    PurgeDateVisa:
+      type: string
+      description: >
+        Date when the card should be removed from the Protection Bulletin.
+        Format = yyyy-mm-dd.
+
+
+        Visa documentation: VisaNet Authorization-Only Online Messages –
+        Technical Specifications - Field 73: Action Date
+      example: '2024-10-22'
+    Reason:
+      type: string
+      description: Reason that indicates why the card was added to the Protection Bulletin.
+      example: L
+    ReasonMastercard:
+      type: string
+      description: >
+        Reason for adding card to Protection Bulletin. **REQUIRED** for
+        Mastercard. 
+          `C` - Credit 
+          `F` - Fraud 
+          `G` - ATM premium listing 
+          `L` - Lost 
+          `O` - Other 
+          `P` - Capture card 
+          `S` - Stolen 
+          `U` - Unauthorized use 
+          `V` - Premium listing 
+          `X` - Counterfeit 
+
+        Mastercard documentation: Customer Interface Specification - DE 120
+        (Record Data) Layout for MCC102 - Field ID 2 (Entry Reason)
+      enum:
+        - C
+        - F
+        - G
+        - L
+        - O
+        - P
+        - S
+        - U
+        - V
+        - X
+      example: F
+    ReasonVisa:
+      type: string
+      description: >
+        Reason for adding card to Protection Bulletin. **REQUIRED** for Visa.
+          `04` - Pickup card
+          `05` - Do not honor
+          `07` - Pickup card, special condition
+          `11` - Approval for **VIP**
+          `14` - Invalid account number (no such number)
+          `41` - Lost card, pickup
+          `43` - Stolen card, pickup
+          `46` - Closed account
+          `54` - Expired card
+
+        Visa documentation: VisaNet Authorization-Only Online Messages –
+        Technical Specifications - Table 214: Field 127E.1 Account Screen
+        Authorization File (ASAF) Action Codes.
+      enum:
+        - '04'
+        - '05'
+        - '07'
+        - '11'
+        - '14'
+        - '41'
+        - '43'
+        - '46'
+        - '54'
+      example: '04'
+    RegionCode:
+      type: array
+      description: >
+        Region code contains one or more Account Screen Authorization File
+        (ASAF) region codes that define the distribution of a Visa cardholder
+        account number in Card Recovery Bulletin Service files. **REQUIRED** for
+        Visa. 
+          `0` - No Bulletin / V.I.P. Only (cannot be combined with other region codes)
+          `A` - All Asia-Pacific region countries
+          `B` - All  Central Europe, Middle East, and Africa (CEMEA) region countries.
+          `C` - All Visa Canada
+          `D` - National Card Recovery Bulletin
+          `E` - All European countries
+          `F` - All Latin America and Caribbean (LAC) region countries 
+
+        Region codes can be in any order, except no other region code can be
+        specified in combination with region code 0.
+
+
+        Visa documentation: VisaNet Authorization-Only Online Messages –
+        Technical Specifications - Table 215: Field 127E.2 Account Screen
+        Authorization File (ASAF) Region Codes
+      items:
+        type: string
+        enum:
+          - '0'
+          - A
+          - B
+          - C
+          - D
+          - E
+          - F
+    State:
+      type: string
+      description: >
+        Is card blocked or not in the network brand? When the state is empty, it
+        means the network brand did not successfully receive any action.
+      enum:
+        - ''
+        - BLOCKED
+        - UNBLOCKED
+      example: BLOCKED
+    Status:
+      type: string
+      description: Request processing status.
+      enum:
+        - PENDING
+        - SUCCESS
+        - FAILED
+      example: PENDING
+    StatusNetworkMastercard:
+      type: string
+      description: >
+        Network status equivalent to Pismo status. **REQUIRED** for Mastercard. 
+          `C` - Credit 
+          `F` - Fraud 
+          `G` - ATM Premium Listing 
+          `L` - Lost 
+          `O` - Other 
+          `P` - Capture card 
+          `S` - Stolen 
+          `U` - Unauthorized use 
+          `V` - Premium listing 
+          `X` - Counterfeit 
+
+        Mastercard documentation: Customer Interface Specification - DE 120
+        (Record Data) Layout for MCC102 - Field ID 2 (Entry Reason).
+      enum:
+        - C
+        - F
+        - G
+        - L
+        - O
+        - P
+        - S
+        - U
+        - V
+        - X
+      example: F
+    StatusNetworkVisa:
+      type: string
+      description: >
+        Network status equivalent to Pismo status. **REQUIRED** for Visa.
+          `04` - Pickup card
+          `05` - Do not honor
+          `07` - Pickup card, special condition
+          `11` - Approval for **VIP**
+          `14` - Invalid account number (no such number)
+          `41` - Lost card, pickup
+          `43` - Stolen card, pickup
+          `46` - Closed account
+          `54` - Expired card
+
+        Visa documentation: VisaNet Authorization-Only Online Messages –
+        Technical Specifications - Table 214: Field 127E.1 Account Screen
+        Authorization File (ASAF) Action Codes.
+      enum:
+        - '04'
+        - '05'
+        - '07'
+        - '11'
+        - '14'
+        - '41'
+        - '43'
+        - '46'
+        - '54'
+      example: '04'
+    StatusPismo:
+      type: string
+      description: >
+        Pismo card status. For more information, see [Card lifecycle and
+        statuses](https://developers.pismo.io/pismo-docs/docs/card-lifecycle-and-statuses).
+      example: LOST
+    TotalItems:
+      type: integer
+      example: 10
+      description: Total number of items in page.
+    UpdatedAt:
+      type: string
+      description: >
+        Date and time when the Protection Bulletin was updated. Format = ISO
+        8601.
+      format: yyyy-mm-dd hh:mm:ss
+      example: '2025-04-22 20:31:50'
+    WasAutomaticallyPurged:
+      type: boolean
+      description: |
+        Was card removed from the network brand on the purge date?
+      example: true
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >
+        Account token - token encoded with a Pismo account ID. Tokens can expire
+        quickly, which can result in a **401 Unauthorized** error.
+      bearerFormat: JWT
+  responses:
+    '202':
+      description: Accepted
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Missing or invalid Authorization header:
+              value:
+                code: EBLT0005
+                message: Missing or invalid Authorization header
+                http_status_code: 401
+            Invalid Authorization header, missing account-id:
+              value:
+                code: EBLT0006
+                message: Invalid Authorization header, missing account-id
+                http_status_code: 401
+            Invalid Authorization header, missing tenant:
+              value:
+                code: EBLT0007
+                message: Invalid Authorization header, missing tenant
+                http_status_code: 401
+    '500':
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Something went wrong when try to process a request in another service:
+              value:
+                code: EBLT9998
+                message: >-
+                  Something went wrong when try to process a request in Programs
+                  API using ID: 123
+                http_status_code: 500
+            Something went wrong, please try again later:
+              value:
+                code: EBLT9999
+                message: Something went wrong, please try again later
+                http_status_code: 500
+    '504':
+      description: Gateway Timeout
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Request timeout:
+              value:
+                code: EBLT0001
+                message: Request timeout
+                http_status_code: 504
+    201PostBulletin:
+      description: Created
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BulletinResponseModel'
+          examples:
+            Register a Elo card:
+              value:
+                card_id: 10203040
+                org_id: TN-123XXX-XXXXXX-XXXXXXX
+                program_id: 1010
+                network_brand_type: ELO
+                created_at: '2025-04-22 20:31:50'
+                network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                status: PENDING
+                was_automatically_purged: true
+                histories:
+                  - event: POST
+                    event_date: '2025-04-22 20:31:50'
+                    status: PENDING
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    was_automatically_purged: true
+                    network_response_data: 'null'
+                    card_track_number: 1
+            Register a Mastercard card:
+              value:
+                card_id: 10203040
+                org_id: TN-123XXX-XXXXXX-XXXXXXX
+                program_id: 1010
+                network_brand_type: MASTERCARD
+                created_at: '2025-04-22 20:31:50'
+                purge_date: '2026-01-01'
+                network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                status: PENDING
+                was_automatically_purged: true
+                histories:
+                  - event: POST
+                    event_date: '2025-04-22 20:31:50'
+                    status: PENDING
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    reason: O
+                    was_automatically_purged: false
+                    network_response_data: 'null'
+                    card_track_number: 1
+            Register a Visa card:
+              value:
+                card_id: 10203040
+                org_id: TN-123XXX-XXXXXX-XXXXXXX
+                program_id: 1010
+                network_brand_type: VISA
+                created_at: '2025-04-22 20:31:50'
+                purge_date: '2026-01-01'
+                network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                status: PENDING
+                was_automatically_purged: true
+                card_track_number: 1
+                region_code:
+                  - A
+                  - B
+                  - C
+                  - D
+                  - E
+                  - F
+                histories:
+                  - event: POST
+                    event_date: '2025-04-22 20:31:50'
+                    status: PENDING
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    reason: '04'
+                    was_automatically_purged: false
+                    network_response_data: 'null'
+                    card_track_number: 1
+                    region_code:
+                      - A
+                      - B
+                      - C
+                      - D
+                      - E
+                      - F
+    400PostBulletin:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Failed to parse request payload:
+              value:
+                code: EBLT0003
+                message: Failed to parse request payload
+                http_status_code: 400
+    404PostBulletin:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Wallets returned not found:
+              value:
+                code: EBLT0009
+                message: 'Wallets returned [Not found] using ID: 123'
+                http_status_code: 404
+    422PostBulletin:
+      description: Unprocessable Entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Error while validating fields for all brands (header and payload):
+              value:
+                code: BBLT0001
+                message: Error while validating fields
+                http_status_code: 422
+                details:
+                  header:
+                    - field: x-customer-id
+                      message: This field is required
+                  payload:
+                    - field: card_id
+                      message: This field is required
+                    - field: purge_date
+                      message: >-
+                        This field has an invalid date format. The correct
+                        format is yyyy-MM-dd
+            Error while validating fields for Mastercard:
+              value:
+                code: BBLT0001
+                message: Error while validating fields
+                http_status_code: 422
+                details:
+                  payload:
+                    - field: reason
+                      message: This field is required
+                    - field: reason
+                      message: >-
+                        This field has an invalid value (A). The accepted values
+                        are: C, F, G, L, O, P, S, U, V, X
+                    - field: purge_date
+                      message: This field need to be greater than 2025-10-20 (180 days)
+            Error while validating fields for Visa:
+              value:
+                code: BBLT0001
+                message: Error while validating fields
+                http_status_code: 422
+                details:
+                  payload:
+                    - field: reason
+                      message: This field is required
+                    - field: reason
+                      message: >-
+                        This field has an invalid value (00). The accepted
+                        values are: 04, 05, 07, 11, 14, 41, 43, 46, 54
+                    - field: region_code
+                      message: >-
+                        This field has an invalid value (X). The accepted values
+                        are: 0, A, B, C, D, E, F
+                    - field: region_code
+                      message: >-
+                        The value '0' in region_code is not allowed with other
+                        region_code.
+            Bulletin card has an ongoing event in the network brand:
+              value:
+                code: BBLT0003
+                message: Bulletin card has an ongoing event in the network brand.
+                http_status_code: 422
+            Bulletin card is already BLOCKED:
+              value:
+                code: BBLT0004
+                message: Bulletin card is already BLOCKED
+                http_status_code: 422
+            The card with ID does not have a network brand:
+              value:
+                code: BBLT0005
+                message: The card with ID 123 does not have a network brand.
+                http_status_code: 422
+    200GetBulletin:
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BulletinResponseModel'
+          examples:
+            Retrieve a Elo card without network response:
+              value:
+                card_id: 10203040
+                org_id: TN-123XXX-XXXXXX-XXXXXXX
+                program_id: 1010
+                network_brand_type: ELO
+                created_at: '2025-04-22 20:31:50'
+                network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                status: PENDING
+                was_automatically_purged: true
+                card_track_number: 1
+                histories:
+                  - event: POST
+                    event_date: '2025-04-22 20:31:50'
+                    status: PENDING
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    was_automatically_purged: true
+                    network_response_data: 'null'
+                    card_track_number: 1
+            Retrieve a Elo card with network response:
+              value:
+                card_id: 10203040
+                org_id: TN-123XXX-XXXXXX-XXXXXXX
+                program_id: 1010
+                network_brand_type: ELO
+                created_at: '2025-04-22 20:31:50'
+                updated_at: '2025-04-22 20:32:50'
+                purge_date: '2026-01-01'
+                network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                state: BLOCKED
+                status: SUCCESS
+                was_automatically_purged: true
+                card_track_number: 1
+                histories:
+                  - event: POST
+                    event_date: '2025-04-22 20:31:50'
+                    status: PENDING
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    was_automatically_purged: true
+                    network_response_data: 'null'
+                    card_track_number: 1
+                  - event: UPDATE
+                    event_date: '2025-04-22 20:32:50'
+                    status: SUCCESS
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    was_automatically_purged: true
+                    purge_date: '2026-01-01'
+                    network_response_data: '{"network": "response"}'
+                    card_track_number: 1
+            Retrieve a Mastercard card without network response:
+              value:
+                card_id: 10203040
+                org_id: TN-123XXX-XXXXXX-XXXXXXX
+                program_id: 1010
+                network_brand_type: MASTERCARD
+                created_at: '2025-04-22 20:31:50'
+                network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                status: PENDING
+                was_automatically_purged: true
+                card_track_number: 1
+                histories:
+                  - event: POST
+                    event_date: '2025-04-22 20:31:50'
+                    status: PENDING
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    reason: O
+                    was_automatically_purged: true
+                    network_response_data: 'null'
+                    card_track_number: 1
+            Retrieve a Mastercard card with network response:
+              value:
+                card_id: 10203040
+                org_id: TN-123XXX-XXXXXX-XXXXXXX
+                program_id: 1010
+                network_brand_type: MASTERCARD
+                created_at: '2025-04-22 20:31:50'
+                updated_at: '2025-04-22 20:32:50'
+                purge_date: '2026-01-01'
+                network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                state: BLOCKED
+                status: SUCCESS
+                was_automatically_purged: true
+                card_track_number: 1
+                histories:
+                  - event: POST
+                    event_date: '2025-04-22 20:31:50'
+                    status: PENDING
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    reason: O
+                    was_automatically_purged: true
+                    network_response_data: 'null'
+                    card_track_number: 1
+                  - event: UPDATE
+                    event_date: '2025-04-22 20:32:50'
+                    status: SUCCESS
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    reason: O
+                    was_automatically_purged: true
+                    purge_date: '2026-01-01'
+                    network_response_data: '{"network": "response"}'
+                    card_track_number: 1
+            Retrieve a Visa card without network response:
+              value:
+                card_id: 10203040
+                org_id: TN-123XXX-XXXXXX-XXXXXXX
+                program_id: 1010
+                network_brand_type: VISA
+                created_at: '2025-04-22 20:31:50'
+                network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                status: PENDING
+                was_automatically_purged: true
+                card_track_number: 1
+                histories:
+                  - event: POST
+                    event_date: '2025-04-22 20:31:50'
+                    status: PENDING
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    reason: '04'
+                    was_automatically_purged: true
+                    network_response_data: 'null'
+                    card_track_number: 1
+            Retrieve a Visa card with network response:
+              value:
+                card_id: 10203040
+                org_id: TN-123XXX-XXXXXX-XXXXXXX
+                program_id: 1010
+                network_brand_type: MASTERCARD
+                created_at: '2025-04-22 20:31:50'
+                updated_at: '2025-04-22 20:32:50'
+                purge_date: '2026-01-01'
+                network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                state: BLOCKED
+                status: SUCCESS
+                was_automatically_purged: true
+                card_track_number: 1
+                region_code:
+                  - A
+                  - B
+                  - C
+                  - D
+                  - E
+                  - F
+                histories:
+                  - event: POST
+                    event_date: '2025-04-22 20:31:50'
+                    status: PENDING
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    reason: '04'
+                    was_automatically_purged: true
+                    network_response_data: 'null'
+                    card_track_number: 1
+                    region_code:
+                      - A
+                      - B
+                      - C
+                      - D
+                      - E
+                      - F
+                  - event: UPDATE
+                    event_date: '2025-04-22 20:32:50'
+                    status: SUCCESS
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    reason: O
+                    was_automatically_purged: true
+                    purge_date: '2026-01-01'
+                    network_response_data: '{"network": "response"}'
+                    card_track_number: 1
+                    region_code:
+                      - A
+                      - B
+                      - C
+                      - D
+                      - E
+                      - F
+    400GetBulletin:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Invalid param:
+              value:
+                code: EBLT0004
+                message: Invalid card_id param
+                http_status_code: 400
+    404GetBulletin:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Bulletin card not found:
+              value:
+                code: BBLT0002
+                message: Bulletin card not found
+                http_status_code: 404
+            Wallets returned not found:
+              value:
+                code: EBLT0009
+                message: 'Wallets returned [Not found] using ID: 123'
+                http_status_code: 404
+    200ListBulletin:
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BulletinResponseListModel'
+    201DeleteBulletin:
+      description: Created
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BulletinResponseModel'
+          examples:
+            Delete a Elo card:
+              value:
+                card_id: 10203040
+                org_id: TN-123XXX-XXXXXX-XXXXXXX
+                program_id: 1010
+                network_brand_type: ELO
+                created_at: '2025-04-22 20:31:50'
+                updated_at: '2025-04-22 20:32:50'
+                network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                status: PENDING
+                was_automatically_purged: true
+                histories:
+                  - event: DELETE
+                    event_date: '2025-04-22 20:32:50'
+                    status: PENDING
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    was_automatically_purged: true
+                    network_response_data: 'null'
+                    card_track_number: 1
+            Delete a Mastercard card:
+              value:
+                card_id: 10203040
+                org_id: TN-123XXX-XXXXXX-XXXXXXX
+                program_id: 1010
+                network_brand_type: MASTERCARD
+                created_at: '2025-04-22 20:31:50'
+                updated_at: '2025-04-22 20:32:50'
+                purge_date: '2026-01-01'
+                network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                status: PENDING
+                was_automatically_purged: true
+                histories:
+                  - event: DELETE
+                    event_date: '2025-04-22 20:32:50'
+                    status: PENDING
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    reason: O
+                    was_automatically_purged: false
+                    network_response_data: 'null'
+                    card_track_number: 1
+            Delete a Visa card:
+              value:
+                card_id: 10203040
+                org_id: TN-123XXX-XXXXXX-XXXXXXX
+                program_id: 1010
+                network_brand_type: VISA
+                created_at: '2025-04-22 20:31:50'
+                updated_at: '2025-04-22 20:32:50'
+                purge_date: '2026-01-01'
+                network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                status: PENDING
+                was_automatically_purged: true
+                card_track_number: 1
+                region_code:
+                  - A
+                  - B
+                  - C
+                  - D
+                  - E
+                  - F
+                histories:
+                  - event: DELETE
+                    event_date: '2025-04-22 20:32:50'
+                    status: PENDING
+                    network_track_number: TN-123XXX-XXXXXX-XXXXXXX::1a2b3c
+                    reason: '04'
+                    was_automatically_purged: false
+                    network_response_data: 'null'
+                    card_track_number: 1
+                    region_code:
+                      - A
+                      - B
+                      - C
+                      - D
+                      - E
+                      - F
+    400DeleteBulletin:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Invalid param:
+              value:
+                code: EBLT0004
+                message: Invalid card_id param
+                http_status_code: 400
+    404DeleteBulletin:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Bulletin card not found:
+              value:
+                code: BBLT0002
+                message: Bulletin card not found
+                http_status_code: 404
+            Wallets returned not found:
+              value:
+                code: EBLT0009
+                message: 'Wallets returned [Not found] using ID: 123'
+                http_status_code: 404
+    422DeleteBulletin:
+      description: Unprocessable Entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Error while validating fields:
+              value:
+                code: BBLT0001
+                message: Error while validating fields
+                http_status_code: 422
+                details:
+                  header:
+                    - field: x-customer-id
+                      message: This field is required
+            Bulletin card has an ongoing event in the network brand:
+              value:
+                code: BBLT0003
+                message: Bulletin card has an ongoing event in the network brand.
+                http_status_code: 422
+            The card with ID does not have a network brand:
+              value:
+                code: BBLT0005
+                message: The card with ID 123 does not have a network brand.
+                http_status_code: 422
+    400GetSetup:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Invalid param:
+              value:
+                code: EBLT0004
+                message: Invalid program_id param
+                http_status_code: 400
+    404GetSetup:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Programs API returned not found:
+              value:
+                code: EBLT0009
+                message: 'Programs API returned [Not found] using ID: {program_id}'
+                http_status_code: 404
+    400PostSetup:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Failed to parse request payload:
+              value:
+                code: EBLT0003
+                message: Failed to parse request payload
+                http_status_code: 400
+    404PostSetup:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Programs API returned not found:
+              value:
+                code: EBLT0009
+                message: 'Programs API returned [Not found] using ID: {program_id}'
+                http_status_code: 404
+    422PostSetup:
+      description: Unprocessable Entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageModel'
+          examples:
+            Required fields for all brands:
+              value:
+                code: BBLT0001
+                message: Error while validating fields
+                http_status_code: 422
+                details:
+                  payload:
+                    - field: program_id
+                      message: This field is required
+                    - field: active
+                      message: This field is required
+            Required fields for Mastercard brand:
+              value:
+                code: BBLT0001
+                message: Error while validating fields
+                http_status_code: 422
+                details:
+                  payload:
+                    - field: ica
+                      message: This field need to be length equals 6
+                    - field: allowed_status.status_network
+                      message: >-
+                        This field has an invalid value (A). The accepted values
+                        are: C, F, G, L, O, P, S, U, V, X
+            Required fields for Visa brand:
+              value:
+                code: BBLT0001
+                message: Error while validating fields
+                http_status_code: 422
+                details:
+                  payload:
+                    - field: bid
+                      message: This field need to be length equals 6
+                    - field: region_code
+                      message: This field is required
+                    - field: region_code
+                      message: >-
+                        This field has an invalid value (Z). The accepted values
+                        are: 0, A, B, C, D, E, F
+                    - field: region_code
+                      message: >-
+                        The value '0' in region_code is not allowed with other
+                        region_code.
+                    - field: allowed_status.status_network
+                      message: >-
+                        This field has an invalid value (00). The accepted
+                        values are: 04, 05, 07, 11, 14, 41, 43, 46, 54
+            The program with ID does not have a network brand:
+              value:
+                code: BBLT0006
+                message: The program with ID 123 does not have a network brand.
+                http_status_code: 422
+paths:
+  /v1/bulletin:
+    post:
+      summary: Register card with Protection Bulletin
+      operationId: post-v1-bulletin
+      description: >
+        Register a Pismo-issued card with the Protection Bulletin. This feature
+        is available for Elo, Mastercard and Visa.
+
+
+        The Protection Bulletin is used before a transaction takes place in
+        cases where the issuer is temporarily offline and unable to provide an
+        authorization. In a process known as *stand-in*, the card network
+        authorizes the transaction to avoid creating problems for the cardholder
+        and merchant. Once the issuer is back online, the card network lets them
+        know what was authorized while they were down.
+
+
+        You can add a card to the Protection Bulletin with this endpoint or
+        [setting a card rule](ref:post-v1-bulletin-setup) so that when a card's
+        status changes to a rule's configured status, the card is automatically
+        added to the Protection Bulletin.
+
+
+        For more information, refer to [Protection
+        Bulletin](doc:protection-bulletin).
+
+
+        **Note:** This endpoint takes an account token - an access token encoded
+        with a Pismo account ID. Tokens can expire quickly, which can result in
+        a <b>401 Unauthorized</b> message.
+      tags:
+        - Bulletin
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/XCustomerIdHeader'
+      requestBody:
+        description: >-
+          Bulletin data. Enter data for one object, depending on brand (Elo,
+          Visa, or Mastercard)
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - $ref: '#/components/schemas/BulletinPostEloModel'
+                - $ref: '#/components/schemas/BulletinPostMastercardModel'
+                - $ref: '#/components/schemas/BulletinPostVisaModel'
+            examples:
+              Register a Elo card:
+                value:
+                  card_id: 10203040
+              Register a Mastercard card with purge date:
+                value:
+                  card_id: 10203040
+                  reason: L
+                  purge_date: '2026-01-01T00:00:00.000Z'
+              Register a Mastercard card without purge date:
+                value:
+                  card_id: 10203040
+                  reason: L
+              Register a Visa card with purge date:
+                value:
+                  card_id: 10203040
+                  card_track_number: 0
+                  reason: '04'
+                  region_code:
+                    - A
+                    - B
+                    - C
+                    - D
+                    - E
+                    - F
+                  purge_date: '2026-01-01T00:00:00.000Z'
+              Register a Visa card without purge date:
+                value:
+                  card_id: 10203040
+                  card_track_number: 0
+                  reason: '04'
+                  region_code:
+                    - A
+                    - B
+                    - C
+                    - D
+                    - E
+                    - F
+      responses:
+        '201':
+          $ref: '#/components/responses/201PostBulletin'
+        '400':
+          $ref: '#/components/responses/400PostBulletin'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404PostBulletin'
+        '422':
+          $ref: '#/components/responses/422PostBulletin'
+        '500':
+          $ref: '#/components/responses/500'
+        '504':
+          $ref: '#/components/responses/504'
+    get:
+      summary: List cards in Protection Bulletin
+      operationId: list-v1-bulletin
+      description: >
+        Get all Pismo-issued cards in the Protection Bulletin with filtering
+        options.
+
+         **Note:** This endpoint takes an account token - an access token encoded with a Pismo account ID. Tokens can expire quickly, which can result in a <b>401 Unauthorized</b> message.
+      tags:
+        - Bulletin
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/BeginDateQuery'
+        - $ref: '#/components/parameters/EndDateQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/ProgramIdQuery'
+        - $ref: '#/components/parameters/NetworkBrandTypeQuery'
+        - $ref: '#/components/parameters/StatusQuery'
+        - $ref: '#/components/parameters/StateQuery'
+      responses:
+        '200':
+          $ref: '#/components/responses/200ListBulletin'
+        '401':
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
+        '504':
+          $ref: '#/components/responses/504'
+  /v1/bulletin/{card_id}:
+    delete:
+      summary: Delete card from Protection Bulletin
+      operationId: delete-v1-bulletin
+      description: >
+        Remove a Pismo-issued card from the Protection Bulletin.
+
+
+        **Note:** This endpoint takes an account token - an access token encoded
+        with a Pismo account ID. Tokens can expire quickly, which can result in
+        a <b>401 Unauthorized</b> message.
+      tags:
+        - Bulletin
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/CardIdPath'
+        - $ref: '#/components/parameters/XCustomerIdHeader'
+      responses:
+        '201':
+          $ref: '#/components/responses/201DeleteBulletin'
+        '400':
+          $ref: '#/components/responses/400DeleteBulletin'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404DeleteBulletin'
+        '422':
+          $ref: '#/components/responses/422DeleteBulletin'
+        '500':
+          $ref: '#/components/responses/500'
+        '504':
+          $ref: '#/components/responses/504'
+    get:
+      summary: Get Protection Bulletin card
+      description: >
+        Gets a Pismo-issued card in the Protection Bulletin and its history.
+
+
+        **Note:** This endpoint takes an account token - an access token encoded
+        with a Pismo account ID. Tokens can expire quickly, which can result in
+        a <b>401 Unauthorized</b> message.
+      operationId: get-v1-bulletin
+      tags:
+        - Bulletin
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/CardIdPath'
+        - $ref: '#/components/parameters/XCustomerIdHeader'
+      responses:
+        '200':
+          $ref: '#/components/responses/200GetBulletin'
+        '400':
+          $ref: '#/components/responses/400GetBulletin'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404GetBulletin'
+        '500':
+          $ref: '#/components/responses/500'
+        '504':
+          $ref: '#/components/responses/504'
+  /v1/bulletin/setup:
+    post:
+      summary: Create Protection Bulletin rule
+      operationId: post-v1-bulletin-setup
+      description: >
+        Register a new Protection Bulletin setup rule. This feature is available
+        for Elo, Mastercard and Visa.
+
+
+        When you set a card rule, for example, when a card status is changed to
+        `LOST`, it is automatically added to the Protection Bulletin.
+
+
+        This operation executes asynchronously. When complete, a [Bulletin rule
+        event](https://developers.pismo.io/events/docs/bulletin-bulletin-rule-1)
+        is generated.
+
+
+        **Notes:** 
+          * This endpoint takes an account token - an access token encoded with a Pismo account ID. Tokens can expire quickly, which can result in a <b>401 Unauthorized</b> message.
+          * Deactivating a rule after it has been created requires re-calling this endpoint  with `active` set to `false`.
+      tags:
+        - Rules
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - $ref: '#/components/schemas/BulletinSetupEloModel'
+                - $ref: '#/components/schemas/BulletinSetupMastercardModel'
+                - $ref: '#/components/schemas/BulletinSetupVisaModel'
+            examples:
+              Setup Rule Elo with allowed status:
+                value:
+                  active: true
+                  program_id: 1010
+                  allowed_status:
+                    - status_pismo: LOST
+                      default_purge_days: 30
+                    - status_pismo: ROBBED
+                      default_purge_days: 15
+              Setup Rule Elo without allowed status:
+                value:
+                  active: true
+                  program_id: 1010
+              Setup Rule Mastercard with allowed status:
+                value:
+                  active: true
+                  ica: '012345'
+                  program_id: 1010
+                  allowed_status:
+                    - status_pismo: LOST
+                      status_network: L
+                      default_purge_days: 30
+                    - status_pismo: ROBBED
+                      status_network: O
+                      default_purge_days: 15
+              Setup Rule Mastercard without allowed status:
+                value:
+                  active: true
+                  ica: '012345'
+                  program_id: 1010
+              Setup Rule Visa with allowed status:
+                value:
+                  active: true
+                  bid: '012345'
+                  program_id: 1010
+                  region_code:
+                    - A
+                    - B
+                    - C
+                    - D
+                    - E
+                    - F
+                  allowed_status:
+                    - status_pismo: LOST
+                      status_network: '41'
+                      default_purge_days: 30
+                    - status_pismo: ROBBED
+                      status_network: '43'
+                      default_purge_days: 15
+              Setup Rule Visa without allowed status:
+                value:
+                  active: true
+                  bid: '012345'
+                  program_id: 1010
+                  region_code:
+                    - A
+                    - B
+                    - C
+                    - D
+                    - E
+                    - F
+      responses:
+        '202':
+          $ref: '#/components/responses/202'
+        '400':
+          $ref: '#/components/responses/400PostSetup'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404PostSetup'
+        '422':
+          $ref: '#/components/responses/422PostSetup'
+        '500':
+          $ref: '#/components/responses/500'
+        '504':
+          $ref: '#/components/responses/504'
+  /v1/bulletin/setup/{program_id}:
+    get:
+      summary: Get Protection Bulletin rule
+      operationId: get-v1-bulletin-rule
+      description: >
+        Gets a Protection Bulletin rule.
+
+
+        The information requested is not returned in the endpoint response.
+        Instead, the information is sent in a [Bulletin rule
+        event](https://developers.pismo.io/events/docs/bulletin-bulletin-rule-1).
+
+
+        **Note:** This endpoint takes an account token - an access token encoded
+        with a Pismo account ID. Tokens can expire quickly, which can result in
+        a <b>401 Unauthorized</b> message.
+      tags:
+        - Rules
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/ProgramIdPath'
+      responses:
+        '202':
+          $ref: '#/components/responses/202'
+        '400':
+          $ref: '#/components/responses/400GetSetup'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404GetSetup'
+        '500':
+          $ref: '#/components/responses/500'
+        '504':
+          $ref: '#/components/responses/504'

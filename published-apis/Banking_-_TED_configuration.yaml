@@ -1,0 +1,202 @@
+openapi: 3.1.0
+info:
+  title: Banking - TED configuration
+  description: >-
+    API for registering your provider configuration for access to the TED
+    payment system in Brazil.
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+  version: '1.0'
+servers:
+  - url: https://sandbox.pismolabs.io/bacen-spb
+    description: Sandbox API server for testing
+security:
+  - BearerAuth: []
+tags:
+  - name: Configurations
+    description: >-
+      Endpoints to manage provider configurations for SPB (Brazil payment
+      system) integration and TED transfers
+components:
+  schemas:
+    Code:
+      type: string
+      description: Code that identifies Pismo to the provider.
+      example: Legacy
+    User:
+      description: Username
+      type: string
+      example: userSpb
+    Password:
+      description: Password
+      type: string
+      example: '123456'
+    DocumentNumber:
+      description: Client organization's government document number such as a Tax ID.
+      type: string
+      example: Client CNPJ (Brazilian business tax ID)
+    Branch:
+      description: Client organization's branch ID
+      type: string
+      example: '1234'
+    Url:
+      type: string
+      description: URL that identifies the client at the provider.
+      example: https://jdspb12345678homl
+    Provider:
+      type: string
+      description: Payment provider. Right now, only JD Consultores.
+      enum:
+        - JD
+      example: JD
+    Domain.Error:
+      type: object
+      properties:
+        code:
+          description: Error type code
+          type: string
+          example: EBS0001
+        details:
+          description: Error details
+          type: string
+          example: Error detail
+        message:
+          description: Error message
+          type: string
+          example: Error
+    spb.CreateRequest:
+      type: object
+      required:
+        - code
+        - url
+        - user
+        - password
+        - provider
+        - document_number
+        - branch
+      properties:
+        branch:
+          $ref: '#/components/schemas/Branch'
+        code:
+          $ref: '#/components/schemas/Code'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        password:
+          $ref: '#/components/schemas/Password'
+        provider:
+          $ref: '#/components/schemas/Provider'
+        url:
+          $ref: '#/components/schemas/Url'
+        user:
+          $ref: '#/components/schemas/User'
+    spb.Response:
+      type: object
+      properties:
+        message:
+          description: message
+          type: string
+          example: Configuration saved
+    Xcid:
+      type: string
+      description: >
+        The Correlation IDentifier UUID field is used to link related API
+        requests and events.  The x-cid can help the Pismo engineering team
+        track everything related to a call. If one isn't passed, it is
+        automatically generated. 
+      example: 5bb05174-4e80-11ea-b77f-2e728ce88125
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Account access token.
+      bearerFormat: JWT
+paths:
+  /v1/provider-configuration:
+    post:
+      summary: Register for TED transfers
+      description: >
+        Register a client's configuration at a provider who is authorized to use
+        the Brazil Central Bank's (BCB) payment system (SPB) for TED transfers. 
+
+
+        TED stands for Transferência Eletrônica Disponível (Electronic transfer
+        available) and is a Brazilian electronic funds transfer system that
+        allows businesses and individuals to transfer funds between different
+        banks. Pismo uses this configuration to authorize TED transfers on
+        clients' behalf.
+      operationId: post-save-provider-configuration
+      requestBody:
+        description: Save configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/spb.CreateRequest'
+      tags:
+        - Configurations
+      responses:
+        '201':
+          description: Response Body
+          headers:
+            x-cid:
+              schema:
+                $ref: '#/components/schemas/Xcid'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/spb.Response'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              schema:
+                $ref: '#/components/schemas/Xcid'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain.Error'
+              examples:
+                EBS0002:
+                  summary: Validation error
+                  value:
+                    code: EBS0009
+                    message: (Field 'code' is required)
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              schema:
+                $ref: '#/components/schemas/Xcid'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain.Error'
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              schema:
+                $ref: '#/components/schemas/Xcid'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain.Error'
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              schema:
+                $ref: '#/components/schemas/Xcid'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain.Error'
+              examples:
+                EBS0002:
+                  summary: Error on save BCB SPB configuration
+                  value:
+                    code: EBS0065
+                    message: Error on save configuration

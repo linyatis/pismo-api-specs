@@ -1,0 +1,2591 @@
+openapi: 3.1.0
+info:
+  title: Core platform - Flex controls
+  version: 1.0.0
+  description: Flex controls API
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/rules
+    description: Sandbox API server for testing
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account access token. Tokens can expire quickly, which can result in an
+        "Unauthorized" error.
+      bearerFormat: JWT
+  schemas:
+    AccountCustomerFlexControlsResponse:
+      type: object
+      description: Flex control response
+      properties:
+        customer_id:
+          type: integer
+          format: int64
+          description: Customer ID
+          example: 99999999
+        controls:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerFlexControlsResponse'
+    AccountFlexControlsResponse:
+      type: object
+      description: Flex control response.
+      required:
+        - id
+        - type
+        - name
+        - deny_code
+      properties:
+        id:
+          type: string
+          format: uuidv4
+          description: Flex control ID
+          example: 9cbdadc-860b-4275-a5cd-d9d892fd3869
+        deny_code:
+          $ref: '#/components/schemas/DenyCode'
+        name:
+          $ref: '#/components/schemas/Name'
+        type:
+          $ref: '#/components/schemas/Type'
+        rule_reference_id:
+          type: string
+          description: Flex control template ID
+          example: purchase-1M
+        beneficiary_id:
+          $ref: '#/components/schemas/BeneficiaryId'
+        override_controls:
+          $ref: '#/components/schemas/OverrideControls'
+        description:
+          type: string
+          description: Flex control description
+          example: This flex control restricts the max value to be spent every 24 hours
+        processing_codes:
+          $ref: '#/components/schemas/ProcessingCodes'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        max_limit:
+          $ref: '#/components/schemas/MaxLimit'
+        available_limit:
+          $ref: '#/components/schemas/AvailableLimit'
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+        limit_duration:
+          $ref: '#/components/schemas/LimitDuration'
+        reset_period:
+          $ref: '#/components/schemas/ResetPeriod'
+        reset_datetime:
+          type: string
+          format: date-time
+          description: >
+            Reset datetime (RFC-3339 format) for the control rule.
+
+            If `reset_datetime` is not set, a default is calculated based on
+            `limit_duration` period and the current time.
+
+            This field should only be specified when `type` is either
+            `spending_limit` or `usage_limit`.
+          example: '2022-03-08T21:19:55Z'
+        active:
+          $ref: '#/components/schemas/Active'
+        customized:
+          $ref: '#/components/schemas/Customized'
+        response_code:
+          $ref: '#/components/schemas/ResponseCode'
+        custom_code:
+          $ref: '#/components/schemas/CustomCode'
+        evaluation_order:
+          $ref: '#/components/schemas/EvaluationOrder'
+    Active:
+      type: boolean
+      example: true
+      default: true
+      description: >-
+        If not specified, defaults to 'true'. If set to 'false', the flex
+        control is skipped during evaluation.
+    AttributeGroupDescription:
+      type: string
+      description: Short description of the attribute group
+      maxLength: 50
+      minLength: 1
+      example: High-risk merchant IDs
+    AttributeGroupID:
+      type: string
+      description: Attribute group ID, unique within the organization
+      maxLength: 36
+      minLength: 1
+      example: non-trusted-merchants
+    AttributeGroupType:
+      type: string
+      enum:
+        - merchant_id
+        - merchant_category_code
+      description: |
+        Flex control scope
+          * `merchant_category_code`:  Merchant category code (MCC) is a four-digit number assigned to a business by credit card companies. It is used to classify the business by the type of goods or services it provides.
+          * `merchant_id`: Unique ID assigned to a merchant by the payment processor.
+    AttributeGroupValues:
+      type: array
+      description: >-
+        Attribute group values. - Each value must be unique within the array -
+        Maximum of 20,000 items - Each item must not exceed 15 characters
+      maxLength: 25000
+      minLength: 1
+      items:
+        type: string
+        pattern: ^[a-zA-Z0-9]+$
+        maxLength: 15
+        minLength: 1
+      example:
+        - '0123'
+        - '2224'
+        - '3876'
+    AttributeListGroupResponse:
+      type: object
+      description: Response containing a list of attribute groups
+      properties:
+        items:
+          type: array
+          description: List of attribute groups
+          items:
+            $ref: '#/components/schemas/AttributeGroupObject'
+    AvailableLimit:
+      type: integer
+      format: int64
+      description: >
+        Total available limit to spend, calculated by: max_limit -
+        current_spend_limit. The `current_spend_limit`, an internal field, is
+        the total amount of all approved transactions in the `limit_duration`
+        period. It is reset by the evaluation flow when a new transaction is
+        evaluated in the new period according to the `reset_datetime`. 
+
+
+        When `available_limit` is set in a PATCH request, it resets
+        `current_spend_limit`. In this case, `available_limit` cannot be greater
+        than `max_limit`. Note that `available_limit` is an integer. Since
+        global currencies vary in the number of digits that are allowed after
+        the decimal point, you must convert the actual maximum spending limit
+        into an integer value to use in this field. To do this, use the
+        following formula:
+
+
+        value = floatNumber * 10^x,
+
+        where x is the number of digits for the currency as defined in ISO 4217.
+
+
+        For example, if you want to set the value 499.99 for BRL currency
+        transactions, you must set 49999 = 499.99 * 10^2.
+
+
+        On the other hand, the Japanese money system does't use fractions of a
+        yen (the Japanese currency). So, to set the value at 4999 yen, you must
+        set 4999 = 4999.0 * 10^0 = 4999.0 * 1. (In other words, the value
+        doesn't change.)
+      example: 300
+    BeneficiaryId:
+      type: string
+      example: 8497225d-2096-4b92-990e-f73bd21bc48c
+      description: Account beneficiary ID
+    CardMode:
+      type: string
+      enum:
+        - credit
+        - debit
+      example: credit
+      description: |
+        Specifies the operational mode of the card.
+    Condition:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Condition ID
+          example: b4930a4d-e2c4-4fdc-9803-c83dec3a30d1
+        attribute:
+          type: string
+          description: >
+            Attribute to evaluate in condition. For `entry_mode`,
+            `merchant_category_code`, and `merchant_id`, these parameters are
+            valid for card network operations. For a control to be valid, you
+            must enter a code specified by the Mastercard/Visa card network.
+
+            * `amount`: Numeric value that indicates the amount of the operation
+            performed by the user
+
+            * `balance`: Maximum balance amount allowed in an account. Due to
+            fiscal restrictions in some countries, the user cannot have more
+            than a certain amount in the account. When the balance value is
+            defined, the control validates any process of entering money into
+            that account, evaluates the account balance at the time of the
+            transaction, and denies any inflow of money above the amount defined
+            in the balance value.
+
+            * `country_code`: Three-letter country code (ISO 3166-1) indicating
+            the location where the transaction is initiated or processed.
+
+            * `currency_code`: Three-letter currency code (ISO-4217) for the
+            flex control condition
+
+            * `entry_mode`: A code used to establish the mode of purchase. Valid
+            only for card network operations. For a control to be valid, it must
+            be a code defined by the entire Field 22 (Visa) or DE 22
+            (Mastercard) or as specified by each card network.
+                * Visa: Field 22 contains a 4-digit code indicating the method used to enter the account number and card expiration date (positions 1 and 2) and, if an electronic terminal is used, the capability of the terminal to capture online PINs (position 3) and the last digit (position 4) equal to 0 (unused) for transactions processed through VisaNet. This field is fixed-length with three subfields.
+                * Mastercard: DE 22 contains a 3-digit code indicating the method used to enter the account number and card expiration date (positions 1 and 2) and, if an electronic terminal is used, the capability of the terminal to capture online PINs (position 3).
+            * `is_device_registered`: Boolean that indicates whether the device
+            used for the operation is registered according to the financial
+            institution's security policies.
+
+            * `is_password_present`: Boolean that indicates whether the password
+            is present in the evaluation request.
+
+            * `is_physical_card_present`: Boolean that indicates whether a
+            physical card is present in the evaluation request.
+
+            * `is_tra_exemption_requested`: Boolean that indicates whether a TRA
+            (Transaction Risk Assessment) exemption is requested for the
+            transaction.
+
+            * `merchant_category_code`: Merchant Category Code (MCC) is a
+            four-digit number used to describe a merchant's primary business
+            activities. Valid only for card network operations. For a control to
+            be valid, you must enter a code specified by the Mastercard/Visa
+            card network.
+
+            * `merchant_id`: Merchant ID. Valid only for card network
+            operations. For a control to be valid, you must enter a code
+            specified by the Mastercard/Visa card network.
+
+            * `month_day`: Day of the month when the operation is performed.
+            Commonly used to limit operations on holidays. The format is MMM-DD.
+            For example, enter January 25 as "JAN-25".
+
+            * `number_of_installments`: Number of installments in the operation
+
+            * `time_now`: Restriction window used to establish the time when the
+            operation is performed, defined in the Coordinated Universal Time
+            (UTC 0) zone. For example, a 10:59 PM-06:59 AM window specifies
+            restrictions that apply from 11 PM to 7 AM in the UTC 0 time.
+
+            * `week_day`: Day of the week when the operation occurs. Use the
+            full lowercase weekday name. Valid values: sunday, monday, tuesday,
+            wednesday, thursday, friday, saturday.
+
+            * `authentication_method`:  Enable authorization rules aligned with
+            PSD2 principles. Determine whether restrictions should be applied
+            for specific authentication methods. Valid values are "password",
+            "email", and "sms". 
+
+            * `is_token_present`: Boolean that indicates whether a token card is
+            present in the evaluation request.
+
+            * `initiation_mode`: Payment initiation mode.
+               - `moto`: Payments made through mail order or telephone. 
+               - `mit`: Merchant-initiated transactions.
+            * acquirer_country_code: Three-letter country code (ISO 3166-1)
+            representing the location of the acquiring bank or financial
+            institution.
+
+            * is_cavv_present: Boolean indicating that the CAVV field is
+            present. CAVV stands for cardholder authentication verification
+            value.
+
+            * avr: String indicating that the transaction is a card network
+            Account Verification Request (AVR) transaction. AVR transactions
+            differ from standard authorizations in that they are typically
+            zero-value and are used for card network verification flows.
+            Currently, the only supported value for this attribute is `mtt`,
+            which is the Mobility & Transport Transaction (MTT) type.
+          enum:
+            - balance
+            - amount
+            - merchant_category_code
+            - week_day
+            - month_day
+            - time_now
+            - entry_mode
+            - merchant_id
+            - currency_code
+            - country_code
+            - number_of_installments
+            - is_physical_card_present
+            - is_device_registered
+            - is_tra_exemption_requested
+            - authentication_method
+            - is_token_present
+            - initiation_mode
+            - acquirer_country_code
+            - is_cavv_present
+            - avr
+        operator:
+          type: string
+          enum:
+            - eq
+            - neq
+            - lt
+            - lte
+            - gt
+            - gte
+            - in
+            - nin
+            - bt
+            - in_group
+            - not_in_group
+          description: |
+            Condition type evaluation.
+            * eq - equal to value
+            * neq - not equal to value
+            * lt - lower than value
+            * lte - lower than or equal to value
+            * gt - greater than value
+            * gte - greater than or equal to value
+            * in - includes value
+            * nin - does not include value
+            * bt - between two values
+            * in_group - in attribute group
+            * not_in_group - not in attribute group
+        value:
+          type: string
+          description: Value to compare
+          example: '10000'
+      required:
+        - attribute
+        - operator
+        - value
+    CreateAccountFlexControlRequest:
+      type: object
+      description: Creates new flex control for account.
+      properties:
+        type:
+          $ref: '#/components/schemas/Type'
+        processing_codes:
+          $ref: '#/components/schemas/ProcessingCodes'
+        name:
+          $ref: '#/components/schemas/Name'
+        beneficiary_id:
+          $ref: '#/components/schemas/BeneficiaryId'
+        override_controls:
+          $ref: '#/components/schemas/OverrideControls'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        max_limit:
+          $ref: '#/components/schemas/MaxLimit'
+        limit_duration:
+          $ref: '#/components/schemas/LimitDuration'
+        reset_datetime:
+          type: string
+          format: date-time
+          deprecated: true
+          description: >
+            *Note: This field has been deprecated. The field `reset_period` has
+            replaced `reset_datetime`.*
+
+            The reset datetime (RFC-3339 format) of the flex control.
+          example: '2022-03-08T21:19:55Z'
+        reset_period:
+          $ref: '#/components/schemas/ResetPeriod'
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+        deny_code:
+          $ref: '#/components/schemas/DenyCode'
+        response_code:
+          $ref: '#/components/schemas/ResponseCode'
+        custom_code:
+          $ref: '#/components/schemas/CustomCode'
+        evaluation_order:
+          $ref: '#/components/schemas/EvaluationOrder'
+        active:
+          $ref: '#/components/schemas/Active'
+      required:
+        - type
+        - name
+        - deny_code
+    AttributeGroupObject:
+      type: object
+      description: Attribute group object
+      properties:
+        id:
+          $ref: '#/components/schemas/AttributeGroupID'
+        description:
+          $ref: '#/components/schemas/AttributeGroupDescription'
+        type:
+          $ref: '#/components/schemas/AttributeGroupType'
+        values:
+          $ref: '#/components/schemas/AttributeGroupValues'
+      required:
+        - id
+        - description
+        - type
+        - values
+    CreateCustomerFlexControlRequest:
+      type: object
+      description: >
+        Create customer flex control request. You use flex controls to restrict
+        financial operations. For example, you can set spending and usage
+        limits. See [Flexible transaction
+        controls](https://developers.pismo.io/pismo-docs/docs/flex-controls) for
+        more information.
+      properties:
+        type:
+          $ref: '#/components/schemas/Type'
+        processing_codes:
+          $ref: '#/components/schemas/ProcessingCodes'
+        rule_reference_id:
+          type: string
+          example: purchase-1M
+          description: >
+            If `rule_reference_id` is set, this program-level flex control, if
+            it exists, overrides this flex control.
+        name:
+          $ref: '#/components/schemas/Name'
+        account_id:
+          type: integer
+          example: 500000
+          format: int64
+          description: Account ID
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+        max_limit:
+          $ref: '#/components/schemas/MaxLimit'
+        max_transactions:
+          $ref: '#/components/schemas/MaxTransactions'
+        max_amount:
+          $ref: '#/components/schemas/MaxAmount'
+        limit_duration:
+          $ref: '#/components/schemas/LimitDuration'
+        reset_datetime:
+          type: string
+          format: date-time
+          deprecated: true
+          description: |
+            *Note: This field has been deprecated, use `reset_period` instead.*
+            The reset datetime (RFC-3339 format) of the control rule.
+          example: '2022-03-08T21:19:55Z'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        reset_period:
+          $ref: '#/components/schemas/ResetPeriod'
+        reset_strategy:
+          $ref: '#/components/schemas/ResetStrategy'
+        card_ids:
+          type: array
+          description: List of card IDs
+          items:
+            type: integer
+            format: int64
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+        active:
+          $ref: '#/components/schemas/Active'
+        deny_code:
+          $ref: '#/components/schemas/DenyCode'
+        response_code:
+          $ref: '#/components/schemas/ResponseCode'
+        custom_code:
+          $ref: '#/components/schemas/CustomCode'
+        evaluation_order:
+          $ref: '#/components/schemas/EvaluationOrder'
+        card_mode:
+          $ref: '#/components/schemas/CardMode'
+      required:
+        - account_id
+        - type
+        - name
+    CurrencyCode:
+      type: string
+      example: BRL
+      description: Flex control currency code (ISO 4217)
+    CustomCode:
+      type: string
+      description: >
+        Alphanumeric three-character custom code. This can be an alternative
+        custom code. When the platform denies a control evaluation, it returns
+        the custom code that provides the precise reason for the denial by the
+        anti-fraud solution.
+      minLength: 1
+      maxLength: 3
+      example: A1B
+    CustomerFlexControlsResponse:
+      type: object
+      description: Flex control response.
+      properties:
+        id:
+          type: string
+          description: |
+            Flex control ID is auto-generated at creation time.
+          format: uuid
+          example: 89cbdadc-860b-4275-a5cd-d9d892fd3869
+        type:
+          $ref: '#/components/schemas/Type'
+        processing_codes:
+          $ref: '#/components/schemas/ProcessingCodes'
+        rule_reference_id:
+          type: string
+          example: purchase-1M
+          description: >-
+            ID of program-level flex control. Only present in generic flex
+            controls created for the entire program.
+        name:
+          $ref: '#/components/schemas/Name'
+        account_id:
+          type: integer
+          example: 8988000
+          format: int64
+          description: Account ID
+        customer_id:
+          type: integer
+          format: int64
+          description: Customer ID
+          example: 99999999
+        card_ids:
+          type: array
+          description: Card ID list
+          items:
+            type: number
+            format: int64
+          example:
+            - 11111
+            - 22222
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+        max_limit:
+          $ref: '#/components/schemas/MaxLimit'
+        max_transactions:
+          $ref: '#/components/schemas/MaxTransactions'
+        max_amount:
+          $ref: '#/components/schemas/MaxAmount'
+        limit_duration:
+          $ref: '#/components/schemas/LimitDuration'
+        reset_datetime:
+          type: string
+          format: date-time
+          description: >
+            Reset datetime (RFC-3339 format).
+
+            If `reset_datetime` is not set, by default it will calculated based
+            on `limit_duration` period and the current time.
+          example: '2022-03-08T21:19:55Z'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        reset_period:
+          $ref: '#/components/schemas/ResetPeriod'
+        reset_strategy:
+          $ref: '#/components/schemas/ResetStrategy'
+        available_limit:
+          $ref: '#/components/schemas/AvailableLimit'
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+          example:
+            - attribute: balance
+              operator: gt
+              value: '10000'
+        active:
+          $ref: '#/components/schemas/Active'
+        deny_code:
+          $ref: '#/components/schemas/DenyCode'
+        response_code:
+          $ref: '#/components/schemas/ResponseCode'
+        custom_code:
+          $ref: '#/components/schemas/CustomCode'
+        evaluation_order:
+          $ref: '#/components/schemas/EvaluationOrder'
+        card_mode:
+          $ref: '#/components/schemas/CardMode'
+        customized:
+          $ref: '#/components/schemas/Customized'
+      required:
+        - id
+        - type
+        - account_id
+    Customized:
+      type: boolean
+      example: true
+      description: >
+        Indicates whether the flex control is managed by the user. If
+        `customized` is `false`, the flex control is managed by the card's
+        program. Generally speaking, users shouldn't change flex controls
+        created by the program, however it is possible to do so. You can reverse
+        indivdually managing a flex control with a call to [Update account flex
+        control](ref:patch-v1-accounts-flex-control) or [Update customer flex
+        control](ref:patch-v1-customers-flex-control) and setting `customized`
+        as `false`.
+    DenyCode:
+      type: string
+      description: |
+        Deny code related to restriction.
+        This code is returned when the evaluation does not meet the conditions.
+      example: ERR_VAL_BALANCE
+    ErrorDetail:
+      type: object
+      description: Error detail.
+      properties:
+        location:
+          type: string
+          example: payload.entity_type
+          description: Identifies where the request is causing an error.
+        message:
+          type: string
+          description: Description of error
+          example: '`entity_type` should be `legal_person` or `natural_person`'
+    ErrorAttributeTypeDetail:
+      type: object
+      description: Error detail.
+      properties:
+        location:
+          type: string
+          example: payload.type
+          description: Location where the request is causing an error
+        message:
+          type: string
+          description: Error description
+          example: '`type` should be `merchant_category_code` or `merchant_id`'
+    ErrorResponse:
+      type: object
+      description: Error response
+      properties:
+        message:
+          type: string
+          description: Error description
+        error_code:
+          type: string
+          description: Error code ID
+          deprecated: true
+        code:
+          description: Error code ID
+          type: string
+    ErrorResponseWithDetails:
+      type: object
+      description: Error response
+      properties:
+        message:
+          type: string
+          description: Error description
+        details:
+          type: array
+          description: Provides more information about the error message.
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+        error_code:
+          type: string
+          description: Error code ID
+          deprecated: true
+        code:
+          type: string
+          description: Error code ID
+    EvaluationOrder:
+      type: integer
+      format: int64
+      description: >
+        Order in which the control is evaluated. If this value is not provided,
+        the control is evaluated after the controls with the configured
+        `evaluation_order` value.
+      minimum: 1
+      maximum: 99
+    GetAllAccountCustomerFlexControlsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/AccountCustomerFlexControlsResponse'
+    GetAllAccountFlexControlsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/AccountFlexControlsResponse'
+    GetAllCustomerFlexControlsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/CustomerFlexControlsResponse'
+    LimitDuration:
+      type: string
+      description: >
+        Flex control limit period duration (ISO 8601 format).
+
+        For example, if a flex control sets a spending limit of $500, and
+        `limit_duration` is set to one month (`P1M`), then the user cannot spend
+        more than $500 from the account in any one month period.
+
+        If `limit_duration` is not set, then the flex control does not
+        accumulate.
+      example: P1M
+    MaxAmount:
+      type: integer
+      minimum: 1
+      format: int64
+      description: >
+        Maximum accumulated amount allowed. Once met or exceeded, subsequent
+        transactions are declined by the evaluation control flow.
+
+        Note that the value must be calculated as follows. 
+
+
+        value = floatNumber × 10^X, where X is the number of digits after the
+        decimal separator for the currency defined in ISO 4217.
+
+
+        For example, if you want to set the value 499.99 for USD currency
+        transactions, where the number of decimal places is 2, you must set the
+        value to `49999` (499.99 × 10²).
+
+
+        If you want to set the value 499 for JPY currency transactions, where
+        the number of decimal places is 0, you must set the value to `499`
+        (499.0 × 10^0 = 499.0 × 1 - in other words, the value doesn't change).
+      example: 100000
+    MaxLimit:
+      type: integer
+      minimum: 1
+      format: int64
+      description: >
+        Maximum spending limit. Once met or exceeded, any subsequent
+        transactions are declined by evaluation control flow.
+
+        Note that this value is an integer. Since global currencies vary in the
+        number of digits that are allowed after the decimal point, you must
+        convert the actual maximum spending limit into an integer value to use
+        in this field. To do this, use the following formula.
+
+
+        value = floatNumber × 10^X, where X is the number of digits after the
+        decimal separator for the currency as defined in ISO 4217.
+
+
+        For example, if you want to set the value 499.99 for BRL currency
+        transactions, where the number of decimal places is 2, you must set it
+        to `49999` (499.99 × 10²).
+
+
+        If you want to set the value 499 for JPY currency transactions, where
+        the number of decimal places is 0, you must set it to `4999` (4999.0 ×
+        10^0 = 4999.0 × 1 - in other words, the value doesn't change.)
+
+
+        This field is **REQUIRED** for cumulative controls.
+      example: 1000
+    MaxTransactions:
+      type: integer
+      minimum: 1
+      format: int64
+      description: >
+        Maximum number of transactions allowed. Once met or exceeded, subsequent
+        transactions are declined by the evaluation control flow.
+      example: 10
+    Name:
+      type: string
+      description: Flex control name
+      example: Purchase 1M limit
+    OverrideControls:
+      type: array
+      items:
+        type: string
+      example:
+        - spending-limit-id-1
+        - spending-limit-id-2
+      description: >
+        List of existing flex control IDs to override. 
+
+        The platform ignores these controls and only evaluates the new flex
+        control.
+    PatchAccountFlexControlRequest:
+      type: object
+      description: Patch flex control request
+      properties:
+        name:
+          $ref: '#/components/schemas/Name'
+        processing_codes:
+          $ref: '#/components/schemas/ProcessingCodes'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+        beneficiary_id:
+          $ref: '#/components/schemas/BeneficiaryId'
+        override_controls:
+          $ref: '#/components/schemas/OverrideControls'
+        max_limit:
+          $ref: '#/components/schemas/MaxLimit'
+        available_limit:
+          $ref: '#/components/schemas/AvailableLimit'
+        limit_duration:
+          $ref: '#/components/schemas/LimitDuration'
+        reset_datetime:
+          type: string
+          format: date-time
+          deprecated: true
+          description: >
+            *Note: This field has been deprecated. The field `reset_period` has
+            replaced `reset_datetime`.*
+
+            The reset datetime (RFC-3339 format) of the flex control.
+          example: '2022-03-08T21:19:55Z'
+        reset_period:
+          $ref: '#/components/schemas/ResetPeriod'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+        active:
+          $ref: '#/components/schemas/Active'
+        customized:
+          $ref: '#/components/schemas/Customized'
+        response_code:
+          $ref: '#/components/schemas/ResponseCode'
+        custom_code:
+          $ref: '#/components/schemas/CustomCode'
+        evaluation_order:
+          $ref: '#/components/schemas/EvaluationOrder'
+    PatchCustomerFlexControlRequest:
+      type: object
+      description: Patch flex control request
+      properties:
+        name:
+          $ref: '#/components/schemas/Name'
+        beneficiary_id:
+          $ref: '#/components/schemas/BeneficiaryId'
+        override_controls:
+          $ref: '#/components/schemas/OverrideControls'
+        processing_codes:
+          $ref: '#/components/schemas/ProcessingCodes'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+        max_limit:
+          $ref: '#/components/schemas/MaxLimit'
+        max_transactions:
+          $ref: '#/components/schemas/MaxTransactions'
+        max_amount:
+          $ref: '#/components/schemas/MaxAmount'
+        limit_duration:
+          $ref: '#/components/schemas/LimitDuration'
+        reset_datetime:
+          type: string
+          format: date-time
+          deprecated: true
+          description: >
+            *Note: This field has been deprecated. The field `reset_period` has
+            replaced `reset_datetime`.*
+
+            The reset datetime (RFC-3339 format) of the control rule.
+          example: '2022-03-08T21:19:55Z'
+        reset_period:
+          $ref: '#/components/schemas/ResetPeriod'
+        reset_strategy:
+          $ref: '#/components/schemas/ResetStrategy'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        available_limit:
+          $ref: '#/components/schemas/AvailableLimit'
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+        active:
+          $ref: '#/components/schemas/Active'
+        deny_code:
+          $ref: '#/components/schemas/DenyCode'
+        card_ids:
+          type: array
+          description: Card ID list
+          items:
+            type: integer
+            format: int64
+        response_code:
+          $ref: '#/components/schemas/ResponseCode'
+        custom_code:
+          $ref: '#/components/schemas/CustomCode'
+        evaluation_order:
+          $ref: '#/components/schemas/EvaluationOrder'
+        card_mode:
+          $ref: '#/components/schemas/CardMode'
+    ProcessingCodes:
+      type: array
+      items:
+        type: string
+      description: >
+        Processing codes list for evaluating flex control conditions. If the
+        value is empty, the flex control applies to any processing code.
+      example:
+        - '07000'
+        - '07001'
+    ResetPeriod:
+      type: object
+      description: >
+        Enables the specification of reset periods for accumulators based on the
+        duration in `limit_duration`. When this field is set, it must follow the
+        RFC 3339 pattern from ISO 8601. When `reset_period` changes, the
+        `avaliable_limit` is reset.
+      properties:
+        month_day:
+          type: number
+          description: >-
+            Month day to reset. Can only be used when `limit_duration` is
+            monthly.
+          minimum: 1
+          maximum: 28
+        month:
+          type: number
+          description: >-
+            Numeric day of the month to reset the flex control. Can only be used
+            when `limit_duration` is yearly.
+          minimum: 1
+          maximum: 12
+        week_day:
+          type: string
+          description: Week day to reset. Can only be used when `limit_duration` is weekly.
+          example: monday
+          enum:
+            - monday
+            - tuesday
+            - wednesday
+            - thursday
+            - friday
+            - saturday
+            - sunday
+        time:
+          type: string
+          description: >
+            Time to reset flex control in time zone defined by control. Include
+            only hours, minutes, and AM/PM. For example, `11:00PM` for 11PM or
+            `00:00AM` for midnight. You can use `12` in hours as an alternative
+            to `00` (for example,`12:59AM` is the same as `00:59AM`).
+          example: 3:00AM
+        utc_time:
+          type: string
+          deprecated: true
+          description: >
+            *Note: This field has been deprecated, use `time` instead.*
+
+            Time to reset the flex control in the UTC 0 time. Include only
+            hours, minutes, and AM/PM. For example, `11:00PM` for 11PM or
+            `00:00AM` for midnight. You can use `12` in hours as an alternative
+            to `00` (for example,`12:59AM` is the same as `00:59AM`).
+          example: 3:00AM
+    ResetStrategy:
+      type: object
+      description: The strategy to reset the accumulators.
+      properties:
+        reset_trigger:
+          type: object
+          description: Trigger that resets the accumulators
+          properties:
+            is_password_present:
+              type: boolean
+              description: Indicates whether the client entered a password
+            authentication_method:
+              type: array
+              description: >-
+                Indicates which authentication methods should trigger a reset of
+                the flex-control accumulator.
+              items:
+                type: string
+                format: text
+              example:
+                - password
+                - sms
+                - email
+    ResponseCode:
+      type: string
+      description: >
+        Alphanumeric two-character response code. This can be the standard card
+        network response code. When the platform denies a transaction, it
+        returns the response code that provides the precise reason for the
+        denial by the card network.
+      minLength: 2
+      maxLength: 2
+      example: '57'
+    TimeZone:
+      type: string
+      description: >
+        IANA Time Zone database, such as "America/New_York". 
+
+        This attribute is used to evaluate the flex control using the desired
+        time zone for condition attributes such as `week_day`, `month_day`,
+        `time_now`, and `reset_period`.
+
+        If `time_zone` is empty, the control is evaluated using the UTC time
+        zone.
+      example: America/Sao_Paulo
+    Type:
+      type: string
+      enum:
+        - spending_limit
+        - usage_limit
+        - restriction
+        - cumulative_limit
+      description: |
+        Flex control scope
+          * `usage_limit`: Accumulator flex control that increases by one until `max_limit`
+          * `spending_limit`: Accumulator flex control that increases by the current transaction’s `amount` until `max_limit`
+          * `restriction`: Restriction flex control that only validates specified conditions
+          * `cumulative_limit`: Accumulator flex control that increases by one until a condition is met, applies only to flex controls with associated `card_ids`, and requires a `reset_strategy`
+  examples:
+    accountFlexControlCreationConditionsResponse:
+      description: Flex Control of type 'usage_limit' creation response
+      value:
+        id: 84ba9052-31d3-41da-99d2-a1632d5ce2e5
+        type: spending_limit
+        name: Purchase 1 Month credit card
+        processing_codes:
+          - '007000'
+        conditions:
+          - attribute: merchant_category_code
+            operator: eq
+            value: '1060'
+          - attribute: entry_mode
+            operator: eq
+            value: contact
+        max_limit: 49999
+        limit_duration: P1M
+        reset_datetime: '2022-03-08T21:19:55Z'
+        deny_code: MAX_VALUE_P1M_1060_CONTACT
+        active: true
+    accountFlexControlCreationResponse:
+      description: Flex Control creation response
+      value:
+        id: 84ba9052-31d3-41da-99d2-a1632d5ce2e5
+        type: spending_limit
+        name: Purchase 1 Month credit card
+        processing_codes:
+          - '007000'
+        max_limit: 49999
+        limit_duration: P1M
+        reset_datetime: '2022-03-08T21:19:55Z'
+        deny_code: MAX_VALUE_P1M
+        active: true
+    accountFlexControlRestrictionCreationResponse:
+      description: Flex control with type 'restriction' creation response
+      value:
+        id: 84ba9052-31d3-41da-99d2-a1632d5ce2e5
+        type: restriction
+        name: balance-10000-rule
+        processing_codes: []
+        conditions:
+          - attribute: balance
+            operator: lt
+            value: '100000'
+        deny_code: ERR_VAL_BALANCE
+        active: true
+    createCustomerFlexControlRequest:
+      description: Create customer flex control example.
+      value:
+        type: spending_limit
+        account_id: 50000001
+        name: Purchase 1 Month credit card
+        max_limit: 49999
+        limit_duration: P1M
+        reset_datetime: '2022-03-08T21:19:55Z'
+    createCustomerFlexControlWithCardIDCondition:
+      description: Create spending_limit rule example for a card_id.
+      value:
+        processing_codes:
+          - '007000'
+          - '007001'
+        account_id: 50000001
+        name: Purchase 1 Month credit card
+        max_limit: 49999
+        limit_duration: P1M
+        reset_datetime: '2022-03-08T21:19:55Z'
+        card_ids:
+          - 111111
+        conditions:
+          - attribute: balance
+            operator: gt
+            value: '10000'
+        deny_code: ERR_VAL_BALANCE
+        active: true
+        type: spending_limit
+    customerFlexControlResponse:
+      description: Create customer flex control example.
+      value:
+        id: 84ba9052-31d3-41da-99d2-a1632d5ce2e5
+        type: spending_limit
+        rule_reference_id: purchase-1M
+        account_id: 50000001
+        customer_id: 9999999
+        name: Purchase 1 Month credit card
+        max_limit: 49999
+        limit_duration: P1M
+        reset_datetime: '2022-03-08T21:19:55Z'
+        available_limit: 49999
+        card_ids:
+          - 111111
+        conditions:
+          - attribute: balance
+            operator: gt
+            value: '10000'
+        active: true
+        customized: true
+    flexControlTypeSpendingLimit:
+      description: Create flex control with type spending_limit.
+      value:
+        type: spending_limit
+        name: Purchase 1 Month credit card
+        processing_codes:
+          - '007000'
+        max_limit: 49999
+        limit_duration: P1M
+        deny_code: MAX_VALUE_P1M
+        active: true
+    flexControlForBeneficiary:
+      description: Create flex control with beneficiary example.
+      value:
+        type: spending_limit
+        name: Purchase 1 Month credit card
+        beneficiary_id: a10efbf9-e67c-4c3c-b52c-d1218427a81b
+        override_controls:
+          - 9186bafe-a077-4cab-bc42-08db41410d52
+          - 12565ce9-050f-41d5-8c63-8d1a13c817ae
+        processing_codes:
+          - '007000'
+        max_limit: 49999
+        limit_duration: P1M
+        deny_code: MAX_VALUE_P1M
+        active: true
+    flexControlByCurrencyCode:
+      description: Create flex control for specific currency.
+      value:
+        type: spending_limit
+        name: Limit purchase USD
+        processing_codes:
+          - '007000'
+        conditions:
+          - attribute: currency_code
+            operator: eq
+            value: USD
+        max_limit: 50000
+        limit_duration: P1M
+        deny_code: MAX_LIMIT_USD_P1M
+        active: true
+    flexControlWithDailyResetPeriod:
+      description: Create flex control with daily reset.
+      value:
+        type: spending_limit
+        name: Purchase 1 Month credit card
+        processing_codes:
+          - '007000'
+        max_limit: 49999
+        limit_duration: P1M
+        time_zone: America/Sao_Paulo
+        reset_period:
+          time: 00:00AM
+        deny_code: MAX_VALUE_P1M
+        active: true
+    flexControlByNumberOfInstallments:
+      description: Create flex control for specific number of installments.
+      value:
+        type: restriction
+        name: restrict-number-of-installments
+        processing_codes:
+          - '007000'
+        conditions:
+          - attribute: number_of_installments
+            operator: bt
+            value: 1-99
+        deny_code: ERR_MAX_INSTALLMENTS
+        active: true
+    flexControlWithWeeklyResetPeriod:
+      description: Create flex control with weekly reset period.
+      value:
+        type: spending_limit
+        name: Purchase 1 Month credit card
+        processing_codes:
+          - '007000'
+        max_limit: 49999
+        limit_duration: P1M
+        time_zone: America/Sao_Paulo
+        reset_period:
+          week_day: monday
+          time: 00:00AM
+        deny_code: MAX_VALUE_P1M
+        active: true
+    flexControlWithMonthlyResetPeriod:
+      description: Create flex control with monthly reset period.
+      value:
+        type: spending_limit
+        name: Purchase 1 Month credit card
+        processing_codes:
+          - '007000'
+        max_limit: 49999
+        limit_duration: P1M
+        time_zone: America/Sao_Paulo
+        reset_period:
+          month_day: 28
+          time: 00:00AM
+        deny_code: MAX_VALUE_P1M
+        active: true
+    flexControlTypeUsageLimitConditions:
+      description: Create flex control example with conditions.
+      value:
+        type: usage_limit
+        name: Purchase 1 Month credit card
+        conditions:
+          - attribute: merchant_category_code
+            operator: eq
+            value: '1060'
+        max_limit: 100
+        limit_duration: P1M
+        deny_code: MAX_USAGE_P1M_1060
+        active: true
+    flexControlRestrictionConditions:
+      description: Create flex control of type restriction with conditions.
+      value:
+        type: restriction
+        name: balance-10000-rule
+        conditions:
+          - attribute: balance
+            operator: lt
+            value: '100000'
+        deny_code: ERR_VAL_BALANCE
+        active: true
+    flexControlMultipleConditions:
+      description: Create flex control with multiple conditions.
+      value:
+        type: spending_limit
+        name: Purchase 1 Month credit card
+        processing_codes:
+          - '007000'
+        conditions:
+          - attribute: merchant_category_code
+            operator: eq
+            value: '1060'
+          - attribute: entry_mode
+            operator: eq
+            value: contact
+        max_limit: 49999
+        limit_duration: P1M
+        deny_code: MAX_VALUE_P1M_1060_CONTACT
+        active: true
+    patchAccountFlexControlRequest:
+      description: Update flex control example
+      value:
+        name: Purchase 1M limit
+        max_limit: 1000
+        conditions:
+          - attribute: balance
+            operator: gt
+            value: '10000'
+        reset_period:
+          month_day: 28
+          utc_time: 00:00AM
+        customized: true
+    PatchCustomerFlexControlRequest:
+      description: Update flex control example
+      value:
+        name: Purchase 1 Month credit card
+        max_limit: 49999
+        limit_duration: P1M
+        reset_datetime: '2022-03-08T21:19:55Z'
+        available_limit: 5000
+        conditions:
+          - attribute: balance
+            operator: gt
+            value: '10000'
+        active: true
+        deny_code: ERR_VAL_BALANCE
+        card_ids:
+          - 11111
+          - 22222
+    PatchCustomerFlexControlRequestInactive:
+      description: Inactive flex control example.
+      value:
+        active: false
+    patchOnlyMaxLimitCustomerFlexControlRequest:
+      description: Update flex control example
+      value:
+        max_limit: 49999
+    ERUL0001:
+      description: Internal server error example.
+      value:
+        message: internal server error
+        error_code: RULREP0500
+        code: ERUL0001
+    ERUL0002:
+      description: Operation not allowed example.
+      value:
+        message: operation not allowed
+        error_code: RULVAL0403
+        code: ERUL0002
+    ERUL0003:
+      description: Spending limit not found example.
+      value:
+        message: spending limit not found
+        error_code: RULREP0404
+        code: ERUL0003
+    ERUL0004:
+      description: Spending limit does not exist in override controls example.
+      value:
+        message: spending limit does not exist in override controls
+        error_code: RULVAL0400
+        code: ERUL0004
+    ERUL0005:
+      description: Error getting info from Account example.
+      value:
+        message: Error getting info from Account
+        error_code: RULREP0500
+        code: ERUL0005
+    ERUL0701:
+      description: Error parsing payload example.
+      value:
+        message: error parsing payload
+        error_code: RULVAL0400
+        code: ERUL0701
+    ERUL0702:
+      description: Error validating request path example
+      value:
+        message: error validating request path
+        error_code: RULVAL0400
+        details:
+          - location: payload.limit_duration
+            message: '`limit_duration` must follow ISO 8601 standard'
+        code: ERUL0702
+    ERUL0703:
+      description: Error validating request header example
+      value:
+        message: error validating request header
+        details:
+          - location: header.x-tenant
+            message: missing x-tenant
+        error_code: RULVAL0400
+        code: ERUL0703
+    ERUL0704:
+      description: Error building new spending limit from request payload example
+      value:
+        message: error building new spending limit from request payload
+        error_code: RULVAL0400
+        details:
+          - location: payload.limit_duration
+            message: '`limit_duration` must follow ISO 8601 standard'
+        code: ERUL0704
+    ERUL0706:
+      description: Spending limit already exists example
+      value:
+        message: spending limit already exists
+        error_code: RULVAL0400
+        code: ERUL0706
+    ERUL0707:
+      description: Attribute group already exists example
+      value:
+        message: Attribute group already exists
+        error_code: RULVAL0400
+        code: ERUL0707
+    ERUL0801:
+      description: error validating request header example
+      value:
+        message: error validating request header
+        error_code: RULVAL0400
+        details:
+          - location: header.x-tenant
+            message: missing x-tenant
+        code: ERUL0801
+    ERUL0802:
+      description: Error validating request path example
+      value:
+        message: error validating request path
+        error_code: RULVAL0400
+        details:
+          - location: path.param.accountId
+            message: accountId must be a valid integer
+        code: ERUL0802
+    ERUL0803:
+      description: spending limit not found for account example
+      value:
+        message: spending limit not found for account
+        error_code: RULVAL0400
+        code: ERUL0803
+    ERUL0804:
+      description: Customer's spending limits not found for account
+      value:
+        message: Customer's spending limits not found for account
+        error_code: RULVAL0400
+        code: ERUL0804
+    ERUL0805:
+      description: Attribute group not found example
+      value:
+        message: attribute group not found
+        error_code: RULVAL0400
+        code: ERUL0805
+    ERUL0806:
+      description: Attribute group not found example
+      value:
+        message: The 'value' field is the only one that can be updated.
+        error_code: RULVAL0400
+        code: ERUL0806
+    ERUL0901:
+      description: Error validating request header example
+      value:
+        message: error validating request header
+        error_code: RULVAL0400
+        details:
+          - location: header.x-tenant
+            message: missing x-tenant
+        code: ERUL0901
+    ERUL0902:
+      description: Error validating request path example
+      value:
+        message: error validating request path
+        error_code: RULVAL0400
+        details:
+          - location: path.param.accountId
+            message: accountId must be a valid integer
+          - location: path.param.spending_limit_id
+            message: spending_limit_id must be valid
+        code: ERUL0902
+    ERUL1001:
+      description: Error parsing payload example
+      value:
+        message: error parsing payload
+        error_code: RULVAL0400
+        code: ERUL1001
+    ERUL1002:
+      description: Error validating request headerd example
+      value:
+        message: error validating request header
+        error_code: RULVAL0400
+        details:
+          - location: header.x-tenant
+            message: missing x-tenant
+        code: ERUL1002
+    ERUL1003:
+      description: Error validating request path example
+      value:
+        message: error validating request path
+        error_code: RULVAL0400
+        details:
+          - location: path.param.accountId
+            message: accountId must be a valid integer
+          - location: path.param.spending_limit_id
+            message: spending_limit_id must be valid
+        code: ERUL1003
+    ERUL1004:
+      description: No information to patch example
+      value:
+        message: no information to patch
+        error_code: RULVAL0400
+        code: ERUL1004
+    ERUL1005:
+      description: Error validating spending limit from request payload example
+      value:
+        message: error validating spending limit from request payload
+        error_code: RULVAL0400
+        details:
+          - location: payload.limit_duration
+            message: limit_duration cannot be empty
+        code: ERUL1005
+    ERUL1006:
+      description: Error validating request payload example
+      value:
+        message: error validating request payload
+        error_code: RULVAL0400
+        details:
+          - location: payload.limit_duration
+            message: limit_duration cannot be empty
+        code: ERUL1006
+    ERUL1007:
+      description: Spending limit created by template example
+      value:
+        message: spending limit created by template
+        error_code: RULVAL0400
+        details:
+          - location: payload.override_controls
+            message: spending limit created by template
+        code: ERUL1007
+    ERUL1101:
+      description: Invalid request example
+      value:
+        message: invalid request
+        error_code: RULVAL0400
+        details:
+          - location: payload.limit_duration
+            message: '`limit_duration` must follow ISO 8601 standard'
+        code: ERUL1101
+    ERUL1102:
+      description: Error building new spending limit from request payload example
+      value:
+        message: error building new spending limit from request payload
+        error_code: RULVAL0400
+        details:
+          - location: payload.restriction_rules[].conditions[].attribute
+            message: >-
+              attribute should be one of (balance, amount,
+              merchant_category_code, week_day, month_day, interval_time,
+              entry_mode, currency_code, merchant_id)
+        code: ERUL1102
+    ERUL1105:
+      description: Error on repository example
+      value:
+        message: Error on repository
+        error_code: RULREP0500
+        code: ERUL1105
+    ERUL1106:
+      description: Customer spending limit already exists example
+      value:
+        message: Customer spending limit already exists.
+        error_code: RULVAL0400
+        code: ERUL1106
+    ERUL1201:
+      description: Invalid request example
+      value:
+        message: Invalid request
+        error_code: RULVAL0400
+        details:
+          - location: payload.limit_duration
+            message: '`limit_duration` must follow ISO 8601 standard'
+        code: ERUL1201
+    ERUL1202:
+      description: >-
+        Error validating request payload to GetCustomerSpendingLimitRules
+        example
+      value:
+        message: Error validating request payload to GetCustomerSpendingLimitRules
+        error_code: RULVAL0400
+        details:
+          - location: payload.limit_duration
+            message: '`limit_duration` must follow ISO 8601 standard'
+        code: ERUL1202
+    ERUL1203:
+      description: Error on repository example
+      value:
+        message: Error on repository
+        error_code: RULREP0500
+        code: ERUL1203
+    ERUL1204:
+      description: Rules for customerID not found example
+      value:
+        message: Rules for customerID not found
+        error_code: RULREP0404
+        code: ERUL1204
+    ERUL1205:
+      description: Customer spending limit rules not found example
+      value:
+        message: Customer spending limit rules not found.
+        error_code: RULVAL0400
+        code: ERUL1205
+    ERUL1301:
+      description: Invalid request example
+      value:
+        message: Invalid request
+        error_code: RULVAL0400
+        details:
+          - location: payload.limit_duration
+            message: '`limit_duration` must follow ISO 8601 standard'
+        code: ERUL1301
+    ERUL1302:
+      description: Error validating request payload to GetCustomerSpendingLimitRule example
+      value:
+        message: Error validating request payload to GetCustomerSpendingLimitRule
+        error_code: RULVAL0400
+        details:
+          - location: payload.limit_duration
+            message: '`limit_duration` must follow ISO 8601 standard'
+        code: ERUL1302
+    ERUL1401:
+      description: Invalid request example
+      value:
+        message: Invalid request
+        error_code: RULVAL0400
+        details:
+          - location: payload.limit_duration
+            message: '`limit_duration` must follow ISO 8601 standard'
+        code: ERUL1401
+    ERUL1402:
+      description: Error parsing payload example
+      value:
+        message: Error parsing payload.
+        error_code: RULVAL0400
+        code: ERUL1402
+    ERUL1403:
+      description: >-
+        Error validating request payload to PatchCustomerSpendingLimitRule
+        example
+      value:
+        message: Error validating request payload to PatchCustomerSpendingLimitRule
+        error_code: RULVAL0400
+        details:
+          - location: payload.limit_duration
+            message: '`limit_duration` must follow ISO 8601 standard'
+        code: ERUL1403
+    ERUL1406:
+      description: Error building new spending limit from request payload example
+      value:
+        message: Error building new spending limit from request payload
+        error_code: RULVAL0400
+        details:
+          - location: payload.restriction_rules[].conditions[].attribute
+            message: >-
+              attribute should be one of (balance, amount,
+              merchant_category_code, week_day, month_day, interval_time,
+              entry_mode, currency_code, merchant_id)
+        code: ERUL1406
+    WRUL1207:
+      description: Maximum number of customer flex controls.
+      value:
+        message: Maximum number of customer flex controls reached - 200.
+        error_code: RULVAL0409
+        code: WRUL1207
+    WRUL0707:
+      description: Maximum number of account flex controls.
+      value:
+        message: Maximum number of account flex controls reached - 200.
+        error_code: RULVAL0409
+        code: WRUL0707
+tags:
+  - name: Account flex controls
+    description: API endpoints for managing account flex controls.
+  - name: Customer flex controls
+    description: API endpoints for managing customer flex controls.
+  - name: Attribute groups
+    description: API endpoints for managing attribute groups used in flex controls.
+paths:
+  /v1/customers/{customerId}/flex-controls:
+    post:
+      operationId: post-v1-customers-flex-controls
+      summary: Create customer flex control
+      description: >
+        Creates flex control for customer. You use flex controls to restrict
+        financial operations. For example, you can set spending and usage
+        limits. See [Flexible transaction
+        controls](https://developers.pismo.io/pismo-docs/docs/flex-controls) for
+        more information.
+
+
+        To create a cumulative condition, the `type` can be:
+
+
+        - `spending_limit` to restrict the maximum total amount that can be
+        transacted during an specific period.
+
+        - `usage_limit` to evaluate the quantity of transactions. The cumulative
+        control type must also specify the `max_limit`. The `limit_duration` and
+        `reset_period` parameters are optional, but they are linked with the
+        behavior of `max_limit`.
+
+
+        To create a restriction condition, set `type` as `restriction`.
+
+
+        To restrict an operation, the restriction control must specify:
+          - at least one condition in the `conditions` array.
+          - the required values for `attribute`, `operator`, and `value` in the condition.
+
+        Once you create the control, you can't change its type.
+
+
+        This endpoint generates a [Customer flex control
+        created](https://developers.pismo.io/events/docs/audit-customer-spending-limit-created-1)
+        event.
+
+
+        NOTE: This endpoint requires an account-specific access token.
+      tags:
+        - Customer flex controls
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: customerId
+          description: Customer ID
+          in: path
+          required: true
+          schema:
+            type: number
+            example: 9999999
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomerFlexControlRequest'
+            examples:
+              simple flex control:
+                $ref: '#/components/examples/createCustomerFlexControlRequest'
+              flex control for card:
+                $ref: >-
+                  #/components/examples/createCustomerFlexControlWithCardIDCondition
+      responses:
+        '201':
+          description: OK. Successful flex control creation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerFlexControlsResponse'
+              examples:
+                flex control with card:
+                  $ref: '#/components/examples/customerFlexControlResponse'
+        '400':
+          description: Bad request. Validation error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+              examples:
+                invalid request:
+                  $ref: '#/components/examples/ERUL1101'
+                error building new spending limit from request payload:
+                  $ref: '#/components/examples/ERUL1102'
+                customer spending limit already exists:
+                  $ref: '#/components/examples/ERUL1106'
+        '403':
+          description: Forbidden. Authorization error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                operation not allowed:
+                  $ref: '#/components/examples/ERUL0002'
+        '409':
+          description: Conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                maximum number of flex controls reached:
+                  $ref: '#/components/examples/WRUL1207'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                error getting info from Account:
+                  $ref: '#/components/examples/ERUL0005'
+                error on repository:
+                  $ref: '#/components/examples/ERUL1105'
+    get:
+      operationId: get-v1-customers-flex-controls
+      summary: List customer flex controls
+      description: |
+        List flex controls for a customer.
+
+        NOTE: This endpoint requires an account-specific access token.
+      tags:
+        - Customer flex controls
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: customerId
+          description: Customer ID
+          in: path
+          required: true
+          schema:
+            type: number
+            example: 9999999
+        - name: cardId
+          description: Card ID
+          in: query
+          schema:
+            type: number
+            example: 1111111
+      responses:
+        '200':
+          description: OK. Successful. Flex control retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAllCustomerFlexControlsResponse'
+        '400':
+          description: Bad request. Validation error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+              examples:
+                Invalid request:
+                  $ref: '#/components/examples/ERUL1201'
+                Error validating request payload to GetCustomerSpendingLimitRules:
+                  $ref: '#/components/examples/ERUL1202'
+        '403':
+          description: Forbidden. Authorization error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Operation not allowed:
+                  $ref: '#/components/examples/ERUL0002'
+        '404':
+          description: Not found. Rules for customerID not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Rules for customerID not found:
+                  $ref: '#/components/examples/ERUL1204'
+                Customer spending limit rules not found:
+                  $ref: '#/components/examples/ERUL1205'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Error on repository:
+                  $ref: '#/components/examples/ERUL1203'
+  /v1/customers/{customerId}/flex-controls/{flexControlId}:
+    get:
+      operationId: get-v1-customers-flex-control
+      summary: Get customer flex control
+      description: |
+        Get a flex control, given the `customerId` and `flexControlId`.
+
+        NOTE: This endpoint requires an account-specific access token.
+      tags:
+        - Customer flex controls
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: customerId
+          description: Customer ID
+          in: path
+          required: true
+          schema:
+            type: number
+            example: 9999999
+        - name: flexControlId
+          in: path
+          required: true
+          description: Flex control ID
+          schema:
+            type: string
+            format: uuid
+            example: 84ba9052-31d3-41da-99d2-a1632d5ce2e5
+      responses:
+        '200':
+          description: OK. Flex control was found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerFlexControlsResponse'
+              examples:
+                simple customer flex control:
+                  $ref: '#/components/examples/customerFlexControlResponse'
+        '400':
+          description: Bad request. Validation error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+              examples:
+                Invalid request:
+                  $ref: '#/components/examples/ERUL1301'
+                Error validating request payload to GetCustomerSpendingLimitRule:
+                  $ref: '#/components/examples/ERUL1302'
+        '403':
+          description: Forbidden. Authorization error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Operation not allowed:
+                  $ref: '#/components/examples/ERUL0002'
+        '404':
+          description: Not found. Flex control for customerId not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Rules for customerID not found:
+                  $ref: '#/components/examples/ERUL1204'
+                Customer spending limit rules not found:
+                  $ref: '#/components/examples/ERUL1205'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Error on repository:
+                  $ref: '#/components/examples/ERUL1203'
+    patch:
+      operationId: patch-v1-customers-flex-control
+      summary: Update customer flex control
+      description: >
+        Update a customer flex control. If you want to disable any flex control
+        at the program level, you need to submit a request to the Pismo support
+        team to change the active status parameter to false.
+
+
+        This endpoint generates a [Customer flex control
+        updated](https://developers.pismo.io/events/docs/audit-customer-spending-limit-updated-1)
+        event.
+
+
+        NOTE: This endpoint requires an account-specific access token.
+      tags:
+        - Customer flex controls
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: customerId
+          description: Customer ID
+          in: path
+          required: true
+          schema:
+            type: number
+            example: 9999999
+        - name: flexControlId
+          description: Flex control ID
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 84ba9052-31d3-41da-99d2-a1632d5ce2e5
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchCustomerFlexControlRequest'
+            examples:
+              PatchCustomerFlexControlRequest:
+                $ref: '#/components/examples/PatchCustomerFlexControlRequest'
+              patchOnlyMaxLimitCustomerFlexControlRequest:
+                $ref: >-
+                  #/components/examples/patchOnlyMaxLimitCustomerFlexControlRequest
+              PatchCustomerFlexControlRequestInactive:
+                $ref: '#/components/examples/PatchCustomerFlexControlRequestInactive'
+      responses:
+        '200':
+          description: OK. Successful spending limit patch.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerFlexControlsResponse'
+              examples:
+                simple customer flex control:
+                  $ref: '#/components/examples/customerFlexControlResponse'
+        '400':
+          description: Bad request. Validation error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+              examples:
+                Invalid request:
+                  $ref: '#/components/examples/ERUL1401'
+                Error parsing payload:
+                  $ref: '#/components/examples/ERUL1402'
+                Error validating request payload to PatchCustomerSpendingLimitRule:
+                  $ref: '#/components/examples/ERUL1403'
+                Error building new spending limit from request payload:
+                  $ref: '#/components/examples/ERUL1406'
+        '403':
+          description: Forbidden. Authorization error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Operation not allowed:
+                  $ref: '#/components/examples/ERUL0002'
+        '404':
+          description: Not found. Rules for customerID not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Rules for customerID not found:
+                  $ref: '#/components/examples/ERUL1204'
+                Customer spending limit rules not found:
+                  $ref: '#/components/examples/ERUL1205'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Error on repository:
+                  $ref: '#/components/examples/ERUL1203'
+  /v1/accounts/{accountId}/flex-controls:
+    post:
+      operationId: post-v1-accounts-flex-controls
+      summary: Create account flex control
+      description: >
+        Creates flex control for account. You use flex controls to restrict
+        financial operations. For example, you can set spending and usage
+        limits. For more information, refer to [Flexible transaction
+        controls](doc:flex-controls).
+
+
+        To create a cumulative condition, the `type` can be:
+
+
+        - `spending_limit` to restrict the maximum total amount that can be
+        transacted during an specific period.
+
+        - `usage_limit` to evaluate the quantity of transactions. The cumulative
+        control type must also specify the `max_limit`. The `limit_duration` and
+        `reset_period` parameters are optional, but they are linked with the
+        behavior of `max_limit`.
+
+
+        To create a restriction condition, set `type` as `restriction`.
+
+
+        To restrict an operation, the restriction control must specify:
+          - at least one condition in the `conditions` array.
+          - the required values for `attribute`, `operator`, and `value` in the condition.
+
+        Once you create the control, you can't change its type.
+
+
+        This endpoint generates an [Account flex control
+        created](https://developers.pismo.io/events/docs/audit-account-spending-limit-created-1)
+        event.
+
+
+        NOTE: This endpoint requires an account-specific access token.
+      tags:
+        - Account flex controls
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: accountId
+          description: Account ID
+          in: path
+          required: true
+          schema:
+            type: number
+            example: 9999999
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountFlexControlRequest'
+            examples:
+              With type spending_limit:
+                $ref: '#/components/examples/flexControlTypeSpendingLimit'
+              With Beneficiary:
+                $ref: '#/components/examples/flexControlForBeneficiary'
+              With Currency Code:
+                $ref: '#/components/examples/flexControlByCurrencyCode'
+              With Daily reset period:
+                $ref: '#/components/examples/flexControlWithDailyResetPeriod'
+              With Weekly reset period:
+                $ref: '#/components/examples/flexControlWithWeeklyResetPeriod'
+              With Monthly reset period:
+                $ref: '#/components/examples/flexControlWithMonthlyResetPeriod'
+              With Conditions:
+                $ref: '#/components/examples/flexControlMultipleConditions'
+              With type usage_limit:
+                $ref: '#/components/examples/flexControlTypeUsageLimitConditions'
+              With type restriction:
+                $ref: '#/components/examples/flexControlRestrictionConditions'
+              With installments restriction:
+                $ref: '#/components/examples/flexControlByNumberOfInstallments'
+      responses:
+        '201':
+          description: OK. Successful flex control creation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountFlexControlsResponse'
+              examples:
+                Simple Flex Control:
+                  $ref: '#/components/examples/accountFlexControlCreationResponse'
+                Flex Control with Conditions:
+                  $ref: >-
+                    #/components/examples/accountFlexControlCreationConditionsResponse
+                Type 'restriction' Flex Control:
+                  $ref: >-
+                    #/components/examples/accountFlexControlRestrictionCreationResponse
+        '400':
+          description: Bad request. Validation error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+              examples:
+                error parsing payload:
+                  $ref: '#/components/examples/ERUL0701'
+                error validating request path:
+                  $ref: '#/components/examples/ERUL0702'
+                error validating request header:
+                  $ref: '#/components/examples/ERUL0703'
+                error building new spending limit from request payload:
+                  $ref: '#/components/examples/ERUL0704'
+                spending limit already exists:
+                  $ref: '#/components/examples/ERUL0706'
+                spending limit does not exist in override controls:
+                  $ref: '#/components/examples/ERUL0004'
+        '403':
+          description: Forbidden. Authorization error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+              examples:
+                operation not allowed:
+                  $ref: '#/components/examples/ERUL0002'
+        '409':
+          description: Conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+              examples:
+                maximum number of account flex controls reached:
+                  $ref: '#/components/examples/WRUL0707'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internal server error:
+                  $ref: '#/components/examples/ERUL0001'
+    get:
+      operationId: get-v1-accounts-flex-controls
+      summary: List account flex controls
+      description: |
+        List the flex controls, given the `accountId`.
+
+        NOTE: This endpoint requires an account-specific access token.
+      tags:
+        - Account flex controls
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: accountId
+          description: Account ID
+          in: path
+          required: true
+          schema:
+            type: number
+            example: 500000
+      responses:
+        '200':
+          description: OK. Flex controls for the account were found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAllAccountFlexControlsResponse'
+        '400':
+          description: Bad request. Validation error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+              examples:
+                error validating request header:
+                  $ref: '#/components/examples/ERUL0801'
+                error validating request path:
+                  $ref: '#/components/examples/ERUL0802'
+        '404':
+          description: Not found. No flex controls were found for the account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                spending limit not found for account:
+                  $ref: '#/components/examples/ERUL0803'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internal server error:
+                  $ref: '#/components/examples/ERUL0001'
+  /v1/accounts/{accountId}/customers/flex-controls:
+    get:
+      operationId: get-v1-accounts-customers-flex-controls
+      summary: Get account customers' flex controls
+      description: |
+        Get flex controls for all customers related to an account. 
+
+        NOTE: This endpoint requires an account-specific access token.
+      tags:
+        - Account flex controls
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: accountId
+          description: Account ID
+          in: path
+          required: true
+          schema:
+            type: number
+            example: 500000
+      responses:
+        '200':
+          description: OK. Customer's flex controls for the account were found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAllAccountCustomerFlexControlsResponse'
+        '400':
+          description: Bad request. Validation error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+              examples:
+                error validating request header:
+                  $ref: '#/components/examples/ERUL0801'
+                error validating request path:
+                  $ref: '#/components/examples/ERUL0802'
+        '404':
+          description: Not found. No customer's flex controls were found for the account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                customer's spending limits not found for account:
+                  $ref: '#/components/examples/ERUL0804'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internal server error:
+                  $ref: '#/components/examples/ERUL0001'
+  /v1/accounts/{accountId}/flex-controls/{flexControlId}:
+    get:
+      operationId: get-v1-accounts-flex-control
+      summary: Get account flex control
+      description: |
+        Get a flex control, given the `accountId` and `flexControlId`.
+
+        NOTE: This endpoint requires an account-specific access token.
+      tags:
+        - Account flex controls
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: Account ID
+          schema:
+            type: number
+            example: 9999999
+        - name: flexControlId
+          in: path
+          required: true
+          description: Flex control ID
+          schema:
+            type: string
+            example: 84ba9052-31d3-41da-99d2-a1632d5ce2e5
+      responses:
+        '200':
+          description: OK. Flex control was found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountFlexControlsResponse'
+              examples:
+                simple account flex control:
+                  $ref: '#/components/examples/accountFlexControlCreationResponse'
+        '400':
+          description: Bad request. Validation error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+              examples:
+                error validating request header:
+                  $ref: '#/components/examples/ERUL0901'
+                error validating request path:
+                  $ref: '#/components/examples/ERUL0902'
+        '404':
+          description: Not found. The account flex control was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                spending limit not found:
+                  $ref: '#/components/examples/ERUL0003'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internal server error:
+                  $ref: '#/components/examples/ERUL0001'
+    patch:
+      operationId: patch-v1-accounts-flex-control
+      summary: Update account flex control
+      description: >
+        Update an account flex control. If you want to disable any flex control
+        at the program level, you need to submit a request to the Pismo support
+        team to change the active status parameter to false.
+
+
+        This endpoint generates an [Account flex control
+        updated](https://developers.pismo.io/events/docs/audit-account-spending-limit-updated-1)
+        event.
+
+
+        NOTE: This endpoint requires an account-specific access token.
+      tags:
+        - Account flex controls
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: Account ID
+          schema:
+            type: number
+            example: 9999999
+        - name: flexControlId
+          in: path
+          required: true
+          description: Flex control ID
+          schema:
+            type: string
+            example: 84ba9052-31d3-41da-99d2-a1632d5ce2e5
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchAccountFlexControlRequest'
+            examples:
+              Patch many fields:
+                $ref: '#/components/examples/patchAccountFlexControlRequest'
+      responses:
+        '200':
+          description: OK. Successful Flex Control patch.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountFlexControlsResponse'
+              examples:
+                Flex Control Patched successfully:
+                  $ref: '#/components/examples/accountFlexControlCreationResponse'
+        '400':
+          description: Bad request. Validation error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+              examples:
+                error parsing payload:
+                  $ref: '#/components/examples/ERUL1001'
+                error validating request header:
+                  $ref: '#/components/examples/ERUL1002'
+                error validating request path:
+                  $ref: '#/components/examples/ERUL1003'
+                no information to patch:
+                  $ref: '#/components/examples/ERUL1004'
+                error validating spending limit from request payload:
+                  $ref: '#/components/examples/ERUL1005'
+                error validating request payload:
+                  $ref: '#/components/examples/ERUL1006'
+                spending limit created by template:
+                  $ref: '#/components/examples/ERUL1007'
+                spending limit does not exist in override controls:
+                  $ref: '#/components/examples/ERUL1004'
+        '404':
+          description: Not found. The account flex control was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                spending limit not found:
+                  $ref: '#/components/examples/ERUL0003'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internal server error:
+                  $ref: '#/components/examples/ERUL0001'
+  /v1/attribute-groups:
+    post:
+      operationId: post-v1-attribute-group-flex-controls
+      summary: Create attribute group
+      description: >
+        Create an attribute group, which is a set of values that can be shared
+        across multiple flex controls within the organization. Once you create
+        an attribute group, you reference it in flex controls in the
+        `conditions` field in the [Create account flex
+        control](ref:post-v1-accounts-flex-controls) or [Create customer flex
+        control](ref:post-v1-customers-flex-controls) endpoint.
+
+
+        For more information, refer to the [Attribute
+        groups](doc:attribute-groups) guide.
+      tags:
+        - Attribute groups
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttributeGroupObject'
+      responses:
+        '201':
+          description: OK. Successful attribute group creation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttributeGroupObject'
+        '400':
+          description: Bad request. Validation error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorAttributeTypeDetail'
+        '409':
+          description: Conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+              examples:
+                Attribute group already exists:
+                  $ref: '#/components/examples/ERUL0707'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal server error:
+                  $ref: '#/components/examples/ERUL0001'
+    get:
+      operationId: get-v1-attribute-groups
+      summary: List attribute groups
+      description: >
+        List all available attribute groups in the organization. You can
+        optionally provide the `limit` query parameter to specify the maximum
+        number of groups to return per page.
+      tags:
+        - Attribute groups
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          description: Maximum number of attribute groups to return
+          in: query
+          schema:
+            type: number
+            example: 100
+      responses:
+        '200':
+          description: OK. Attribute groups for the account were found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttributeListGroupResponse'
+  /v1/attribute-groups/{groupId}:
+    get:
+      operationId: get-v1-attribute-groups-groupId
+      summary: Get attribute group
+      description: |
+        Get a specific attribute group by its ID.
+      tags:
+        - Attribute groups
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          description: Attribute group ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK. Attribute group was found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttributeGroupObject'
+        '404':
+          description: Not found. The attribute group was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                attribute group not found:
+                  $ref: '#/components/examples/ERUL0805'
+    patch:
+      operationId: update-v1-attribute-groups
+      summary: Update attribute group
+      description: >-
+        Update the `values` field in an attribute group. All other attribute
+        group fields are immutable.
+      tags:
+        - Attribute groups
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: Attribute group ID
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Attribute group values to update
+              type: object
+              properties:
+                values:
+                  $ref: '#/components/schemas/AttributeGroupValues'
+              required:
+                - values
+      responses:
+        '204':
+          description: No content
+        '400':
+          description: Bad request. Validation error on request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+              examples:
+                attribute group not found:
+                  $ref: '#/components/examples/ERUL0806'
+        '404':
+          description: Not found. The attribute group was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                attribute group not found:
+                  $ref: '#/components/examples/ERUL0805'

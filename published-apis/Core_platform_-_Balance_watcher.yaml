@@ -1,0 +1,1557 @@
+openapi: 3.1.0
+info:
+  title: Core platform - Balance watcher
+  description: Balance watcher endpoints.
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+  version: 1.0.0
+servers:
+  - url: https://sandbox.pismolabs.io/balance-watcher
+    description: Sandbox API server for testing
+tags:
+  - name: Records
+    description: Endpoints to support records operations
+  - name: Limit configurations
+    description: Endpoints to support configuration operations
+  - name: Limit acceptance configurations
+    description: Endpoints to support acceptance configuration operations
+  - name: Migration
+    description: Endpoints to support migration operations
+components:
+  parameters:
+    AccountIdPathString:
+      in: path
+      name: accountId
+      schema:
+        type: string
+      description: Account ID
+      required: true
+      example: '11935782'
+    AccountIdPathInteger:
+      in: path
+      name: accountId
+      schema:
+        type: integer
+      required: true
+      description: Account ID for this configuration.
+      example: 11935782
+    EndDateQuery:
+      in: query
+      name: end_date
+      schema:
+        type: string
+        format: date-time
+      description: >-
+        The end datetime of the datetime range being requested. The start date
+        must be specified in order to the range be considered.
+      required: false
+    MonthQuery:
+      in: query
+      name: month
+      schema:
+        type: integer
+      description: The month of the year, between 1 to 12.
+      required: false
+      example: 11
+    ProcessingCodePath:
+      name: processingCode
+      in: path
+      schema:
+        type: string
+      required: true
+      description: >-
+        Processing code which defines the operation related to this acceptance
+        configuration.
+      example: 00AB01
+    ProgramIdPath:
+      name: programId
+      schema:
+        type: integer
+      in: path
+      required: true
+      description: Program ID for this configuration.
+      example: 7126354
+    StartDateQuery:
+      in: query
+      name: start_date
+      schema:
+        type: string
+        format: date-time
+      description: >-
+        The start datetime of the datetime range being requested. The end date
+        must be specified in order to the range be considered.
+      required: false
+    TypeQuery:
+      in: query
+      name: type
+      schema:
+        type: string
+      description: The type of the record being requested.
+      required: true
+  schemas:
+    AcceptanceRequest:
+      type: object
+      description: Acceptance configuration request
+      properties:
+        network_authorization:
+          type: object
+          description: >-
+            Group of acceptance configurations related to the network
+            authorization flow
+          properties:
+            over_limit:
+              $ref: '#/components/schemas/Overlimit'
+            limit_refund:
+              $ref: '#/components/schemas/LimitRefund'
+        platform_authorization:
+          type: object
+          description: >-
+            Group of acceptance configurations related to the platform
+            authorization flow
+          properties:
+            over_limit:
+              $ref: '#/components/schemas/Overlimit'
+            limit_refund:
+              $ref: '#/components/schemas/LimitRefund'
+        authorization:
+          type: object
+          description: Group of acceptance configurations related to the authorization flow
+          properties:
+            over_limit:
+              $ref: '#/components/schemas/Overlimit'
+            limit_refund:
+              $ref: '#/components/schemas/LimitRefund'
+    AcceptanceResponse:
+      type: object
+      description: Acceptance configuration response
+      properties:
+        network_authorization:
+          type: object
+          description: Group of acceptances related to the network authorization flow
+          properties:
+            over_limit:
+              $ref: '#/components/schemas/Overlimit'
+            limit_refund:
+              $ref: '#/components/schemas/LimitRefund'
+        platform_authorization:
+          type: object
+          description: Group of acceptances related to the platform authorization flow
+          properties:
+            over_limit:
+              $ref: '#/components/schemas/Overlimit'
+            limit_refund:
+              $ref: '#/components/schemas/LimitRefund'
+        authorization:
+          type: object
+          description: Group of acceptances related to the authorization flow
+          properties:
+            over_limit:
+              $ref: '#/components/schemas/Overlimit'
+            limit_refund:
+              $ref: '#/components/schemas/LimitRefund'
+    ConfigRequest:
+      type: object
+      description: Configuration record request
+      properties:
+        over_limit:
+          $ref: '#/components/schemas/Overlimit'
+        limit_refund:
+          $ref: '#/components/schemas/LimitRefund'
+    ConfigResponse:
+      type: object
+      description: Configuration record response
+      properties:
+        over_limit:
+          $ref: '#/components/schemas/Overlimit'
+        limit_refund:
+          $ref: '#/components/schemas/LimitRefund'
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code.
+          example: RCAPI-DOMAIN-VIOLATION
+        message:
+          type: string
+          description: Error description.
+          example: RCAPI domain violation.
+    MigrationLimitRefundRequest:
+      description: Request body for Balance Watcher API migrate account with limit refund
+      properties:
+        migration_id:
+          type: string
+          description: Migration identifier
+          example: 479d07fc-bfc8-11ec-9d64-0242ac120002
+        version_date:
+          type: string
+          description: Version date
+          example: '2021-06-08T10:46:54.000Z'
+          format: date-time
+        toggle:
+          type: boolean
+          description: Toggle to enable/disable migration
+          example: true
+        account_id:
+          type: number
+          description: Account identifier
+          example: 1234
+        authorization_id:
+          type: number
+          description: Authorization identifier
+          example: 1234
+        amount:
+          type: number
+          description: Amount to be refunded
+          example: 100.12
+        currency_code:
+          type: string
+          description: Three-letter currency code of the operation in ISO 4217.
+          example: BRL
+        ledger_impact:
+          type: string
+          description: Impact type to be used in ledger
+          enum:
+            - AvailableInstallmentLimit
+          example: AvailableInstallmentLimit
+        metadata:
+          type: object
+          description: Metadata information to be used by client
+          example:
+            key: value
+        pismo_metadata:
+          type: object
+          description: Pismo Metadata to be used in internal operations
+          example:
+            key: value
+    MigrationLimitRefundResponse:
+      description: Response body for Balance Watcher API migrate account with limit refund
+      properties:
+        account_id:
+          type: number
+          description: Account ID
+          example: 1234
+        message:
+          type: string
+          description: Message to be displayed to the user
+          example: Limit Refund account migration will be processed asynchronously
+    MigrationOverlimitRequest:
+      description: Request body for Balance Watcher API migrate account with overlimit
+      properties:
+        account_id:
+          type: number
+          description: Account ID
+          example: 1234
+        migration_id:
+          type: string
+          description: Migration ID
+          example: 479d07fc-bfc8-11ec-9d64-0242ac120002
+        version_date:
+          type: string
+          description: Version date
+          example: '2021-06-08T10:46:54.000Z'
+          format: date-time
+        toggle:
+          type: boolean
+          description: Toggle to enable/disable migration
+          example: true
+    MigrationOverlimitResponse:
+      description: Response body for Balance Watcher API migrate account with overlimit
+      properties:
+        account_id:
+          type: number
+          description: Account ID
+          example: 1234
+        message:
+          type: string
+          description: Message to be displayed to the user
+          example: Overlimit account migration is processed asynchronously
+    Overlimit:
+      type: object
+      description: Group of configurations related to the over-limit flow
+      required:
+        - enable
+      properties:
+        enable:
+          type: boolean
+          description: Flag to enable the over-limit feature.
+          example: true
+    LimitRefund:
+      type: object
+      description: Group of configurations related to the limit refund flow
+      required:
+        - enable
+      properties:
+        enable:
+          type: boolean
+          description: Flag to enable the limit refund feature.
+          example: true
+    RecordsList:
+      description: Response body for the Balance watcher API get account records
+      properties:
+        has_next:
+          type: boolean
+          description: Has next page of records. Used for cursor iteration.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Records'
+    Records:
+      description: Balance watcher records
+      properties:
+        datetime:
+          type: string
+          format: date-time
+          description: Timestamp when the record was added in the UTC format.
+          example: '2021-06-08T10:46:54.000Z'
+        account_id:
+          type: number
+          description: Account ID of the record owner.
+          example: 1234
+        type:
+          type: string
+          enum:
+            - OVERLIMIT
+          description: Record type. Currently only the `OVERLIMIT` type is supported.
+        id:
+          type: string
+          description: Record UUID.
+          example: 479d07fc-bfc8-11ec-9d64-0242ac120002
+        data:
+          $ref: '#/components/schemas/RecordData'
+    RecordData:
+      description: Record data
+      properties:
+        used_overlimit:
+          type: boolean
+          description: Attribute indicating if the record has used over-limit or not.
+          example: true
+        available_credit_limit_amount:
+          type: number
+          description: >-
+            Attribute indicating the account available credit limit after the
+            operation was performed and the account impacted.
+          example: -100.3
+        operation_amount:
+          type: number
+          description: >-
+            Attribute indicating the amount of the operation that issued this
+            record creation.
+          example: 200.55
+    OverlimitResponse:
+      description: Overlimit response body
+      properties:
+        overlimit:
+          type: object
+          description: Indicate the details about when the account enter in overlimit state
+          properties:
+            datetime:
+              type: string
+              format: date-time
+              description: >-
+                Timestamp when the account enter in overlimit state in the UTC
+                format.
+              example: '2021-06-08T10:46:54.000Z'
+            account_id:
+              type: number
+              description: Identification of the account.
+              example: 11935782
+            available_credit_limit_amount:
+              type: number
+              description: >-
+                Attribute indicating the account available credit limit after
+                the operation was performed and the account impacted.
+              example: -2300.12
+            operation_amount:
+              type: number
+              description: >-
+                Attribute indicating the amount of the operation that issued
+                this record creation.
+              example: 1100.12
+        exit_overlimit:
+          type: object
+          description: Indicate the details about when the account enter in overlimit state
+          properties:
+            datetime:
+              type: string
+              format: date-time
+              description: >-
+                Timestamp when the account exit in overlimit state in the UTC
+                format.
+              example: '2021-06-08T10:46:54.000Z'
+            account_id:
+              type: number
+              description: Identification of the account.
+              example: 11935782
+            available_credit_limit_amount:
+              type: number
+              description: >-
+                Attribute indicating the account available credit limit after
+                the operation was performed and the account impacted.
+              example: 1700.12
+            operation_amount:
+              type: number
+              description: >-
+                Attribute indicating the amount of the operation that issued
+                this record creation.
+              example: 4000.12
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account access token. Tokens can expire quickly, which can result in an
+        "Unauthorized" error.
+      bearerFormat: JWT
+security:
+  - BearerAuth: []
+paths:
+  /v1/config:
+    post:
+      summary: Create limit config by Org
+      description: >
+        Create a limit configuration for authorizations on the organization
+        (Org) level. 
+
+
+        This level can be used as a default configuration for all programs and
+        accounts in this Org. There can be only one configuration by Org. New
+        creation attempts for the same Org get a conflict response.
+
+
+        This configuration currently supports only the over-limit feature. See
+        the [Over-limit fee](doc:over-limit-fee) guide for more information.
+      operationId: post-config-by-tenant
+      tags:
+        - Limit configurations
+      requestBody:
+        description: Create configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0032
+                message: Config already exists.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+    get:
+      summary: Get limit config by Org
+      description: Get the limit configuration for authorizations on the Org level.
+      operationId: get-config-by-tenant
+      tags:
+        - Limit configurations
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0001
+                message: No configuration was found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+    put:
+      summary: Update limit config by Org
+      description: >-
+        Update the limit configuration for authorizations on the Org level. This
+        endpoint updates the entire configuration, so you must send all fields
+        to avoid data loss.
+      operationId: put-config-by-tenant
+      tags:
+        - Limit configurations
+      requestBody:
+        description: Update configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0001
+                message: No configuration was found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+  /v1/config/program/{programId}:
+    parameters:
+      - $ref: '#/components/parameters/ProgramIdPath'
+    post:
+      summary: Create limit config by program
+      description: >
+        Create a limit configuration for authorizations on the program level. 
+
+
+        This level is a more granular level than Org and can be used as a
+        default configuration for all accounts in this program. There can be
+        only one configuration by program. New creation attempts for the same
+        program get a conflict response.
+
+
+        This configuration currently supports only the over-limit feature. See
+        the [Over-limit fee](doc:over-limit-fee) guide for more information.
+      operationId: post-config-by-program
+      tags:
+        - Limit configurations
+      requestBody:
+        description: Create configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0032
+                message: Config already exists.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+    get:
+      summary: Get limit config by program
+      description: Get the limit configuration for authorizations on the program level.
+      operationId: get-config-by-program
+      tags:
+        - Limit configurations
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0001
+                message: No configuration was found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+    put:
+      summary: Update limit config by program
+      description: >-
+        Update the limit configuration for authorizations on the program level.
+        This endpoint updates the entire configuration, so you must send all
+        fields to avoid data loss.
+      operationId: put-config-by-program
+      tags:
+        - Limit configurations
+      requestBody:
+        description: Update configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0001
+                message: No configuration was found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+  /v1/config/account/{accountId}:
+    parameters:
+      - $ref: '#/components/parameters/AccountIdPathInteger'
+    post:
+      summary: Create limit config by account
+      description: >
+        Create a limit configuration for authorizations on the account level. 
+
+
+        This is the most granular level allowed and can be used to customize a
+        specific account. There can be only one configuration by account. New
+        creation attempts for the same account get a conflict response.
+
+
+        This configuration currently supports only the over-limit feature. See
+        the [Over-limit fee](doc:over-limit-fee) guide for more information.
+      operationId: post-config-by-account
+      tags:
+        - Limit configurations
+      requestBody:
+        description: Create configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0032
+                message: Config already exists.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+    get:
+      summary: Get limit config by account
+      description: Get the limit configuration for authorizations on the account level.
+      operationId: get-config-by-account
+      tags:
+        - Limit configurations
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0001
+                message: No configuration was found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+    put:
+      summary: Update limit config by account
+      description: >-
+        Update the limit configuration for authorizations on the account level.
+        This endpoint updates the entire configuration, so you must send all
+        fields to avoid data loss.
+      operationId: put-config-by-account
+      tags:
+        - Limit configurations
+      requestBody:
+        description: Update configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0001
+                message: No configuration was found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+  /v1/acceptance/processing-code/{processingCode}:
+    parameters:
+      - $ref: '#/components/parameters/ProcessingCodePath'
+    post:
+      summary: Create limit acceptance config by Org
+      description: >
+        Create a limit acceptance configuration for authorizations on the
+        organization (Org) level. This configuration applies to authorizations
+        generated by operations defined in the provided processing code. 
+
+
+        This level can be used as a default configuration for all programs and
+        accounts in this Org. There can be only one configuration by Org. New
+        creation attempts for the same Org get a conflict response.
+
+
+        At least one of the following objects is **required** in this request:
+
+        - `network_authorization` 
+
+        - `platform_authorization`
+
+        - `authorization`
+
+
+        This configuration currently supports only the over-limit feature. See
+        the [Over-limit fee](doc:over-limit-fee) guide for more information.
+      operationId: post-acceptance-by-tenant
+      tags:
+        - Limit acceptance configurations
+      requestBody:
+        description: Create acceptance configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptanceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptanceResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0032
+                message: Config already exists.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+    get:
+      summary: Get limit acceptance config by Org
+      description: >-
+        Get the limit acceptance configuration for authorizations on the Org
+        level. This configuration applies to authorizations generated by
+        operations defined in the provided processing code.
+      operationId: get-acceptance-by-tenant
+      tags:
+        - Limit acceptance configurations
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptanceResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0001
+                message: No configuration was found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+    put:
+      summary: Update limit acceptance config by Org
+      description: >
+        Update the limit acceptance configuration for authorizations on the Org
+        level. This configuration applies to authorizations generated by
+        operations defined in the provided processing code. 
+
+
+        At least one of the following objects is **required** in this request:
+
+        - `network_authorization` 
+
+        - `platform_authorization`
+
+        - `authorization`
+
+
+        This endpoint updates the entire configuration, so you must send all
+        fields to avoid data loss.
+      operationId: put-acceptance-by-tenant
+      tags:
+        - Limit acceptance configurations
+      requestBody:
+        description: Update acceptance configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptanceRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptanceResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0001
+                message: No configuration was found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+  /v1/acceptance/processing-code/{processingCode}/program/{programId}:
+    parameters:
+      - $ref: '#/components/parameters/ProcessingCodePath'
+      - $ref: '#/components/parameters/ProgramIdPath'
+    post:
+      summary: Create limit acceptance config by program
+      description: >
+        Create a limit acceptance configuration for authorizations on the
+        program level. This configuration applies to authorizations generated by
+        operations defined in the provided processing code.
+
+
+        This level is a more granular level than Org and can be used as a
+        default configuration for all accounts in this program. There can be
+        only one configuration by program. New creation attempts for the same
+        program get a conflict response.
+
+
+        At least one of the following objects is **required** in this request:
+
+        - `network_authorization` 
+
+        - `platform_authorization`
+
+        - `authorization`
+
+
+        This configuration currently supports only the over-limit feature. See
+        the [Over-limit fee](doc:over-limit-fee) guide for more information.
+      operationId: post-acceptance-by-program
+      tags:
+        - Limit acceptance configurations
+      requestBody:
+        description: Create acceptance configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptanceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptanceResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0032
+                message: Config already exists.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+    get:
+      summary: Get limit acceptance config by program
+      description: >-
+        Get the acceptance configuration on the program level. This
+        configuration applies to authorizations generated by operations defined
+        in the provided processing code.
+      operationId: get-acceptance-by-program
+      tags:
+        - Limit acceptance configurations
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptanceResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0001
+                message: No configuration was found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+    put:
+      summary: Update limit acceptance config by program
+      description: >
+        Update the limit acceptance configuration for authorizations on the
+        program level. This configuration applies to authorizations generated by
+        operations defined in the provided processing code. 
+
+
+        At least one of the following objects is **required** in this request:
+
+        - `network_authorization` 
+
+        - `platform_authorization`
+
+        - `authorization`
+
+
+        This endpoint updates the entire configuration, so you must send all
+        fields to avoid data loss.
+      operationId: put-acceptance-by-program
+      tags:
+        - Limit acceptance configurations
+      requestBody:
+        description: Update acceptance configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptanceRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptanceResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0001
+                message: No configuration was found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+  /v1/acceptance/processing-code/{processingCode}/account/{accountId}:
+    parameters:
+      - $ref: '#/components/parameters/ProcessingCodePath'
+      - $ref: '#/components/parameters/AccountIdPathInteger'
+    post:
+      summary: Create limit acceptance config by account
+      description: >
+        Create a limit acceptance configuration for authorizations on the
+        account level. This configuration applies to authorizations generated by
+        operations defined in the provided processing code.
+
+
+        This is the most granular level allowed and can be used to customize a
+        specific account. There can be only one configuration by account. New
+        creation attempts for the same account get a conflict response.
+
+
+        At least one of the following objects is **required** in this request:
+
+        - `network_authorization` 
+
+        - `platform_authorization`
+
+        - `authorization`
+
+
+        This configuration currently supports only the over-limit feature. See
+        the [Over-limit fee](doc:over-limit-fee) guide for more information.
+      operationId: post-acceptance-by-account
+      tags:
+        - Limit acceptance configurations
+      requestBody:
+        description: Create acceptance configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptanceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptanceResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0032
+                message: Config already exists.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+    get:
+      summary: Get limit acceptance config by account
+      description: >-
+        Get the limit acceptance configuration for authorizations on the account
+        level. This configuration applies to authorizations generated by
+        operations defined in the provided processing code.
+      operationId: get-acceptance-by-account
+      tags:
+        - Limit acceptance configurations
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptanceResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0001
+                message: No configuration was found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.
+    put:
+      summary: Update limit acceptance config by account
+      description: >
+        Update the limit acceptance configuration for authorizations on the
+        account level. This configuration applies to authorizations generated by
+        operations defined in the provided processing code. 
+
+
+        At least one of the following objects is **required** in this request:
+
+        - `network_authorization` 
+
+        - `platform_authorization`
+
+        - `authorization`
+
+
+        This endpoint updates the entire configuration, so you must send all
+        fields to avoid data loss.
+      operationId: put-acceptance-by-account
+      tags:
+        - Limit acceptance configurations
+      requestBody:
+        description: Update acceptance configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptanceRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptanceResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0008
+                message: Invalid request.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0031
+                message: Config creation by account unauthorized.
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0001
+                message: No configuration was found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: BW0007
+                message: An unexpected error happened.

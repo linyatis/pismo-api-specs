@@ -1,0 +1,781 @@
+openapi: 3.1.0
+info:
+  title: Platform setup - Organizations
+  description: >-
+    View and manage organizations. <br><br>Note: An updated version of the <a
+    href="https://developers.pismo.io/pismo-docs/reference/get-v1-holidays">Holidays
+    API</a> is available.
+  version: v1.0
+  contact:
+    name: Pismo Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io
+    description: Sandbox API server for testing
+tags:
+  - name: Organization
+    description: View and manage some general origanization configurations
+  - name: Holidays (outdated)
+    description: View and manage some general holidays configurations
+components:
+  parameters:
+    HolidayNameQuery:
+      name: name
+      in: query
+      description: Holiday name filter
+      schema:
+        type: string
+        maxLength: 255
+        example: Christmas
+    HolidayYearQuery:
+      name: holidayYear
+      in: query
+      description: Holiday year filter. Format = yyyy
+      schema:
+        type: string
+        example: '2024'
+    HolidayDateQuery:
+      name: holidayDate
+      in: query
+      description: Holiday date filter. Format = yyyy-mm-dd.
+      schema:
+        type: string
+        example: '2024-02-24'
+    HolidayIdPath:
+      description: Holiday ID
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        example: '12345'
+    OrderQuery:
+      name: order
+      in: query
+      description: Sort order.  Default = `ASC`.
+      schema:
+        type: string
+        enum:
+          - ASC
+          - DESC
+        example: DESC
+    OrderByQuery:
+      name: orderBy
+      in: query
+      description: Sort order. Default = `ID`.
+      schema:
+        type: string
+        enum:
+          - ID
+          - name
+          - holidayYear
+          - holidayDate
+        example: name
+    OrgIdPath2:
+      description: Organization ID
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        example: TN-cc8f8b89-233a-4582-9f36-63ee85278d6d
+    PageQuery:
+      name: page
+      in: query
+      description: Current page. Must be greater than 0. Default is `1`.
+      schema:
+        type: integer
+        format: int32
+        example: 2
+    PerPageQuery:
+      name: perPage
+      in: query
+      description: >-
+        Maximum number of items per page. Must be greater than 0. Default is
+        `10`.
+      schema:
+        type: integer
+        format: int32
+        example: 20
+    TenantIdHeader:
+      name: x-tenant
+      in: header
+      description: Pismo organization ID
+      required: true
+      style: simple
+      schema:
+        type: string
+        example: TN-cc8f8b89-233a-4582-9f36-63ee85278d6d
+  schemas:
+    AddressNumber:
+      type: integer
+      format: int32
+      description: Your company's address number
+      example: 900
+    City:
+      type: string
+      description: City name
+      maxLength: 60
+      example: New York
+    ComplementaryAddress:
+      type: string
+      description: Any additional address information (unit, floor, and so on)
+      maxLength: 50
+      example: Suite 123
+    Country:
+      type: string
+      description: Country name
+      maxLength: 30
+      example: United States of America
+    CountryCode:
+      type: string
+      description: >-
+        <a href="https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes"
+        target="_blank">ISO-3166</a> three-letter country code.
+      maxLength: 3
+      example: USA
+    CurrencyNumericCode:
+      type: string
+      description: ISO 4217 3-digit currency numeric code.
+      maxLength: 3
+      example: '986'
+    CurrentPage:
+      type: integer
+      description: Current page
+      format: int32
+      default: 1
+      example: 1
+    CycleClosing:
+      type: string
+      description: Cycle closing time. Format = HH:MM:SS
+      example: '12:00:00'
+    DocumentNumber:
+      type: string
+      description: >-
+        Numeric ID that identifies your company (such as a government tax ID
+        number)
+      maxLength: 20
+      example: '08350504000143'
+    HolidayCalendarId:
+      type: number
+      description: Holiday calendar ID.
+      example: 8675309
+    HolidayDate:
+      type: string
+      description: Holiday date. Format = yyyy-mm-dd.
+      example: '2024-02-24'
+    HolidayDetails:
+      description: Holiday details
+      type: object
+      properties:
+        holiday_date:
+          $ref: '#/components/schemas/HolidayDate'
+        id:
+          $ref: '#/components/schemas/HolidayID'
+        name:
+          $ref: '#/components/schemas/HolidayName'
+        working_date:
+          $ref: '#/components/schemas/WorkingDate'
+    HolidayID:
+      example: 1
+      description: Holiday ID
+      type: integer
+      format: int64
+    HolidayName:
+      type: string
+      description: Holiday name
+      example: Festivus
+    HolidayRequest:
+      description: Data to update a Holiday
+      type: object
+      properties:
+        holiday_date:
+          $ref: '#/components/schemas/HolidayDate'
+        name:
+          $ref: '#/components/schemas/HolidayName'
+        working_date:
+          $ref: '#/components/schemas/WorkingDate'
+    HolidaysPageResponse:
+      type: object
+      properties:
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HolidayDetails'
+        pages:
+          $ref: '#/components/schemas/Pages'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        total_items:
+          $ref: '#/components/schemas/TotalItems'
+    HTTPError:
+      description: Error
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+    Language:
+      type: string
+      description: Language. Default is `en-US`
+      enum:
+        - en-US
+        - pt-BR
+      default: en-US
+      example: en-US
+    LegalProxyDocument:
+      type: string
+      description: >-
+        ID (such as a government tax ID number) of your organization's legal
+        representative
+      maxLength: 20
+      example: '123456'
+    LegalProxyName:
+      type: string
+      description: >-
+        Name of your organization's legal representative (person or other
+        entity)
+      maxLength: 50
+      example: Acme Corporation LTDA
+    Neighborhood:
+      type: string
+      description: Neighborhood. Some countries use neighborhood in their addresses.
+      maxLength: 50
+      example: Bunker Hill
+    OfficialName:
+      type: string
+      description: Your company's legal name
+      minLength: 1
+      maxLength: 100
+      example: Acme Corporation
+    OrgDetails:
+      description: Organization details
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/OrgID'
+        official_name:
+          $ref: '#/components/schemas/OfficialName'
+        org_name:
+          $ref: '#/components/schemas/OrgName'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        address:
+          $ref: '#/components/schemas/StreetAddress'
+        number:
+          $ref: '#/components/schemas/AddressNumber'
+        complementary_address:
+          $ref: '#/components/schemas/ComplementaryAddress'
+        neighborhood:
+          $ref: '#/components/schemas/Neighborhood'
+        zipcode:
+          $ref: '#/components/schemas/PostalCode'
+        city:
+          $ref: '#/components/schemas/City'
+        state:
+          $ref: '#/components/schemas/State'
+        country:
+          $ref: '#/components/schemas/Country'
+        legal_proxy_name:
+          $ref: '#/components/schemas/LegalProxyName'
+        legal_proxy_document:
+          $ref: '#/components/schemas/LegalProxyDocument'
+        responsible:
+          $ref: '#/components/schemas/Responsible'
+        currency_numeric_code:
+          $ref: '#/components/schemas/CurrencyNumericCode'
+        timezone:
+          $ref: '#/components/schemas/Timezone'
+        language:
+          $ref: '#/components/schemas/Language'
+        country_code:
+          $ref: '#/components/schemas/CountryCode'
+        cycle_closing:
+          $ref: '#/components/schemas/CycleClosing'
+        holiday_calendar_id:
+          $ref: '#/components/schemas/HolidayCalendarId'
+    OrgID:
+      type: string
+      description: Pismo organization ID
+      example: TN-cc8f8b89-233a-4582-9f36-63ee85278d6d
+    OrgName:
+      type: string
+      description: Organization display name on the Pismo platform
+      minLength: 1
+      maxLength: 80
+      example: Acme Corporation
+    Pages:
+      default: 1
+      description: Total number of pages
+      example: 2
+      type: integer
+      format: int32
+    PatchOrgRequest:
+      description: Organization data to update
+      type: object
+      properties:
+        official_name:
+          $ref: '#/components/schemas/OfficialName'
+        org_name:
+          $ref: '#/components/schemas/OrgName'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        address:
+          $ref: '#/components/schemas/StreetAddress'
+        number:
+          $ref: '#/components/schemas/AddressNumber'
+        complementary_address:
+          $ref: '#/components/schemas/ComplementaryAddress'
+        neighborhood:
+          $ref: '#/components/schemas/Neighborhood'
+        zipcode:
+          $ref: '#/components/schemas/PostalCode'
+        city:
+          $ref: '#/components/schemas/City'
+        state:
+          $ref: '#/components/schemas/State'
+        country:
+          $ref: '#/components/schemas/Country'
+        legal_proxy_name:
+          $ref: '#/components/schemas/LegalProxyName'
+        responsible:
+          $ref: '#/components/schemas/Responsible'
+        currency_numeric_code:
+          $ref: '#/components/schemas/CurrencyNumericCode'
+        timezone:
+          $ref: '#/components/schemas/Timezone'
+        language:
+          $ref: '#/components/schemas/Language'
+        country_code:
+          $ref: '#/components/schemas/CountryCode'
+        cycle_closing:
+          $ref: '#/components/schemas/CycleClosing'
+        holiday_calendar_id:
+          $ref: '#/components/schemas/HolidayCalendarId'
+    PerPage:
+      default: 10
+      description: Maximum number of items per page
+      example: 10
+      type: integer
+      format: int32
+    PostalCode:
+      type: string
+      description: ZIP/postal code
+      maxLength: 9
+      example: '11203'
+    Responsible:
+      type: string
+      description: Email of person at organization who can be contacted if necessary.
+      maxLength: 255
+    State:
+      type: string
+      description: State/province/region. ISO 3166-2 (2 char) format.
+      maxLength: 2
+      example: NY
+    StreetAddress:
+      type: string
+      description: Your company's street name
+      maxLength: 80
+      example: Main Street
+    Timezone:
+      type: string
+      description: >-
+        Timezone in <a
+        href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+        target="_blank">TZ country/city or region format</a>
+      maxLength: 60
+      example: America/New_York
+    TotalItems:
+      description: Total number of items
+      example: 21
+      type: integer
+      format: int32
+    WorkingDate:
+      description: >-
+        Working date. The first normal business day after the holiday. Format =
+        yyyy-mm-dd.
+      example: '2023-02-22'
+      type: string
+  responses:
+    400BadRequestError:
+      description: Bad Request
+    401UnauthorizedError:
+      description: Unauthorized
+    404NotFound:
+      description: Not Found
+    500InternalServerError:
+      description: Internal Server Error
+  examples:
+    BadRequestResponse:
+      value:
+        code: EOA0030
+        message: Missing x-tenant header
+    GetV1HolidaysResponse:
+      value:
+        pages: 1
+        current_page: 1
+        per_page: 10
+        total_items: 4
+        items:
+          - id: 1
+            name: Carnival
+            holiday_date: '2023-02-20'
+            working_date: '2023-02-22'
+          - id: 2
+            name: Corpus Christi
+            holiday_date: '2023-05-01'
+            working_date: '2023-05-02'
+          - id: 3
+            name: Independence Day
+            holiday_date: '2023-09-07'
+            working_date: '2023-09-08'
+          - id: 4
+            holiday_date: '2023-11-02'
+            working_date: '2023-11-03'
+    InternalServerErrorResponse:
+      value:
+        code: EOA0001
+        message: Something went wrong, please try again later
+    OrgDetails:
+      value:
+        id: TN-00000000000001
+        official_name: Acme Corp
+        org_name: Acme
+        document_number: '123456789'
+        address: Main Street
+        number: 25
+        complementary_address: Suite 9
+        neighborhood: Brooklyn
+        zipcode: '12345'
+        city: New York
+        state: NY
+        country: United Stated of America
+        legal_proxy_name: Acme corporation LLC
+        legal_proxy_document: '95123123123'
+        currency_numeric_code: '986'
+        timezone: America/New York
+        language: en-US
+        country_code: USA
+    TenantNotFoundResponse:
+      value:
+        code: EOA0100
+        message: Org TN-00000000000001 was not found
+    XTenantDiffResponse:
+      value:
+        code: EOA0035
+        message: X-Tenant header and request are different
+  securitySchemes:
+    S2SAuthentication:
+      type: http
+      scheme: bearer
+      description: >-
+        All requests must be previously authenticated with an account-specific
+        token.
+      bearerFormat: JWT
+security:
+  - S2SAuthentication: []
+paths:
+  /orgs-core/v1/orgs:
+    patch:
+      summary: Update organization
+      description: >
+        Performs a partial update of an organization's information. Fields not
+        passed are not updated.
+
+
+        An organization is the root object on the Pismo platform, the container
+        for all programs. For more information, refer to [Core
+        objects](doc:setup-overview#organization).
+      operationId: patch-v1-orgs
+      tags:
+        - Organization
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchOrgRequest'
+      responses:
+        '200':
+          description: Organization data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgDetails'
+              examples:
+                response-v1-orgs:
+                  $ref: '#/components/examples/OrgDetails'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                missing-x-tenant-header:
+                  $ref: '#/components/examples/BadRequestResponse'
+                tenant-not-found:
+                  $ref: '#/components/examples/TenantNotFoundResponse'
+        '401':
+          $ref: '#/components/responses/401UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                generic-internal-error:
+                  $ref: '#/components/examples/InternalServerErrorResponse'
+  /orgs-core/v1/orgs/{id}:
+    get:
+      summary: Get organization
+      description: >
+        Returns information about a specific organization.
+
+
+        An organization is the root object on the Pismo platform, the container
+        for all programs. For more information, refer to [Core
+        objects](doc:setup-overview#organization).
+      operationId: get-v1-org
+      tags:
+        - Organization
+      parameters:
+        - $ref: '#/components/parameters/OrgIdPath2'
+      responses:
+        '200':
+          description: Organization data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgDetails'
+              examples:
+                response-v1-orgs:
+                  $ref: '#/components/examples/OrgDetails'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                missing-x-tenant-header:
+                  $ref: '#/components/examples/BadRequestResponse'
+                different-x-tenant-header:
+                  $ref: '#/components/examples/XTenantDiffResponse'
+                tenant-not-found:
+                  $ref: '#/components/examples/TenantNotFoundResponse'
+        '401':
+          $ref: '#/components/responses/401UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                generic-internal-error:
+                  $ref: '#/components/examples/InternalServerErrorResponse'
+  /orgs-core/v1/orgs/holidays:
+    post:
+      tags:
+        - Holidays (outdated)
+      summary: Create holiday
+      description: >-
+        Create a holiday. (**Outdated:** For an updated version of this
+        endpoint, see <a
+        href="https://developers.pismo.io/pismo-docs/reference/get-v1-holidays">Holidays
+        API</a>.)
+      operationId: post-v1-orgs-holidays
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HolidayRequest'
+      responses:
+        '200':
+          description: Holidays response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HolidayDetails'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                missing-x-tenant-header:
+                  $ref: '#/components/examples/BadRequestResponse'
+                tenant-not-found:
+                  $ref: '#/components/examples/TenantNotFoundResponse'
+        '401':
+          $ref: '#/components/responses/401UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                generic-internal-error:
+                  $ref: '#/components/examples/InternalServerErrorResponse'
+    get:
+      tags:
+        - Holidays (outdated)
+      summary: List holidays (outdated)
+      operationId: get-v1-orgs-holidays
+      description: >-
+        Retrieve a paginated list of holidays. (**Outdated:** For an updated
+        version of this endpoint, see <a
+        href="https://developers.pismo.io/pismo-docs/reference/get-v1-holidays">Holidays
+        API</a>.)
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/OrderQuery'
+        - $ref: '#/components/parameters/OrderByQuery'
+        - $ref: '#/components/parameters/HolidayNameQuery'
+        - $ref: '#/components/parameters/HolidayYearQuery'
+        - $ref: '#/components/parameters/HolidayDateQuery'
+      responses:
+        '200':
+          description: Holidays page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HolidaysPageResponse'
+              examples:
+                response-v1-orgs:
+                  $ref: '#/components/examples/GetV1HolidaysResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                missing-x-tenant-header:
+                  $ref: '#/components/examples/BadRequestResponse'
+                tenant-not-found:
+                  $ref: '#/components/examples/TenantNotFoundResponse'
+        '401':
+          $ref: '#/components/responses/401UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                generic-internal-error:
+                  $ref: '#/components/examples/InternalServerErrorResponse'
+  /orgs-core/v1/orgs/holidays/{id}:
+    put:
+      tags:
+        - Holidays (outdated)
+      summary: Update holiday
+      description: >-
+        Update a holiday. (**Outdated:** For an updated version of this
+        endpoint, see <a
+        href="https://developers.pismo.io/pismo-docs/reference/get-v1-holidays">Holidays
+        API</a>.)
+      operationId: put-v1-orgs-holidays
+      parameters:
+        - $ref: '#/components/parameters/HolidayIdPath'
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HolidayRequest'
+      responses:
+        '200':
+          description: Holidays response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HolidayDetails'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                missing-x-tenant-header:
+                  $ref: '#/components/examples/BadRequestResponse'
+                tenant-not-found:
+                  $ref: '#/components/examples/TenantNotFoundResponse'
+        '401':
+          $ref: '#/components/responses/401UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                generic-internal-error:
+                  $ref: '#/components/examples/InternalServerErrorResponse'
+    delete:
+      tags:
+        - Holidays (outdated)
+      summary: Delete holiday
+      operationId: delete-v1-orgs-holidays
+      description: >-
+        Delete a holiday. (**Outdated:** For an updated version of this
+        endpoint, see <a
+        href="https://developers.pismo.io/pismo-docs/reference/get-v1-holidays">Holidays
+        API</a>.)
+      parameters:
+        - $ref: '#/components/parameters/HolidayIdPath'
+        - $ref: '#/components/parameters/TenantIdHeader'
+      responses:
+        '204':
+          description: Holidays response.
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                missing-x-tenant-header:
+                  $ref: '#/components/examples/BadRequestResponse'
+                tenant-not-found:
+                  $ref: '#/components/examples/TenantNotFoundResponse'
+        '401':
+          $ref: '#/components/responses/401UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+              examples:
+                generic-internal-error:
+                  $ref: '#/components/examples/InternalServerErrorResponse'

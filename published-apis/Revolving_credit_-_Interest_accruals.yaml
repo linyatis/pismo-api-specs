@@ -1,0 +1,830 @@
+openapi: 3.1.0
+info:
+  title: Revolving credit - Interest accruals
+  version: 2.74.0
+  description: Endpoints to manage accruals in the credit card cycle.
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/credit-cycle-interest-accruals
+    description: Sandbox API server for testing
+tags:
+  - name: Internal
+    description: Internal endpoints to check the service
+  - name: Post interest accruals
+    description: Endpoints for posting interest accrual by account
+  - name: Accrual types minimum value
+    description: Endpoints for setting minimum values of accrual types
+  - name: Accrual type post configurations
+    description: Accrual type post configurations
+components:
+  parameters:
+    AccountIdPath:
+      name: accountId
+      description: Account ID
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        example: 5689
+    AccrualTypePostConfigId:
+      name: accrualTypePostConfigId
+      in: path
+      description: Accrual type post configuration ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+    AccrualTypeQuery:
+      name: accrualType
+      description: |
+        Accrual type
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - REFINANCING
+          - OVERDUE
+          - WITHDRAWAL_INTEREST
+          - BILLPAYMENT_INTEREST
+          - OVERDRAFT_INTEREST
+          - FINANCIAL_TAX
+        example: REFINANCING
+    HierarchyNameQuery:
+      name: hierarchyName
+      description: Hierarchy name
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/HierarchyName'
+    HierarchyValueQuery:
+      name: hierarchyValue
+      description: Hierarchy value
+      in: query
+      required: false
+      schema:
+        type: string
+        example: '123456789'
+    IsDeletedQuery:
+      name: isDeleted
+      description: Is deleted
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+    PageQuery:
+      name: page
+      description: Page number
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 1
+    PerPageQuery:
+      name: perPage
+      description: Number of items per page
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 100
+    ProgramIdPath:
+      name: programId
+      description: Program ID
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  schemas:
+    AccrualStatusesForPost:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: >
+            Accrual status.<br>
+
+            `PENDING` — Accrual has not been processed.<br>
+
+            `STOP_ACCRUAL` — An accrual is generated with this status when the
+            account has been in `OVERDUE` status for at least X number of days,
+            where X is configured in the program parameter `Stop accrual # of
+            days`. Accruals with STOP_ACCRUAL status are not posted at cycle
+            closing.
+          enum:
+            - PENDING
+            - STOP_ACCRUAL
+          example: PENDING
+    AccrualType:
+      type: string
+      description: |
+        Accrual type. Should be one of the following values:
+          `REFINANCING`
+          `OVERDUE`
+          `WITHDRAWAL_INTEREST`
+          `BILLPAYMENT_INTEREST`
+          `OVERDRAFT_INTEREST`
+          `FINANCIAL_TAX`
+      maxLength: 20
+      example: REFINANCING
+    AccrualTypeMinimumValueRequest:
+      type: object
+      properties:
+        accrual_type:
+          $ref: '#/components/schemas/AccrualType'
+        hierarchy_name:
+          $ref: '#/components/schemas/HierarchyName'
+        hierarchy_value:
+          $ref: '#/components/schemas/HierarchyValue'
+        minimum_amount_to_post:
+          $ref: '#/components/schemas/MinimumAmountToPost'
+      required:
+        - accrual_type
+        - hierarchy_name
+        - hierarchy_value
+        - minimum_amount_to_post
+    AccrualTypeMinimumValueResponse:
+      type: object
+      properties:
+        accrual_type:
+          $ref: '#/components/schemas/AccrualType'
+        hierarchy_name:
+          $ref: '#/components/schemas/HierarchyName'
+        hierarchy_value:
+          $ref: '#/components/schemas/HierarchyValue'
+        minimum_amount_to_post:
+          $ref: '#/components/schemas/MinimumAmountToPost'
+      required:
+        - accrual_type
+        - hierarchy_name
+        - hierarchy_value
+        - minimum_amount_to_post
+    AccrualTypeMinimumValueResponseWithDates:
+      type: object
+      properties:
+        accrual_type:
+          $ref: '#/components/schemas/AccrualType'
+        hierarchy_name:
+          $ref: '#/components/schemas/HierarchyName'
+        hierarchy_value:
+          $ref: '#/components/schemas/HierarchyValue'
+        minimum_amount_to_post:
+          $ref: '#/components/schemas/MinimumAmountToPost'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        deleted_at:
+          $ref: '#/components/schemas/DeletedAt'
+      required:
+        - accrual_type
+        - hierarchy_name
+        - hierarchy_value
+        - minimum_amount_to_post
+    AccrualTypePostConfigId:
+      type: integer
+      format: int64
+      description: Accrual type post configuration ID
+      example: 1001
+    Amount:
+      type: number
+      format: float
+      description: Transaction amount
+      example: 25.36
+    Authorization:
+      type: object
+      required:
+        - accrual_type
+        - tracking_id
+        - amount
+      properties:
+        accrual_type:
+          $ref: '#/components/schemas/AccrualType'
+        tracking_id:
+          $ref: '#/components/schemas/TrackingID'
+        amount:
+          $ref: '#/components/schemas/Amount'
+    CreatedAt:
+      type: string
+      description: Date created. Format = YYYY-MM-DDThh:mm:ss.sssz.
+      example: '2023-08-18T20:53:27.498Z'
+    CreateNewAccrualTypePostConfigRequest:
+      type: object
+      required:
+        - accrual_type
+        - processing_code
+      properties:
+        accrual_type:
+          $ref: '#/components/schemas/AccrualType'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        reversal_projection_processing_code:
+          $ref: '#/components/schemas/ReversalProjectionProcessingCode'
+    CurrentPage:
+      description: Current page
+      type: integer
+      format: int32
+      example: 1
+    DeletedAt:
+      type: string
+      description: Date deleted. Format = YYYY-MM-DDThh:mm:ss.sssz.
+      example: '2023-10-10T10:50:18.212Z'
+    HierarchyName:
+      type: string
+      enum:
+        - ORG_ID
+        - PROGRAM_ID
+        - ACCOUNT_ID
+      example: ACCOUNT_ID
+    HierarchyValue:
+      type: string
+      description: >-
+        If `hierarchy_name` is `PROGRAM_ID` or `ACCOUNT_ID`, the hierarchy value
+        must be an integer. If `hierarchy_name` is `ORG_ID`, the value must be a
+        string.
+      example: '123456789'
+    InterestAccrualRequest:
+      type: object
+      required:
+        - accrual_statuses
+      properties:
+        accrual_statuses:
+          type: array
+          description: >-
+            Accrual statuses that you can use for filtering the interest
+            accruals (`PENDING`, `STOP_ACCRUAL`, or both).
+          items:
+            $ref: '#/components/schemas/AccrualStatusesForPost'
+        start_date:
+          type: string
+          format: date
+          description: Start date. Format = YYYY-MM-DD.
+          example: '2024-01-01'
+        end_date:
+          type: string
+          format: date
+          description: End date. Format = YYYY-MM-DD.
+          example: '2025-06-22'
+    InterestAccrualResponse:
+      type: object
+      properties:
+        authorizations:
+          type: array
+          description: >-
+            Authorizations created to post the accruals on the current
+            statement. `tracking_id` can be used to check if each transaction
+            was created after receiving a [Transaction
+            created](https://developers.pismo.io/events/docs/transaction-creation-1)
+            event.
+          items:
+            $ref: '#/components/schemas/Authorization'
+      required:
+        - authorizations
+    IsLastPage:
+      description: Is this the last page?
+      type: boolean
+      example: false
+    ItemsOnPage:
+      description: >-
+        Items on page. (This could be less than `per_page` if this is the last
+        page.)
+      type: integer
+      format: int32
+      example: 1
+    MinimumAmountToPost:
+      type: number
+      format: double
+      example: 100.23
+    NumberOfPages:
+      type: integer
+      format: int32
+      description: Number of pages
+      example: 10
+    PerPage:
+      description: Number of items per page
+      type: integer
+      format: int32
+      example: 20
+    ProcessingCode:
+      type: string
+      description: Processing code
+      example: PROC123
+    ProgramId:
+      type: integer
+      format: int64
+      description: Program ID
+      example: 500
+    ReversalProjectionProcessingCode:
+      type: string
+      description: >
+        Reversal projection processing code. This field is used if the `Enable
+        accrual reversal to new accrual types` program parameter is set to `1`
+        (true).
+      example: REV456
+    StandardErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: '1020030'
+        message:
+          type: string
+          example: Error message
+    TotalItems:
+      description: Total number of items
+      type: integer
+      format: int32
+      example: 955
+    TrackingID:
+      type: string
+      description: >-
+        Generated tracking ID. Identifies the authorization for the debit
+        transaction used to post the total accrual for the given accrual type.
+      example: 18573154-bcb8-42c4-bd52-3f74e6939f47
+    UpdateAccrualTypePostConfigRequest:
+      type: object
+      properties:
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        reversal_projection_processing_code:
+          $ref: '#/components/schemas/ReversalProjectionProcessingCode'
+    UpdatedAt:
+      type: string
+      format: date-time
+      description: Timestamp of last update. Format = YYYY-MM-DDThh:mm:ssz.
+      example: '2025-05-16T12:30:00Z'
+  responses:
+    500InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/StandardErrorResponse'
+          examples:
+            Internal Server Error:
+              description: Service is unavailable
+              value:
+                code: GN0001
+                message: Service is unavailable
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - BearerAuth: []
+paths:
+  /v1/accounts/{accountId}/interest-accruals:
+    post:
+      summary: Post interest accruals
+      description: >
+        The platform filters all accruals by `accrual_status` and, optionally,
+        by `start_date` and `end_date`. For each accrual type in the results, it
+        adds the values and posts one transaction for the total amount.
+
+
+        The status for each accrual filtered is changed to `PROCESSED`.
+
+
+        The `201 Created` HTTP status response code indicates that the accruals
+        were processed. However, the process that posts the transactions on the
+        account's statement is asynchronous. To check if all transactions were
+        created, check the [Transaction
+        created](https://developers.pismo.io/events/docs/transaction-creation-1)
+        event to verify that a transaction was created for each `tracking_id`
+        returned by the endpoint.
+
+
+        You can use `start_date` and `end_date` to restrict the search to
+        accruals in a specific date range (where the accrual date indicates when
+        the client issued the asset). If you do not provide either date field,
+        then the search returns results from any date.
+
+
+        NOTE: This endpoint requires an account-specific access token. Getting
+        an account token requires you to call [Get OpenID access
+        token](ref:post-passport-v1-oauth2-token-1) with an external account ID.
+        Tokens can expire quickly, which can result in an Unauthorized message.
+      operationId: postInterestAccruals
+      tags:
+        - Post interest accruals
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterestAccrualRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterestAccrualResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardErrorResponse'
+              example:
+                Missing request header or param:
+                  description: accrual_statuses
+                  value:
+                    code: EIAC0002
+                    message: >-
+                      The header {HeaderName} is required | The property
+                      {PropertyName} is required. | Can't find [BalanceAccount]
+                      with params: [AccountID: XXX, OrgID: XXX].
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardErrorResponse'
+              example:
+                There are no accruals to be posted:
+                  description: There are no accruals to be posted.
+                  value:
+                    code: WIAC0002
+                    message: There are no accruals to be posted.
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardErrorResponse'
+              example:
+                There are no processing codes configured to post the accrual:
+                  description: >-
+                    There are no processing codes configured to post the accrual
+                    types [XXXX, YYYYY, ZZZZZ].
+                  value:
+                    code: WIAC0003
+                    message: >-
+                      There are no processing codes configured to post the
+                      accrual types [XXXX, YYYYY, ZZZZZ].
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/accrual-type-minimum-value:
+    post:
+      summary: Configure minimum value by accrual type
+      description: >
+        Configure a minimum value for an accrual type. At cycle closing, if the
+        calculated value for an accrual of that type is lower that the
+        configured minimum value, the minimum value is used instead.
+
+
+        This is an immutable configuration. So, to override a previous
+        configuration, you have to create a new configuration for the same level
+        in the hierarchy. The old configuration is maintained to track the
+        changes, but it's not used.
+      operationId: postAccrualTypeMinimumValue
+      tags:
+        - Accrual types minimum value
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccrualTypeMinimumValueRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccrualTypeMinimumValueResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardErrorResponse'
+              examples:
+                Missing request header or param:
+                  description: accrual_statuses
+                  value:
+                    code: EX0001
+                    message: >-
+                      The header {HeaderName} is required | The property
+                      {PropertyName} is required.
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    get:
+      summary: List minimum value configurations
+      description: |
+        List the minimum value configurations for an accrual type.
+      operationId: getAccrualTypeMinimumValue
+      tags:
+        - Accrual types minimum value
+      parameters:
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/AccrualTypeQuery'
+        - $ref: '#/components/parameters/HierarchyNameQuery'
+        - $ref: '#/components/parameters/HierarchyValueQuery'
+        - $ref: '#/components/parameters/IsDeletedQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  current_page:
+                    $ref: '#/components/schemas/CurrentPage'
+                  per_page:
+                    $ref: '#/components/schemas/PerPage'
+                  total_items:
+                    $ref: '#/components/schemas/TotalItems'
+                  items_on_page:
+                    $ref: '#/components/schemas/ItemsOnPage'
+                  is_last_page:
+                    $ref: '#/components/schemas/IsLastPage'
+                  items:
+                    type: array
+                    items:
+                      $ref: >-
+                        #/components/schemas/AccrualTypeMinimumValueResponseWithDates
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardErrorResponse'
+              examples:
+                Missing request header or param:
+                  description: accrual_statuses
+                  value:
+                    code: EX0001
+                    message: >-
+                      The header {HeaderName} is required | The property
+                      {PropertyName} is required.
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    delete:
+      summary: Delete minimum value configuration
+      description: |
+        Delete a minimum value configuration for an accrual type.
+      operationId: deleteAccrualTypeMinimumValue
+      tags:
+        - Accrual types minimum value
+      parameters:
+        - $ref: '#/components/parameters/AccrualTypeQuery'
+        - $ref: '#/components/parameters/HierarchyNameQuery'
+        - $ref: '#/components/parameters/HierarchyValueQuery'
+      responses:
+        '204':
+          description: No content
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardErrorResponse'
+              examples:
+                Missing request header or param:
+                  description: accrual_statuses
+                  value:
+                    code: EX0001
+                    message: >-
+                      The header {HeaderName} is required | The property
+                      {PropertyName} is required.
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/programs/{programId}/accrual-type-post-config:
+    post:
+      summary: Create an accrual type post configuration
+      description: >
+        Creates a new accrual type post configuration for the specified program.
+        This configuration is used in posting transactions for accruals to
+        statements.
+
+
+        When a cycle closes, the Pismo platform retrieves the accrual type post
+        configuration for the specific program and accrual type and uses the
+        specified processing code when posting the accrual transactions.
+
+
+        The reversal projection processing code is used to reverse projected
+        accruals when the customer's payment date is between
+        `cycle-closing-date` and `due-date` (or the real due date, if different
+        from `due_date`). The Pismo platform creates transactions to perform the
+        reversals and posts them on the statement.
+
+
+        **Note:** Payments can be backdated, but future dates are not allowed.
+      operationId: createAccrualTypePostConfig
+      tags:
+        - Accrual type post configurations
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNewAccrualTypePostConfigRequest'
+      responses:
+        '201':
+          description: Successfully created accrual type post config.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accrual_type_post_config_id:
+                    $ref: '#/components/schemas/AccrualTypePostConfigId'
+                  accrual_type:
+                    $ref: '#/components/schemas/AccrualType'
+                  program_id:
+                    $ref: '#/components/schemas/ProgramId'
+                  processing_code:
+                    $ref: '#/components/schemas/ProcessingCode'
+                  reversal_projection_processing_code:
+                    $ref: '#/components/schemas/ReversalProjectionProcessingCode'
+                  created_at:
+                    $ref: '#/components/schemas/CreatedAt'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardErrorResponse'
+              examples:
+                Missing request header:
+                  description: Missing request header
+                  value:
+                    code: EIAC0002
+                    message: 'Request header is missing: x-tenant'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardErrorResponse'
+              examples:
+                Program not found:
+                  description: Program not found
+                  value:
+                    code: EX0001
+                    message: The program_id ${program_id} not found
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    get:
+      summary: List accrual type post configurations
+      description: Retrieves a list of accrual type post configurations for a program.
+      operationId: getAccrualTypePostConfig
+      tags:
+        - Accrual type post configurations
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+        - $ref: '#/components/parameters/AccrualTypeQuery'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: Paginated list of accrual type post configurations.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  current_page:
+                    $ref: '#/components/schemas/CurrentPage'
+                  per_page:
+                    $ref: '#/components/schemas/PerPage'
+                  total_items:
+                    $ref: '#/components/schemas/TotalItems'
+                  items_on_page:
+                    $ref: '#/components/schemas/ItemsOnPage'
+                  pages:
+                    $ref: '#/components/schemas/NumberOfPages'
+                  is_last_page:
+                    $ref: '#/components/schemas/IsLastPage'
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        accrual_type_post_config_id:
+                          $ref: '#/components/schemas/AccrualTypePostConfigId'
+                        program_id:
+                          $ref: '#/components/schemas/ProgramId'
+                        accrual_type:
+                          $ref: '#/components/schemas/AccrualType'
+                        reversal_projection_processing_code:
+                          $ref: >-
+                            #/components/schemas/ReversalProjectionProcessingCode
+                        processing_code:
+                          $ref: '#/components/schemas/ProcessingCode'
+                        created_at:
+                          $ref: '#/components/schemas/CreatedAt'
+                        updated_at:
+                          $ref: '#/components/schemas/UpdatedAt'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardErrorResponse'
+              examples:
+                Missing request header:
+                  description: Missing request header
+                  value:
+                    code: EIAC0002
+                    message: 'Request header is missing: x-tenant'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardErrorResponse'
+              examples:
+                Program not found:
+                  description: Program not found
+                  value:
+                    code: EX0001
+                    message: Program ID ${program_id} not found
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/programs/{programId}/accrual-type-post-config/{accrualTypePostConfigId}:
+    patch:
+      summary: Update accrual type post configuration
+      description: >
+        Update specific fields in an accrual type post configuration for a
+        program.
+
+
+        <b>Notes:</b>
+
+        - If `reversal_projection_processing_code is omitted in request`, its
+        value is updated to null.
+
+        - If `processing_code` is omitted, its value remains unchanged.
+      operationId: updateAccrualTypePostConfig
+      tags:
+        - Accrual type post configurations
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+        - $ref: '#/components/parameters/AccrualTypePostConfigId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAccrualTypePostConfigRequest'
+      responses:
+        '200':
+          description: Successfully updated accrual type post config.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accrual_type_post_config_id:
+                    $ref: '#/components/schemas/AccrualTypePostConfigId'
+                  processing_code:
+                    $ref: '#/components/schemas/ProcessingCode'
+                  reversal_projection_processing_code:
+                    $ref: '#/components/schemas/ReversalProjectionProcessingCode'
+                  updated_at:
+                    $ref: '#/components/schemas/UpdatedAt'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardErrorResponse'
+              examples:
+                Missing request header:
+                  description: Missing request header
+                  value:
+                    code: EIAC0002
+                    message: 'Request header is missing: x-tenant'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardErrorResponse'
+              examples:
+                Program not found:
+                  description: Program not found
+                  value:
+                    code: EX0001
+                    message: Program ID ${program_id} not found
+        '500':
+          $ref: '#/components/responses/500InternalServerError'

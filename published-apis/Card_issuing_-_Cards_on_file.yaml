@@ -1,0 +1,1048 @@
+openapi: 3.0.0
+info:
+  title: Card issuing - Cards on file
+  version: 2.0.0
+  description: Tokenize cards and manage digital wallets
+  contact:
+    email: support@pismo.com.br
+    name: API Support
+    url: https://developers.pismo.io/support
+  license:
+    name: Copyright Pismo
+    url: https://developers.pismo.io/licenses
+  termsOfService: https://developers.pismo.io/terms
+servers:
+  - url: https://gw-pci.pismolabs.io
+    description: Sandbox PCI API server for testing
+  - url: https://api-sandbox.pismolabs.io
+    description: Sandbox API server for testing
+tags:
+  - name: Cards on file
+    description: Cards on file management
+  - name: Validation
+    description: Cards on file validations
+  - name: Metadata
+    description: Delete card on file metadata
+components:
+  parameters:
+    accountIDpath:
+      name: accountId
+      in: path
+      schema:
+        type: integer
+      description: Pismo account ID
+      required: true
+    authPath:
+      name: Authorization
+      in: header
+      schema:
+        type: string
+      required: true
+      description: >
+        Account token - an access token encoded with a Pismo account ID. Tokens
+        can expire quickly, which can result in an <b>401 Unauthorized</b>
+        message.  
+    cardIDpath:
+      name: cardid
+      in: path
+      schema:
+        type: string
+      description: Card ID
+      required: true
+    cardStatusQuery:
+      name: status
+      in: query
+      schema:
+        type: string
+      description: >
+        Card status - `ACTIVE`, `SUSPENDED` or `PENDING`. To filter more than
+        one status, separate with a comma (,)
+      required: false
+    cardTypeQuery:
+      name: type
+      in: query
+      schema:
+        type: string
+      description: >
+        Card type - `PLASTIC`, `VIRTUAL`, `TEMPORARY` or `RECURRING`. To filter
+        more than one type, separate with a comma (,)
+      required: false
+    orgIDheader:
+      name: x-tenant
+      in: header
+      schema:
+        type: integer
+      description: Organization/tenant ID.
+      required: true
+    uuidPath:
+      name: uuid
+      in: path
+      schema:
+        type: string
+      description: Card UUID (token) to validate.
+      required: true
+    validationIDpath:
+      name: validationid
+      in: path
+      schema:
+        type: string
+      description: >-
+        Validation UUID. This is the `uuid` field returned from [Create card
+        validation](https://developers.pismo.io/pismo-docs/reference/create-a-new-validation-for-a-given-card)
+      required: true
+  schemas:
+    AcquirerID:
+      type: string
+      description: Acquirer ID.
+      maxLength: 50
+      example: '289900'
+    CardAliasName:
+      type: string
+      description: Card alias name
+      example: Vacation card
+    CardExpirationDate:
+      type: string
+      description: Card expiration date (mmyy)
+      example: '1214'
+    CardholderName:
+      type: string
+      description: Cardholder printed name. No limit.
+      example: Mabel Syrup
+    CardID:
+      type: string
+      description: Card ID
+      example: '48849'
+    CardOnFileResponse:
+      type: object
+      properties:
+        acquirer:
+          type: string
+          description: Acquirer ID.
+          maxLength: 50
+          example: '20'
+        card_name:
+          $ref: '#/components/schemas/CardName'
+        card_profile:
+          $ref: '#/components/schemas/CardProfile'
+        pismo_card_id:
+          $ref: '#/components/schemas/PismoCardID'
+        customer_id:
+          $ref: '#/components/schemas/CustomerID'
+        program_id:
+          $ref: '#/components/schemas/ProgramID'
+        card_status:
+          $ref: '#/components/schemas/CardStatus'
+        creation_date:
+          $ref: '#/components/schemas/CreationDate'
+        default_card:
+          $ref: '#/components/schemas/DefaultCard'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        expiration_date:
+          $ref: '#/components/schemas/CardExpirationDate'
+        first_6_digits:
+          $ref: '#/components/schemas/First6Digits'
+        issuer_card:
+          $ref: '#/components/schemas/IssuerCard'
+        last_4_digits:
+          $ref: '#/components/schemas/Last4Digits'
+        network:
+          $ref: '#/components/schemas/Network'
+        pan:
+          $ref: '#/components/schemas/Pan'
+        printed_name:
+          $ref: '#/components/schemas/PrintedName'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        verified:
+          $ref: '#/components/schemas/Verified'
+      example:
+        pan: '4556360876754431'
+        expiration_date: '0228'
+        printed_name: Beverly Hills
+        acquirer: '38847'
+        verified: false
+        card_status: ACTIVE
+        pismo_card_id: 123
+        custom_id: 123456
+        program_id: 1234567
+        last_4_digits: '4431'
+        first_6_digits: '455636'
+        creation_date: '2022-05-20T11:40:22.287Z'
+        card_name: Primary card
+        document_number: '72437914099'
+        card_profile: profile 01
+        default_card: true
+        issuer_card: false
+        network: VISA
+        metadata: '{ "address": "st main 01, center, nashville - FA" }'
+    CardName:
+      type: string
+      description: Card alias name. No limit.
+      example: Vacation card
+    CardsOnFileCreate:
+      type: object
+      required:
+        - card_name
+        - cvv
+        - expiration_date
+        - name
+        - pan
+      properties:
+        card_name:
+          $ref: '#/components/schemas/CardName'
+        cvv:
+          $ref: '#/components/schemas/CVV'
+        expiration_date:
+          $ref: '#/components/schemas/CardExpirationDate'
+        name:
+          $ref: '#/components/schemas/CardholderName'
+        pan:
+          $ref: '#/components/schemas/Pan'
+        acquirer:
+          $ref: '#/components/schemas/AcquirerID'
+        card_profile:
+          $ref: '#/components/schemas/CardProfile'
+        card_stored_uuid:
+          $ref: '#/components/schemas/CardStoredUuid'
+        default_card:
+          $ref: '#/components/schemas/DefaultCard'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        issuer_card:
+          $ref: '#/components/schemas/IssuerCard'
+        verified:
+          $ref: '#/components/schemas/Verified'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+      example:
+        card_name: My Card
+        card_profile: 0XFF00FF
+        cvv: '123'
+        default_card: true
+        document_number: '41440022209'
+        expiration_date: '1224'
+        issuer_card: true
+        name: Vacation card
+        pan: '5448280000000007'
+        verified: true
+        metadata: '{any_key: any_value}'
+    CardsOnFileErrorResponse:
+      properties:
+        error_code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Error message
+    CardsOnFileGetResponseModel:
+      type: object
+      properties:
+        card_name:
+          $ref: '#/components/schemas/CardName'
+        card_profile:
+          $ref: '#/components/schemas/CardProfile'
+        card_status:
+          $ref: '#/components/schemas/CardStatus'
+        pismo_card_id:
+          $ref: '#/components/schemas/PismoCardID'
+        customer_id:
+          $ref: '#/components/schemas/CustomerID'
+        program_id:
+          $ref: '#/components/schemas/ProgramID'
+        creation_date:
+          $ref: '#/components/schemas/CreationDate'
+        default_card:
+          $ref: '#/components/schemas/DefaultCard'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        expiration_date:
+          $ref: '#/components/schemas/CardExpirationDate'
+        issuer_card:
+          $ref: '#/components/schemas/IssuerCard'
+        last_4_digits:
+          $ref: '#/components/schemas/Last4Digits'
+        network:
+          $ref: '#/components/schemas/Network'
+        printed_name:
+          $ref: '#/components/schemas/PrintedName'
+        uuid:
+          $ref: '#/components/schemas/Uuid'
+        verified:
+          $ref: '#/components/schemas/Verified'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+      example:
+        card_name: Vacation card
+        card_profile: 0XFF00FF
+        card_status: ACTIVE
+        pismo_card_id: 12376
+        custom_id: 123456
+        program_id: 1234567
+        creation_date: '2018-11-05T19:21:42.000Z'
+        default_card: true
+        document_number: '41440022209'
+        expiration_date: '1224'
+        issuer_card: true
+        last_4_digits: '2347'
+        first_6_digits: ''
+        network: VISA
+        printed_name: Jenna Flect
+        uuid: 77cdd87e-b9b6-11ec-b4f5-4a7a44f81261
+        verified: true
+        metadata: '{any_key: any_value}'
+    CardsOnFileMetadata:
+      type: object
+      required:
+        - card_name
+        - cvv
+        - expiration_date
+        - name
+        - pan
+      properties:
+        card_name:
+          $ref: '#/components/schemas/CardName'
+        cvv:
+          $ref: '#/components/schemas/CVV'
+        expiration_date:
+          $ref: '#/components/schemas/CardExpirationDate'
+        name:
+          $ref: '#/components/schemas/CardholderName'
+        pan:
+          $ref: '#/components/schemas/Pan'
+        card_profile:
+          $ref: '#/components/schemas/CardProfile'
+        default_card:
+          $ref: '#/components/schemas/DefaultCard'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        id:
+          $ref: '#/components/schemas/CardID'
+        issuer_card:
+          $ref: '#/components/schemas/IssuerCard'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        verified:
+          $ref: '#/components/schemas/Verified'
+    CardsOnFileMetadataV3:
+      allOf:
+        - $ref: '#/components/schemas/CardsOnFileMetadata'
+        - type: object
+      properties:
+        skip_validation:
+          type: boolean
+          description: Flag to skip acquirer and anti-fraud validation. Default is `false`.
+    CardsOnFilePatch:
+      type: object
+      required:
+        - card_stored_uuid
+      properties:
+        card_stored_uuid:
+          $ref: '#/components/schemas/CardStoredUuid'
+        card_name:
+          $ref: '#/components/schemas/CardName'
+        card_profile:
+          $ref: '#/components/schemas/CardProfile'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        status:
+          type: string
+          description: Card-on-file token status - `ACTIVE` or `SUSPENDED`.
+          enum:
+            - ''
+            - ACTIVE
+            - SUSPENDED
+          example: SUSPENDED
+      example:
+        card_name: National Bank MC
+        card_profile: 0XFF00FF
+        card_stored_uuid: 77cdd87e-b9b6-11ec-b4f5-4a7a44f81261
+        metadata: '{''Bank'': ''National MC''}'
+        status: SUSPENDED
+    CardsOnFileRegisterResponse:
+      properties:
+        card_stored_uuid:
+          $ref: '#/components/schemas/CardStoredUuid'
+    CardStoredUuid:
+      type: string
+      description: >
+        API-generated card token from registration. This is NOT a field you can
+        change, but it must be passed to identify the card.
+      example: uuid-a-1ffff
+    CardProfile:
+      type: string
+      description: >
+        Network card profile identifier or HEX color. A profile or HEX color
+        determines a card's appearance in a mobile payment app or payment
+        system. Issuers are responsible for configuring card profiles with the
+        card network.
+      example: 0XFFFFFF
+    CardStatus:
+      type: string
+      description: Card status
+      enum:
+        - ACTIVE
+        - SUSPENDED
+        - PENDING
+      example: ACTIVE
+    CreationDate:
+      type: string
+      description: Creation date in RFC3339 format.
+      example: '2018-11-05T19:21:42.000Z'
+    CustomerID:
+      type: integer
+      description: Pismo customer ID.
+      example: 5648988
+    CVV:
+      type: string
+      description: Card Verification Code (CVV) (the three numbers behind the card).
+      example: '564'
+    DefaultCard:
+      type: boolean
+      description: Default card flag. Default is `false`.
+      example: true
+    DocumentNumber:
+      type: string
+      description: >
+        Cardholder government document number. This can be from any document
+        that identifies the cardholder such as a Tax ID, State ID, or driver's
+        license.
+      example: 7777888hh
+    First6Digits:
+      type: string
+      description: First 6 PAN digits
+    IssuerCard:
+      type: boolean
+      description: Is this the issuer's card flag. Default is `false`.
+      example: false
+    Last4Digits:
+      type: string
+      description: Last 4 PAN digits
+      example: '5684'
+    Metadata:
+      type: string
+      description: Any data object with key/value pairs. No limit on length.
+      example: '{ "key": "value"}'
+    Network:
+      type: string
+      description: Card network that provisioned card
+      enum:
+        - AMEX
+        - MASTERCARD
+        - VISA
+        - UNKNOWN
+      example: VISA
+    Pan:
+      type: string
+      description: Primary Account Number (PAN) to store
+      minLength: 12
+      maxLength: 19
+      example: '55689839363638393'
+    PismoCardID:
+      type: integer
+      description: Pismo card ID
+      example: 674593
+    PrintedName:
+      type: string
+      description: Printed name on physical card
+      example: Sarah Toga
+    ProgramID:
+      type: integer
+      description: Pismo program ID
+      example: 5674
+    TryRequestModel:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          description: Amount to be tried (1.00 - 5.00).
+          minimum: 1
+          maximum: 5
+        date:
+          type: string
+          description: >-
+            Submission date. Format = dd/mm/yyyy. If not passed, the current
+            datetime is used.
+      example:
+        amount: 1.27
+        date: 25/09/2021
+    Uuid:
+      type: string
+      description: API-generated card UUID token
+    ValidationAmountResponse:
+      type: object
+      properties:
+        validation_amount:
+          type: number
+          description: Validation amount
+      example:
+        validation_amount: 1.27
+    ValidationExpiration:
+      type: number
+      description: >-
+        When validation expires since creation in hours - 96 maximum. Default is
+        96.
+      minimum: 1
+      maximum: 96
+    ValidationRemainingTries:
+      type: number
+      description: Maximum card validation tries - 3 tries maximum. Default is 3.
+      minimum: 1
+      maximum: 3
+    ValidationRequestModel:
+      properties:
+        type:
+          $ref: '#/components/schemas/ValidationType'
+        expiration_hours:
+          $ref: '#/components/schemas/ValidationExpiration'
+        remaining_tries:
+          $ref: '#/components/schemas/ValidationRemainingTries'
+      example:
+        type: INVOICE
+        expiration_hours: 96
+        remaining_tries: 3
+    ValidationResponseModel:
+      allOf:
+        - $ref: '#/components/schemas/ValidationRequestModel'
+        - type: object
+          properties:
+            uuid:
+              type: string
+              description: Unique validation ID
+            type:
+              type: string
+              description: Validation type, currently, only `INVOICE`.
+            status:
+              type: string
+              enum:
+                - IN_PROGRESS
+                - SUCCESS
+                - FAILED
+              description: Validation status enum - `IN_PROGRESS`, `SUCCESS`, or `FAILED`
+            expiration_hours:
+              type: number
+              description: Validation expiration since creation in hours. Maximum is 96
+              minimum: 1
+              maximum: 96
+            remaining_tries:
+              type: number
+              description: Maximum card validation tries. Maximum is 3.
+              minimum: 1
+              maximum: 3
+            inclusion_date:
+              type: string
+              description: >-
+                Validation creation date in ISO 8601 format, i.e.,
+                2019-09-04T19:09:53.881Z
+            expiration_date:
+              type: string
+              description: >-
+                Date validation expires if not validated yet in ISO 8601 format,
+                i.e., 2019-09-08T19:09:53.881Z
+            activation_date:
+              type: string
+              description: >-
+                When validated date in ISO 8601 format, i.e.,
+                2019-09-08T19:09:53.881Z
+            cancellation_date:
+              type: string
+              description: >-
+                Validation cancelled date, by expiration or out of remaining
+                tries, in ISO 8601 format, i.e., 2019-09-08T19:09:53.881Z
+            refunded_at:
+              type: string
+              description: >-
+                When charge refunded in in ISO 8601 format, i.e.,
+                2019-09-08T19:09:53.881Z
+            refund_id:
+              type: string
+              description: Refund ID
+      example:
+        uuid: 93ae5a79-cf47-11e9-814f-6c2b59562ec2
+        type: INVOICE
+        status: IN_PROGRESS
+        expiration_hours: 96
+        inclusion_date: '2019-09-04T19:09:53.881Z'
+        expiration_date: '2019-09-08T19:09:53.881Z'
+        activation_date: '2019-09-04T19:09:53.881Z'
+        cancellation_date: '2192-09-08T19:09:53.881Z'
+        remaining_tries: 3
+        refunded_at: null
+        refund_id: null
+    ValidationResponseWithTriesModel:
+      allOf:
+        - $ref: '#/components/schemas/ValidationResponseModel'
+        - type: object
+          properties:
+            tries:
+              type: array
+              items:
+                $ref: '#/components/schemas/ValidationTriesModel'
+      example:
+        uuid: 93ae5a79-cf47-11e9-814f-6c2b59562ec2
+        type: INVOICE
+        status: IN_PROGRESS
+        expiration_hours: 96
+        inclusion_date: '2019-09-04T19:09:53.881Z'
+        expiration_date: '2019-09-08T19:09:53.881Z'
+        activation_date: null
+        cancellation_date: null
+        remaining_tries: 3
+        tries:
+          - date: '2019-08-11T12:16:00.000Z'
+            amount: 1.27
+          - date: '2019-08-15T16:04:38.481Z'
+            amount: 4.78
+    ValidationTriesModel:
+      type: object
+      properties:
+        date:
+          type: string
+          description: Submission date. RFC3339 format.
+        amount:
+          type: number
+          description: Tried amount.
+      example:
+        date: '2019-08-11T12:16:00.000Z'
+        amount: 1.27
+    ValidationType:
+      type: string
+      enum:
+        - INVOICE
+      description: Validation type, currently only `INVOICE`.
+    Verified:
+      type: boolean
+      description: Is card verified flag. Default is `false`.
+      example: false
+    SuccessResponse:
+      properties:
+        message:
+          type: string
+          description: Success message
+      example:
+        message: Card cancelled
+    ErrorResponse:
+      properties:
+        error_code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Error message
+      example:
+        error_code: W100020
+        message: Duplicate request!
+  responses:
+    200Success:
+      description: Success
+    201Created:
+      description: Created
+    204NoContent:
+      description: No Content
+    400BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CardsOnFileErrorResponse'
+    401Unauthorized:
+      description: Access token is missing or invalid
+    403Forbidden:
+      description: You don't have permission to access this resource
+    404NotFound:
+      description: The specified resource was not found
+    409Conflict:
+      description: The specified resource status conflict with the current request.
+    409ConflictCardsPost:
+      description: You already have a card with this type and name active
+    500InternalServer:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CardsOnFileErrorResponse'
+paths:
+  /cardsonfile/v3/cardsonfile/cards:
+    post:
+      summary: Create card on file
+      description: >
+        Create a *card on file* - an existing card that has been tokenized and
+        stored in a digital wallet. The token is then used for payment
+        transactions to avoid exposing sensitive data like the card's PAN and
+        CVV.<br>
+
+
+        Unless indicated otherwise (`skip_validation` = `true`), this endpoint
+        generates a validation - a random transacation amount between 1.00 and
+        5.00 (later chargebacked) is created for the cardholder to approve,
+        which requires them to log into an online banking account. The
+        cardholder has up to 3 tries and 96 hours to input the correct amount.
+        If the validation fails, the card is deleted from the wallet.<br>
+
+
+        The card can be a Pismo-issued card or an external card. The card is
+        added to the customer's digital wallet.<br>
+
+
+        This endpoint generates a [Card on file
+        created](https://developers.pismo.io/events/docs/cardsonfile-provision-1)
+        event and, if `skip_validation` = `false`, a [Card on file validation
+        result
+        received](https://developers.pismo.io/events/docs/cardsonfile-verification-1)
+        event.
+
+
+        **Note**: This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: create-a-cardsonfile-v3
+      tags:
+        - Cards on file
+      parameters:
+        - $ref: '#/components/parameters/authPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardsOnFileMetadataV3'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardsOnFileRegisterResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /cardsonfile/v2/cardsonfile/cards/{uuid}/validations:
+    post:
+      summary: Create card validation
+      description: >
+        Create a new invoice validation for a given tokenized card. A random
+        transacation amount between 1.00 and 5.00 (later chargebacked) is
+        created for the cardholder to approve, which requires logging into an
+        online banking account. The cardholder has up to 3 tries and 96 hours to
+        input the correct amount. If the validation fails, the card is deleted
+        from the wallet.<br>
+
+
+        This endpoint generates a [Card on file validation result
+        received](https://developers.pismo.io/events/docs/cardsonfile-verification-1)
+        event. If the validation fails, it generates an [Card
+        excluded](https://developers.pismo.io/events/docs/cardsonfile-exclusion-1)
+        event.
+
+
+        **Note**: This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: create-a-new-validation-for-a-given-card
+      tags:
+        - Validation
+      parameters:
+        - $ref: '#/components/parameters/uuidPath'
+        - $ref: '#/components/parameters/authPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidationRequestModel'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponseModel'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: List card validations
+      description: >
+        Get all validations for a card currently outstanding.
+
+
+        **Note**: This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: list-all-validations-for-a-given-card
+      tags:
+        - Validation
+      parameters:
+        - $ref: '#/components/parameters/uuidPath'
+        - $ref: '#/components/parameters/authPath'
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ValidationResponseModel'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /cardsonfile/v2/cardsonfile/cards/{cardid}:
+    get:
+      summary: Get card on file
+      description: >
+        Get card on file
+
+
+        **Note**: This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: list-cardonfile
+      tags:
+        - Cards on file
+      parameters:
+        - $ref: '#/components/parameters/cardIDpath'
+        - $ref: '#/components/parameters/authPath'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CardOnFileResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /cardsonfile/v2/cardsonfile/cards/{uuid}/validations/{validationid}:
+    get:
+      summary: Get card validation
+      description: >
+        Gets a specific validation for a card
+
+
+        **Note**: This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: get-a-specific-validation-for-a-given-card
+      tags:
+        - Validation
+      parameters:
+        - $ref: '#/components/parameters/uuidPath'
+        - $ref: '#/components/parameters/validationIDpath'
+        - $ref: '#/components/parameters/authPath'
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponseWithTriesModel'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /cardsonfile/v2/cardsonfile/cards/{uuid}/validations/{validationid}/amount:
+    get:
+      summary: Get card validation amount
+      description: >
+        Gets the validation amount for a specific card validation
+
+
+        **Note**: This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: get-a-specific-validation-amount-for-a-given-card
+      tags:
+        - Validation
+      parameters:
+        - $ref: '#/components/parameters/uuidPath'
+        - $ref: '#/components/parameters/validationIDpath'
+        - $ref: '#/components/parameters/authPath'
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationAmountResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /cardsonfile/v2/cardsonfile/cards/{uuid}/validations/{validationid}/tries:
+    post:
+      summary: Submit validation try
+      description: >
+        Submit a validation try with amount.<br>
+
+
+        This endpoint generates a [Card on file validation result
+        received](https://developers.pismo.io/events/docs/cardsonfile-verification-1)
+        event with `PENDING` status. If the verification/validation fails, a
+        [Card
+        excluded](https://developers.pismo.io/events/docs/cardsonfile-exclusion-1)
+        event is generated and the card is deleted from the customer's wallet.
+
+
+        **Note**: This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: submit-a-validation-try
+      tags:
+        - Validation
+      parameters:
+        - $ref: '#/components/parameters/uuidPath'
+        - $ref: '#/components/parameters/validationIDpath'
+        - $ref: '#/components/parameters/authPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TryRequestModel'
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /cardsonfile/v2/cardsonfile/cards/{uuid}/metadata:
+    delete:
+      summary: Delete card metadata
+      description: >
+        Deletes card metadata.
+
+
+        This endpoint generates a [Card metadata
+        deleted](https://developers.pismo.io/events/docs/cardsonfile-delete-metadata-1)
+        event.
+
+
+        **Note**: This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: delete-a-metadata-field-for-a-given-card
+      tags:
+        - Metadata
+      parameters:
+        - $ref: '#/components/parameters/uuidPath'
+        - $ref: '#/components/parameters/authPath'
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /cardsonfile/v2/cardsonfile/cards:
+    get:
+      summary: Get account cards on file
+      description: >
+        Get  all cards on file for a specific account, which is derived from the
+        access token.
+
+
+        **Note**: This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: list-all-cardsonfile-registries
+      tags:
+        - Cards on file
+      parameters:
+        - $ref: '#/components/parameters/authPath'
+        - $ref: '#/components/parameters/cardStatusQuery'
+        - $ref: '#/components/parameters/cardTypeQuery'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CardsOnFileGetResponseModel'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    patch:
+      summary: Update card on file
+      description: >
+        Updates a card on file - change the card name, status, or profile. You
+        must pass the card uuid token as a body parameter to identify the card.
+
+
+        Fields that are not passed are not updated.
+
+
+        This endpoint generates a [Card on file
+        updated](https://developers.pismo.io/events/docs/cardsonfile-patch-cards-1)
+        event. If the card status is being changed to `SUSPENDED`, it also
+        generates a [Card
+        excluded](https://developers.pismo.io/events/docs/cardsonfile-exclusion-1)
+        event.
+
+
+        **Note**: This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: updates-a-cardsonfile
+      tags:
+        - Cards on file
+      parameters:
+        - $ref: '#/components/parameters/authPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardsOnFilePatch'
+      responses:
+        '200':
+          description: SUCCESS
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    post:
+      summary: Create card on file (outdated)
+      description: >
+        Create a *card on file* - an existing card that has been tokenized and
+        stored in a digital wallet. The token is then used for payment
+        transactions to avoid exposing sensitive data like the card's PAN and
+        CVV.<br>
+
+        The card can be a Pismo-issued card or an external card. The card is
+        added to the customer's digital wallet.<br>
+
+
+        This endpoint generates a
+        [provision-1](https://developers.pismo.io/events/docs/cardsonfile-provision-1)
+        event.
+
+
+        **Note**: This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: create-a-cardsonfile
+      deprecated: true
+      tags:
+        - Cards on file
+      parameters:
+        - in: query
+          name: skip_validation
+          schema:
+            type: boolean
+          required: false
+          description: Flag to skip acquirer and anti-fraud validation. Default is `false`.
+        - $ref: '#/components/parameters/authPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardsOnFileCreate'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardsOnFileRegisterResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'

@@ -1,0 +1,1851 @@
+openapi: 3.1.0
+tags:
+  - name: Transaction types
+    description: |
+      Endpoints to manage transaction types
+  - name: Transaction flows
+    description: >-
+      Endpoints to manage the link between transaction types and processing
+      codes.
+  - name: Transactions
+    description: Endpoints to retrieve transaction data.
+info:
+  title: Core platform - Transactions
+  version: 1.0.0
+  description: API used to configure transactions domain and get transactions information.
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/transactions-core
+    description: Sandbox API server for testing
+components:
+  parameters:
+    authorizationType:
+      in: query
+      name: authorizationType
+      description: The authorization type
+      schema:
+        type: string
+        enum:
+          - NETWORK
+          - PLATFORM
+    authorizationID:
+      in: query
+      name: authorizationId
+      description: The authorization ID
+      schema:
+        type: integer
+        format: int64
+        example: 1
+    customerID:
+      in: query
+      name: customerId
+      description: Customer ID
+      schema:
+        type: integer
+        format: int64
+    statementID:
+      in: query
+      name: statementId
+      description: Statement ID
+      schema:
+        type: integer
+        format: int64
+    eventDateStart:
+      in: query
+      name: eventDateStart
+      description: Event date period start
+      schema:
+        type: string
+        format: date or date-time
+        example: '2021-06-26T12:03:04Z'
+    eventDateEnd:
+      in: query
+      name: eventDateEnd
+      description: Event date period end
+      schema:
+        type: string
+        format: date or date-time
+        example: '2021-06-26T12:03:04Z'
+    numberOfLatestTransactions:
+      in: query
+      name: numberOfLatestTransactions
+      description: >-
+        Number of latest transactions. Get the X latest transactions from the
+        date specified in the `event_date` field. This filter overwrites page
+        filters and doesn't allow any other filters with it.
+      schema:
+        type: integer
+        format: int64
+        maximum: 500
+        minimum: 1
+    transactionTypeIdQuery:
+      in: query
+      name: transactionTypeId
+      description: Transaction type ID filter.
+      schema:
+        type: integer
+        format: int64
+      example: 101010
+    transactionTypeIdPath:
+      in: path
+      name: transactionTypeId
+      description: Transaction type ID.
+      schema:
+        type: integer
+        format: int64
+      required: true
+      example: 101010
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account access token. Tokens can expire quickly, which can result in an
+        "Unauthorized" error.
+      bearerFormat: JWT
+  schemas:
+    TransactionTypeId:
+      type: integer
+      format: int64
+      description: >-
+        Transaction type ID. Certain IDs are reserved by the platform and cannot
+        be used.
+      minimum: 1
+    TransactionType:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Transaction type ID
+        description:
+          type: string
+          description: Transaction type description
+          maxLength: 30
+        credit:
+          type: boolean
+          description: Indicates if the transaction type is a credit or debit operation.
+        posted_transaction:
+          type: boolean
+          description: >-
+            Indicates whether transactions are posted on statements (`true`) or
+            not (`false`).
+        balance_impact_id:
+          type: integer
+          format: int64
+          description: Balance impact ID
+        category:
+          type: string
+          description: Transaction type category
+      example:
+        id: 203
+        description: Credit voucher
+        credit: true
+        posted_transaction: true
+        balance_impact_id: 4
+        category: PAYMENTS/CREDITS
+    Card:
+      type: object
+      description: >
+        Contains details about the card used in a transaction.
+
+        *  For transactions from card network operations, this object includes
+        card information.
+
+        *  For platform operations, this object is empty.
+
+        Whether card information appears depends on what was provided during
+        authorization, not on the transaction type.
+      properties:
+        id:
+          type: integer
+          description: Card ID
+        name:
+          type: string
+          description: Card name
+    ProgramTransactionTypePatch:
+      required:
+        - description
+      type: object
+      properties:
+        description:
+          type: string
+          description: Transaction type description
+          maxLength: 30
+      example:
+        description: Credit Voucher
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Transaction ID
+          example: 1111
+        program_id:
+          type: integer
+          format: int64
+          description: Program ID
+          example: 2222
+        account_id:
+          type: integer
+          format: int64
+          description: Account ID
+          example: 1234
+        statement_id:
+          type: integer
+          format: int64
+          description: Statement ID
+          example: 2345
+        installment:
+          type: integer
+          description: Transaction installment number
+          example: 2
+        number_of_installments:
+          type: integer
+          description: Total number of installments
+          example: 20
+        soft_descriptor:
+          type: string
+          description: >-
+            Soft descriptor of transaction. This is the description that shows
+            on the customer's statement after it is authorized, but before it is
+            settled.
+        processing_code:
+          type: string
+          description: Processing code used to create the transaction.
+          example: '00'
+        processing_description:
+          type: string
+          description: Processing code description
+          example: Purchase
+        customer_id:
+          type: integer
+          format: int64
+          description: Customer ID
+          example: 8675309
+        user_category:
+          type: string
+          description: User category
+          example: SERVICES
+        transaction_group:
+          type: string
+          description: Transaction group
+          example: EXPENSES
+          deprecated: true
+        entry_mode:
+          type: string
+          description: Transaction Entry Mode
+          example: POS
+        amount:
+          type: array
+          items:
+            $ref: '#/components/schemas/Amount'
+        tax:
+          type: array
+          description: Transaction taxes
+          items:
+            $ref: '#/components/schemas/Tax'
+        event_date:
+          type: string
+          format: date-time
+          description: >-
+            Event timestamp in the UTC (zero-hour offset) ISO 8601 format
+            (yyyy-MM-ddThh:mm:ssZ).
+          example: '2022-08-24T19:15:24.000Z'
+        event_datetime:
+          type: string
+          format: date-time
+          description: >-
+            Event timestamp in the UTC (zero-hour offset) RFC 3339 format, which
+            includes milliseconds (yyyy-MM-ddThh:mm:ss.SSSZ).
+          example: '2022-08-24T19:15:24.000Z'
+        payment_date:
+          type: string
+          format: date-time
+          description: >-
+            Payment timestamp provided by the user in the ISO 8601 format
+            (yyyy-MM-ddThh:mm:ssZ).
+          example: '2022-08-24T20:13:24.000Z'
+        payment_datetime:
+          type: string
+          format: date-time
+          description: >-
+            Payment timestamp provided by the user in the RFC 3339 format, which
+            includes milliseconds (yyyy-MM-ddThh:mm:ss.SSSZ).
+          example: '2022-08-24T20:13:24.000Z'
+        created_at:
+          type: string
+          format: date-time
+          description: Transaction creation date (ISO 8601)
+          example: '2022-08-24T19:05:24.000Z'
+        transaction_type:
+          $ref: '#/components/schemas/TransactionType'
+        card:
+          $ref: '#/components/schemas/Card'
+        authorization:
+          $ref: '#/components/schemas/Authorization'
+        merchant:
+          $ref: '#/components/schemas/Merchant'
+    TransactionWithMetadata:
+      allOf:
+        - $ref: '#/components/schemas/Transaction'
+        - type: object
+          properties:
+            metadata:
+              type: object
+              description: User-defined information
+    TransactionsCount:
+      type: object
+      properties:
+        total_items:
+          type: integer
+          description: Total transaction count
+      example:
+        total_items: 100
+    Amount:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - PRINCIPAL
+            - LOCAL
+            - SETTLEMENT
+          description: |
+            Amount type 
+              - `PRINCIPAL`: Transaction amount in the customer’s account currency (already converted).
+              - `LOCAL`: Transaction amount in the merchant’s local currency, where the purchase was made.
+              - `SETTLEMENT`: Settlement amount that is typically defined by the issuer and usually matches the `PRINCIPAL` currency.
+        currency:
+          type: string
+          description: ISO-4217 alphabetic code (3 characters) for transaction currency.
+          example: USD
+        value:
+          type: number
+          multipleOf: 0.01
+          description: Amount value
+    Tax:
+      type: object
+      properties:
+        currency:
+          description: ISO-4217 alphabetic code (3 characters) for transaction currency.
+          type: string
+          minLength: 0
+          maxLength: 3
+          example: BRL
+        type:
+          type: string
+          enum:
+            - IOF
+            - IOF_DAILY
+            - INTEREST
+          description: Tax type
+        value:
+          type: number
+          multipleOf: 0.01
+          description: Tax value
+    Merchant:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Merchant ID
+        type:
+          type: string
+          description: Merchant type
+        name:
+          type: string
+          description: Merchant name
+        city:
+          type: string
+          description: Merchant city
+        state:
+          type: string
+          description: >-
+            Merchant's state. In some cases, for countries other than the U.S.,
+            it can indicate the country code of the merchant instead.
+        category:
+          $ref: '#/components/schemas/MerchantCategory'
+    MerchantCategory:
+      type: object
+      properties:
+        code:
+          type: string
+          description: >-
+            Merchant category code (MCC). Provided by the network (Visa or
+            Mastercard).
+        description:
+          type: string
+          description: Merchant category description
+        group_name:
+          type: string
+          description: Merchant category group name
+        network_group:
+          type: string
+          description: Merchant category group name sent by network
+    Page:
+      type: object
+      properties:
+        has_next:
+          type: boolean
+          description: Indicates whether there are more pages after the current page.
+        items:
+          type: array
+          description: Items returned by the request
+          items:
+            type: object
+    Authorization:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Authorization ID
+        type:
+          type: string
+          enum:
+            - PLATFORM
+            - NETWORK
+          description: Authorization's type
+        code:
+          type: string
+          description: Authorization code or Network Approval Code
+        payment_method_id:
+          type: string
+          description: Payment method
+        network:
+          type: string
+          enum:
+            - VISA
+            - MASTERCARD
+          description: Visa or Mastercard network
+        tracking_id:
+          type: string
+          description: Idempotency tracking ID
+        correlated_authorization_id:
+          type: integer
+          format: int64
+          description: >-
+            Authorization ID generated by force or installment operations when
+            the `original_authorization` field is provided. See the [Force
+            operation](doc:force-operation) and [Installments
+            payment](doc:installments-payment) guides for more information.
+        original_account_id:
+          type: integer
+          format: int64
+          description: >-
+            Original account ID. This field is used when the transaction is
+            linked to a authorizaiton that was made on a different account than
+            the one being queried.
+    TransactionTypeResult:
+      required:
+        - transaction_type_id
+        - description
+        - credit
+        - posted_transaction
+      type: object
+      properties:
+        transaction_type_id:
+          $ref: '#/components/schemas/TransactionTypeId'
+        description:
+          type: string
+          description: Transaction type description
+          maxLength: 30
+        credit:
+          type: boolean
+          description: >-
+            Indicates whether the transaction type is credit (`true`) or debit
+            (`false`).
+        posted_transaction:
+          type: boolean
+          description: >-
+            Indicates whether transactions are posted on statements (`true`) or
+            not (`false`). Set to `false` for zero balance integrations.
+      example:
+        transaction_type_id: 7001
+        description: Payment
+        credit: true
+        posted_transaction: true
+    TransactionFlowPost:
+      required:
+        - transaction_type_id
+        - processing_code
+        - key
+      type: object
+      properties:
+        transaction_type_id:
+          $ref: '#/components/schemas/TransactionTypeId'
+        processing_code:
+          type: string
+          maximum: 6
+          description: Processing code that issues the transaction type.
+        key:
+          type: string
+          description: >
+            The relation key that links transaction type and processing code.
+
+
+            * `PRINCIPAL` uses principal amount.
+
+            * `INSTALLMENT` uses installment amount.
+
+            * `CONTRACT` uses contract amount.
+
+            * `OTHER` uses any custom amount, such as fees, taxes, or other
+            charges. When the key is OTHER, you must define the `custom_key`
+            value.
+          enum:
+            - PRINCIPAL
+            - INSTALLMENT
+            - CONTRACT
+            - OTHER
+        custom_key:
+          type: string
+          maximum: 200
+          description: >-
+            The customized relation between transaction type and processing
+            code. This field is tied to the type or ID of a custom fee model
+            that configures fees, taxes, or other charges. REQUIRED if the key
+            is OTHER.
+      example:
+        transaction_type_id: 7001
+        processing_code: 00AB11
+        key: OTHER
+        custom_key: national_rate
+    TransactionFlowPatch:
+      required:
+        - key
+      type: object
+      properties:
+        key:
+          type: string
+          description: >
+            Sets the relation key that links transaction type and processing
+            code.
+
+
+            * `PRINCIPAL` uses principal amount.
+
+            * `INSTALLMENT` uses installment amount.
+
+            * `CONTRACT` uses contract amount.
+
+            * `OTHER` uses any custom amount, such as fees, taxes, or other
+            charges. When the key is OTHER, you must define the `custom_key`
+            value.
+          enum:
+            - PRINCIPAL
+            - INSTALLMENT
+            - CONTRACT
+            - OTHER
+        custom_key:
+          type: string
+          maximum: 200
+          description: >-
+            Sets a customized relation between transaction type and processing
+            code. This field is tied to the type or ID of a custom fee model
+            that configures fees, taxes, or other charges. REQUIRED if the key
+            is OTHER.
+      example:
+        key: OTHER
+        custom_key: national_rate
+    TransactionFlow:
+      required:
+        - transaction_type_id
+        - processing_code
+        - key
+      type: array
+      items:
+        properties:
+          transaction_type_id:
+            $ref: '#/components/schemas/TransactionTypeId'
+          processing_code:
+            type: string
+            maximum: 6
+            description: Processing code that issues the transaction type
+          key:
+            type: string
+            description: >
+              Sets the relation key that links transaction type and processing
+              code.
+
+
+              * `PRINCIPAL` uses principal amount.
+
+              * `INSTALLMENT` uses installment amount.
+
+              * `CONTRACT` uses contract amount.
+
+              * `OTHER` uses any custom amount, such as fees, taxes, or other
+              charges. When the key is OTHER, you must define the `custom_key`
+              value.
+            enum:
+              - PRINCIPAL
+              - INSTALLMENT
+              - CONTRACT
+              - OTHER
+          custom_key:
+            type: string
+            maximum: 200
+            description: >-
+              Sets a customized relation between transaction type and processing
+              code, usually to configure fees, taxes, or other charges. REQUIRED
+              if the key is OTHER.
+      example:
+        - transaction_type_id: 7001
+          processing_code: 00AB11
+          key: OTHER
+          custom_key: national_rate
+        - transaction_type_id: 7002
+          processing_code: 00AB22
+          key: OTHER
+          custom_key: fee_amount
+    ListTransactionTypes:
+      type: array
+      items:
+        properties:
+          transaction_type_id:
+            $ref: '#/components/schemas/TransactionTypeId'
+          description:
+            type: string
+            description: Transaction type description
+            maxLength: 30
+          credit:
+            type: boolean
+            description: >-
+              Indicates whether the transaction type is a credit (`true`) a
+              debit (`false`).
+          posted_transaction:
+            type: boolean
+            description: >-
+              Indicates whether transactions are posted on statements (`true`)
+              or not (`false`)
+      example:
+        - transaction_type_id: 7001
+          description: Purchase
+          credit: false
+          posted_transaction: true
+        - transaction_type_id: 7002
+          description: Purchase reversal
+          credit: true
+          posted_transaction: true
+    TransactionTypePatch:
+      required:
+        - description
+      type: object
+      properties:
+        description:
+          type: string
+          description: Transaction type description.
+          maxLength: 30
+      example:
+        description: Payment
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error description.
+        error:
+          type: string
+          description: Error description.
+        code:
+          type: string
+          description: Code description.
+security:
+  - BearerAuth: []
+paths:
+  /v1/transaction-types:
+    post:
+      tags:
+        - Transaction types
+      summary: Create transaction type
+      description: >
+        Create a new transaction type. Examples of transaction types include
+        cash-in and cash-out. For the list of transaction types on the Pismo
+        platform, refer to [Standard processing
+        codes](doc:processing-codes-and-transaction-types#standard-processing-codes).
+
+
+        This endpoint generates the [Transaction type
+        created](https://developers.pismo.io/events/docs/transaction-types-creation-1)
+        event. 
+
+
+        For information on creating and managing processing codes and
+        transaction types, refer to [Processing codes and transaction
+        types](doc:processing-codes-and-transaction-types) and [Payments
+        configurations](doc:payments-configurations).
+      operationId: PostSetupTransactionType
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionTypeResult'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionTypeResult'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidRequestBody:
+                  summary: Invalid request body
+                  value:
+                    message: Invalid request body
+                    error: Invalid request body
+                    code: WTRC00005
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ttDoesntMatch:
+                  summary: Transaction type ID already exists
+                  value:
+                    message: Transaction type ID already exists
+                    error: Transaction type ID already exists
+                    code: WTRC05001
+                ttReservedByPlatform:
+                  summary: Transaction type ID is reserved by platform
+                  value:
+                    message: >-
+                      The provided transaction_type_id is reserved by the
+                      platform and cannot be used
+                    error: >-
+                      The provided transaction_type_id is reserved by the
+                      platform and cannot be used
+                    code: WTRC08001
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internalProcessingError:
+                  summary: Internal processing error
+                  value:
+                    message: Internal processing error
+                    error: Internal processing error
+                    code: ETRC00001
+    get:
+      tags:
+        - Transaction types
+      summary: List transaction types
+      description: >-
+        List transaction types that match the search parameters. If no search
+        parameters are given, then all transaction types are returned.
+      operationId: SearchTransactionTypes
+      parameters:
+        - $ref: '#/components/parameters/transactionTypeIdQuery'
+        - in: query
+          name: description
+          description: Wildcard filter used to search transaction types by description.
+          schema:
+            type: string
+            minLength: 3
+        - in: query
+          name: credit
+          description: Filters transaction types by credit (`true`) or debit (`false`).
+          schema:
+            type: boolean
+        - in: query
+          name: pageSize
+          description: Maximum number of transactions per page.
+          schema:
+            type: integer
+        - in: query
+          name: orderBy
+          description: Transaction type sort parameter
+          schema:
+            type: string
+            enum:
+              - transactionId
+              - description
+            default: transactionId
+        - in: query
+          name: pageOffset
+          description: >-
+            Page offset. Indicates which page to start with when returning the
+            results. For example, value `2` returns the third page. Defaults to
+            `0`, which returns the first page.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  has_next:
+                    type: boolean
+                    description: >-
+                      Indicates whether there are more pages after the current
+                      page
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ListTransactionTypes'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidFilterValue:
+                  summary: Invalid filter value
+                  value:
+                    message: Invalid filter value
+                    error: Invalid filter value
+                    code: WTRC00001
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                failedToFetch:
+                  summary: Failed to get transaction type
+                  value:
+                    message: Failed to get transaction type
+                    error: Failed to get transaction type
+                    code: ETRC05001
+                internalProcessingError:
+                  summary: Internal processing error
+                  value:
+                    message: Internal processing error
+                    error: Internal processing error
+                    code: ETRC00001
+  /v1/transaction-type/{transactionTypeId}:
+    get:
+      tags:
+        - Transaction types
+      summary: Get transaction type
+      operationId: GetTransactionTypeById
+      description: |
+        Get a transaction type, given the transaction type ID.
+      parameters:
+        - $ref: '#/components/parameters/transactionTypeIdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionType'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ttIdNotInformed:
+                  summary: Transaction type ID not provided
+                  value:
+                    message: Transaction type ID not provided
+                    error: Transaction type ID not provided
+                    code: WTRC05004
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ttNotFound:
+                  summary: Transaction type not found
+                  value:
+                    message: Transaction type not found
+                    error: Transaction type not found
+                    code: WTRC05005
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internalProcessingError:
+                  summary: Internal processing error
+                  value:
+                    message: Internal processing error
+                    error: Internal processing error
+                    code: ETRC00001
+      deprecated: false
+  /v1/transaction-types/{transactionTypeId}:
+    patch:
+      tags:
+        - Transaction types
+      summary: Update transaction type
+      description: Updates a transaction type description, given the transaction type ID.
+      operationId: PatchTransactionType
+      parameters:
+        - $ref: '#/components/parameters/transactionTypeIdPath'
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionTypePatch'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionTypeResult'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidRequestBody:
+                  summary: Invalid request body
+                  value:
+                    message: Invalid request body
+                    error: Invalid request body
+                    code: WTRC00005
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ttIdAlreadyExist:
+                  summary: Transaction type ID already exists
+                  value:
+                    message: Transaction type ID already exists
+                    error: Transaction type ID already exists
+                    code: WTRC05001
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internalProcessingError:
+                  summary: Internal processing error
+                  value:
+                    message: Internal processing error
+                    error: Internal processing error
+                    code: ETRC00001
+  /v1/programs/{programId}/transaction-types/{transactionTypeId}:
+    patch:
+      tags:
+        - Transaction types
+      summary: Update program transaction type description
+      description: Update the description of a transaction type for a specific program.
+      operationId: PatchProgramTransactionType
+      parameters:
+        - in: path
+          name: programId
+          description: Program ID
+          schema:
+            type: integer
+            format: int64
+          required: true
+        - $ref: '#/components/parameters/transactionTypeIdPath'
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramTransactionTypePatch'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidRequestParameters:
+                  summary: Invalid request parameters
+                  value:
+                    message: Invalid request parameters
+                    error: Invalid request parameters
+                    code: WTRC00003
+                invalidRequestBody:
+                  summary: Invalid request body
+                  value:
+                    message: Invalid request body
+                    error: Invalid request body
+                    code: WTRC00005
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                pttNotFound:
+                  summary: Program transaction type not found
+                  value:
+                    message: Program transaction type not found
+                    error: Program transaction type not found
+                    code: WTRC03001
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                pttNotFound:
+                  summary: Could not perform program transaction type operation
+                  value:
+                    message: Could not perform program transaction type operation
+                    error: Could not perform program transaction type operation
+                    code: ETRC03002
+  /v1/transaction-flow:
+    post:
+      tags:
+        - Transaction flows
+      summary: Create transaction flow
+      description: >
+        Creates a configuration linking a transaction type with a processing
+        code. 
+
+
+        See [Processing codes and transaction
+        types](doc:processing-codes-and-transaction-types) and [Payments
+        configurations](doc:payments-configurations) for information on
+        processing codes and transaction types, how to create them, and map them
+        to each other.
+      operationId: PostTransactionFlow
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionFlowPost'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionFlowPost'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidRequestParameters:
+                  summary: Invalid request parameters
+                  value:
+                    message: Invalid request parameters
+                    error: Invalid request parameters
+                    code: WTRC00003
+                invalidRequestBody:
+                  summary: Invalid request body
+                  value:
+                    message: Invalid request body
+                    error: Invalid request body
+                    code: WTRC00005
+                invalidKey:
+                  summary: Key should be PRINCIPAL, INSTALLMENT, CONTRACT, or OTHER
+                  value:
+                    message: Key should be PRINCIPAL, INSTALLMENT, CONTRACT, or OTHER
+                    error: Key should be PRINCIPAL, INSTALLMENT, CONTRACT, or OTHER
+                    code: WTRC04003
+                mandatoryCustomKey:
+                  summary: Custom key is mandatory when key is OTHER
+                  value:
+                    message: custom_key is mandatory when key is OTHER
+                    error: custom_key is mandatory when key is OTHER
+                    code: WTRC04004
+                emptyCustomKey:
+                  summary: Custom key should not be empty when key is OTHER
+                  value:
+                    message: custom_key should not be empty when key is OTHER
+                    error: custom_key should not be empty when key is OTHER
+                    code: WTRC04005
+                invalidCustomKey:
+                  summary: Custom key should only be provided when key is OTHER
+                  value:
+                    message: custom_key should only be provided when key is OTHER
+                    error: custom_key should only be provided when key is OTHER
+                    code: WTRC04006
+                ttDoesntExist:
+                  summary: Transaction type doesn't exist
+                  value:
+                    message: Transaction type doesn't exist
+                    error: Transaction type doesn't exist
+                    code: WTRC05003
+                pcDoesntExist:
+                  summary: Processing code doesn't exist
+                  value:
+                    message: Processing code doesn't exist
+                    error: Processing code doesn't exist
+                    code: WTRC07001
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidRequestParameters:
+                  summary: >-
+                    Relationship between transaction type and processing code
+                    already exists
+                  value:
+                    message: >-
+                      Relationship between transaction type and processing code
+                      already exists
+                    error: >-
+                      Relationship between transaction type and processing code
+                      already exists
+                    code: WTRC04001
+                amountTypeAlreadyConfigured:
+                  summary: >-
+                    The provided amount type is already configured for the
+                    processing code
+                  value:
+                    message: >-
+                      The provided amount type is already configured for the
+                      processing code
+                    error: >-
+                      The provided amount type is already configured for the
+                      processing code
+                    code: ETRC04003
+                transactionTypeAlreadyConfigured:
+                  summary: >-
+                    The provided transaction type is already configured for the
+                    processing code
+                  value:
+                    message: >-
+                      The provided transaction type is already configured for
+                      the processing code
+                    error: >-
+                      The provided transaction type is already configured for
+                      the processing code
+                    code: ETRC04004
+                amountTypeConflicts:
+                  summary: >-
+                    The provided amount type conflicts with an existing
+                    configured amount type for the processing code. Please
+                    select either Principal or Contract
+                  value:
+                    message: >-
+                      The provided amount type conflicts with an existing
+                      configured amount type for the processing code. Please
+                      select either Principal or Contract
+                    error: >-
+                      The provided amount type conflicts with an existing
+                      configured amount type for the processing code. Please
+                      select either Principal or Contract
+                    code: ETRC04005
+                isCreditBalanceImpactConflicts:
+                  summary: >-
+                    Transaction Type isCredit does not correspond to the
+                    processing code balance impact
+                  value:
+                    message: >-
+                      Transaction Type isCredit does not correspond to the
+                      processing code balance impact
+                    error: >-
+                      Transaction Type isCredit does not correspond to the
+                      processing code balance impact
+                    code: ETRC04006
+                ttReservedByPlatform:
+                  summary: Transaction type ID is reserved by platform
+                  value:
+                    message: >-
+                      The provided transaction_type_id is reserved by the
+                      platform and cannot be used
+                    error: >-
+                      The provided transaction_type_id is reserved by the
+                      platform and cannot be used
+                    code: WTRC08001
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internalProcessingError:
+                  summary: Internal processing error
+                  value:
+                    message: Internal processing error
+                    error: Internal processing error
+                    code: ETRC00001
+    get:
+      tags:
+        - Transaction flows
+      summary: List transaction flows
+      description: >
+        List transaction flow configurations that link transaction types and
+        processing codes.
+
+
+        See [Processing codes and transaction
+        types](doc:processing-codes-and-transaction-types) and [Payments
+        configurations](doc:payments-configurations) for information on
+        processing codes and transaction types, how to create them, and map them
+        to each other.
+      operationId: SearchTransactionFlows
+      parameters:
+        - in: query
+          name: processingCode
+          description: Processing code filter
+          schema:
+            type: string
+        - $ref: '#/components/parameters/transactionTypeIdQuery'
+        - in: query
+          name: pageOffset
+          description: >-
+            Page offset. Indicates which page to start with when returning the
+            results. Defaults to 0.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  has_next:
+                    type: boolean
+                    description: >-
+                      Indicates whether there are more pages after the current
+                      page
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TransactionFlow'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidFilterValue:
+                  summary: Invalid filter value
+                  value:
+                    message: Invalid filter value
+                    error: Invalid filter value
+                    code: WTRC00001
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internalProcessingError:
+                  summary: Internal processing error
+                  value:
+                    message: Internal processing error
+                    error: Internal processing error
+                    code: ETRC00001
+  /v1/transaction-flow/processing-code/{processingCode}/transaction-type/{transactionTypeId}:
+    patch:
+      tags:
+        - Transaction flows
+      summary: Update transaction flow
+      description: >-
+        Update `key` or `custom_key` for the relation between processing code
+        and transaction type ID. You can only use this endpoint to update a
+        transaction flow that is already created.
+      operationId: PatchTransactionFlow
+      parameters:
+        - in: path
+          name: processingCode
+          description: >-
+            Processing code for an existing transaction flow, given the
+            transaction type ID.
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: transactionTypeId
+          description: Transaction type ID related to the processing code.
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionFlowPatch'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionFlowPost'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidRequestBody:
+                  summary: Invalid request body
+                  value:
+                    message: Invalid request body
+                    error: Invalid request body
+                    code: WTRC00005
+                ttIsNotANumber:
+                  summary: Transaction type ID is not a number
+                  value:
+                    message: Transaction type ID is not a number
+                    error: Transaction type ID is not a number
+                    code: WTRC05007
+                invalidKey:
+                  summary: Key should be PRINCIPAL, INSTALLMENT, CONTRACT, or OTHER
+                  value:
+                    message: Key should be PRINCIPAL, INSTALLMENT, CONTRACT, or OTHER
+                    error: Key should be PRINCIPAL, INSTALLMENT, CONTRACT, or OTHER
+                    code: WTRC04003
+                mandatoryCustomKey:
+                  summary: custom_key is mandatory when key is OTHER
+                  value:
+                    message: custom_key is mandatory when key is OTHER
+                    error: custom_key is mandatory when key is OTHER
+                    code: WTRC04004
+                invalidCustomKey:
+                  summary: custom_key should only be provided when key is OTHER
+                  value:
+                    message: custom_key should only be provided when key is OTHER
+                    error: custom_key should only be provided when key is OTHER
+                    code: WTRC04006
+                emptyCustomKey:
+                  summary: custom_key should not be empty when key is OTHER
+                  value:
+                    message: custom_key should not be empty when key is OTHER
+                    error: custom_key should not be empty when key is OTHER
+                    code: WTRC04005
+                ttDoesntExist:
+                  summary: Transaction type doesn't exist
+                  value:
+                    message: Transaction type doesn't exist
+                    error: Transaction type doesn't exist
+                    code: WTRC05003
+                tPostingDoesntExist:
+                  summary: >-
+                    The transaction flow mapping configuration between this
+                    processing code and transaction type doesn't exist
+                  value:
+                    message: >-
+                      The transaction flow mapping configuration between this
+                      processing code and transaction type doesn't exist
+                    error: >-
+                      The transaction flow mapping configuration between this
+                      processing code and transaction type doesn't exist
+                    code: WTRC04002
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                amountTypeAlreadyConfigured:
+                  summary: >-
+                    The provided amount type is already configured for the
+                    processing code
+                  value:
+                    message: >-
+                      The provided amount type is already configured for the
+                      processing code
+                    error: >-
+                      The provided amount type is already configured for the
+                      processing code
+                    code: ETRC04003
+                transactionTypeAlreadyConfigured:
+                  summary: >-
+                    The provided transaction type is already configured for the
+                    processing code
+                  value:
+                    message: >-
+                      The provided transaction type is already configured for
+                      the processing code
+                    error: >-
+                      The provided transaction type is already configured for
+                      the processing code
+                    code: ETRC04004
+                amountTypeConflicts:
+                  summary: >-
+                    The provided amount type conflicts with an existing
+                    configured amount type for the processing code. Please
+                    select either Principal or Contract
+                  value:
+                    message: >-
+                      The provided amount type conflicts with an existing
+                      configured amount type for the processing code. Please
+                      select either Principal or Contract
+                    error: >-
+                      The provided amount type conflicts with an existing
+                      configured amount type for the processing code. Please
+                      select either Principal or Contract
+                    code: ETRC04005
+                isCreditBalanceImpactConflicts:
+                  summary: >-
+                    Transaction Type isCredit does not correspond to the
+                    Processing Code balance impact
+                  value:
+                    message: >-
+                      Transaction Type isCredit does not correspond to the
+                      Processing Code balance impact
+                    error: >-
+                      Transaction Type isCredit does not correspond to the
+                      Processing Code balance impact
+                    code: ETRC04006
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internalProcessingError:
+                  summary: Internal processing error
+                  value:
+                    message: Internal processing error
+                    error: Internal processing error
+                    code: ETRC00001
+  /v2/transactions/{transactionId}:
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction
+      description: >
+        Get a specific transaction by its ID. You can use the [List
+        transactions](ref:searchtransactions) endpoint to search for a
+        transaction and get its ID.
+      operationId: GetTransactionById
+      parameters:
+        - in: path
+          name: transactionId
+          description: Transaction ID
+          schema:
+            type: integer
+            format: int64
+          required: true
+        - in: query
+          name: includeMetadata
+          description: Return transaction metadata flag.
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionWithMetadata'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidRequestHeaders:
+                  summary: Invalid request headers
+                  value:
+                    message: Invalid request headers
+                    error: Invalid request headers
+                    code: WTRC00002
+                invalidRequestParameter:
+                  summary: Invalid request parameters
+                  value:
+                    message: Invalid request parameters
+                    error: Invalid request parameters
+                    code: WTRC00003
+                transactionIdNotInformed:
+                  summary: Transaction ID not provided
+                  value:
+                    message: Transaction ID not provided
+                    error: Transaction ID not provided
+                    code: WTRC01003
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                transactionNotFound:
+                  summary: Transaction not found
+                  value:
+                    message: Transaction not found
+                    error: Transaction not found
+                    code: WTRC01001
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internalProcessingError:
+                  summary: Internal processing error
+                  value:
+                    message: Internal processing error
+                    error: Internal processing error
+                    code: ETRC00001
+      deprecated: false
+  /v2/transactions:
+    get:
+      tags:
+        - Transactions
+      summary: List transactions
+      operationId: ListTransactions
+      description: >
+        List transactions without their metadata. If you provide at least one of
+        the following parameters, the `eventDateStart` parameter is optional. 
+
+        - `id`
+
+        - `authorizationId`
+
+        - `authorizationIds`
+
+        - `statementId`
+
+        - `authorizationTrackingId`
+
+        - `numberOfLatestTransactions`
+
+
+        If you don't provide any of the above parameters, you must include the
+        `eventDateStart` parameter, and the maximum allowed query range is 90
+        days. 
+      parameters:
+        - $ref: '#/components/parameters/statementID'
+        - $ref: '#/components/parameters/customerID'
+        - $ref: '#/components/parameters/transactionTypeIdQuery'
+        - in: query
+          name: processingCode
+          description: Processing code
+          schema:
+            type: string
+        - in: query
+          name: credit
+          description: Show only credit (`true`) or debit (`false`) transactions.
+          schema:
+            type: boolean
+        - in: query
+          name: statementPost
+          description: >-
+            Filter on `StatementPost` field. This field indicates whether a
+            transaction should be posted to the statement.
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/authorizationID'
+        - $ref: '#/components/parameters/authorizationType'
+        - $ref: '#/components/parameters/eventDateStart'
+        - in: query
+          name: order
+          description: >-
+            The order of the result set. The results are always ordered by
+            transaction date. This param indicates whether the order is
+            ascending or descending.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+        - $ref: '#/components/parameters/eventDateEnd'
+        - $ref: '#/components/parameters/numberOfLatestTransactions'
+        - in: query
+          name: authorizationTrackingId
+          description: Authorization tracking ID
+          schema:
+            type: string
+        - in: query
+          name: pageSize
+          description: Maximum number of transactions per page.
+          schema:
+            type: integer
+        - in: query
+          name: pageOffset
+          description: >-
+            Page offset of transactions. Indicates which page to start with when
+            returning the results. Defaults to 0.
+          schema:
+            type: integer
+        - in: query
+          name: ids
+          description: Array of transaction IDs
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+            minItems: 1
+            maxItems: 100
+          example:
+            - 10
+            - 20
+            - 30
+            - 40
+            - 50
+            - 60
+        - in: query
+          name: userCategory
+          description: User category
+          schema:
+            type: string
+        - in: query
+          name: paymentMethodId
+          description: Payment method ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidRequestHeaders:
+                  summary: Invalid request headers
+                  value:
+                    message: Invalid request headers
+                    error: Invalid request headers
+                    code: WTRC00002
+                invalidRequestParameter:
+                  summary: Invalid request parameters
+                  value:
+                    message: Invalid request parameters
+                    error: Invalid request parameters
+                    code: WTRC00003
+                invalidFilterValue:
+                  summary: Invalid filter value
+                  value:
+                    message: Invalid filter value
+                    error: Invalid filter value
+                    code: WTRC00001
+                invalidNumberOfLatestTransactions:
+                  summary: Number of latest transactions should not have another filter
+                  value:
+                    message: >-
+                      numberOfLatestTransactions should not have another filters
+                      associate
+                    error: >-
+                      numberOfLatestTransactions should not have another filters
+                      associate
+                    code: WTRC00001
+                invalidNumberOfLatestTransactionsFilter:
+                  summary: Number of latest transactions should be an integer
+                  value:
+                    message: numberOfLatestTransactions should be an integer value
+                    error: numberOfLatestTransactions should be an integer value
+                    code: WTRC00001
+                invalidNumberOfLatestTransactionsRange:
+                  summary: Invalid range for number of latest transactions
+                  value:
+                    message: numberOfLatestTransactions should be between 1 and 500
+                    error: numberOfLatestTransactions should be between 1 and 500
+                    code: WTRC00001
+                invalidAuthorizationType:
+                  summary: Invalid authorization type
+                  value:
+                    message: authorization type should be PLATFORM or NETWORK
+                    error: authorization type should be PLATFORM or NETWORK
+                    code: WTRC00001
+                accountRequired:
+                  summary: Account is required when querying by card ID
+                  value:
+                    message: 'account is required when querying by cardId '
+                    error: 'account is required when querying by cardId '
+                    code: WTRC00001
+                eventDateStartRequired:
+                  summary: Event date start not provided
+                  value:
+                    message: eventDateStart not provided
+                    error: eventDateStart not provided
+                    code: WTRC00001
+                invalidEventDateStartFormat:
+                  summary: Invalid event date start format
+                  value:
+                    message: invalid eventDateStart format
+                    error: invalid eventDateStart format
+                    code: WTRC00001
+                invalidEventDateEndFormat:
+                  summary: Invalid event date end format
+                  value:
+                    message: invalid eventDateEnd format
+                    error: invalid eventDateEnd format
+                    code: WTRC00001
+                invalidTimeRange:
+                  summary: Invalid time range
+                  value:
+                    message: >-
+                      invalid time range: difference between eventDateStart and
+                      eventDateEnd cannot be greater than 90 days
+                    error: >-
+                      invalid time range: difference between eventDateStart and
+                      eventDateEnd cannot be greater than 90 days
+                    code: WTRC00001
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internalProcessingError:
+                  summary: Internal processing error
+                  value:
+                    message: Internal processing error
+                    error: Internal processing error
+                    code: ETRC00001
+      deprecated: false
+  /v2/transactions/total-items:
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction count
+      description: >
+        Returns the number of transactions that match the given search
+        parameters.
+      operationId: SearchTranscationMetaDataCount
+      parameters:
+        - $ref: '#/components/parameters/statementID'
+        - $ref: '#/components/parameters/customerID'
+        - $ref: '#/components/parameters/transactionTypeIdQuery'
+        - in: query
+          name: processingCode
+          description: Processing code
+          schema:
+            type: string
+        - in: query
+          name: credit
+          description: Count only credit (`true`) or debit (`false`).
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/authorizationID'
+        - $ref: '#/components/parameters/authorizationType'
+        - $ref: '#/components/parameters/eventDateStart'
+        - $ref: '#/components/parameters/eventDateEnd'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionsCount'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidRequestHeaders:
+                  summary: Invalid request headers
+                  value:
+                    message: Invalid request headers
+                    error: Invalid request headers
+                    code: WTRC00002
+                invalidRequestParameter:
+                  summary: Invalid request parameters
+                  value:
+                    message: Invalid request parameters
+                    error: Invalid request parameters
+                    code: WTRC00003
+                invalidFilterValue:
+                  summary: Invalid filter value
+                  value:
+                    message: Invalid filter value
+                    error: Invalid filter value
+                    code: WTRC00001
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internalProcessingError:
+                  summary: Internal processing error
+                  value:
+                    message: Internal processing error
+                    error: Internal processing error
+                    code: ETRC00001

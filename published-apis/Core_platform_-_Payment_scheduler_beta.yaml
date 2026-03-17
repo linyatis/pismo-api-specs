@@ -1,0 +1,1337 @@
+openapi: 3.1.0
+info:
+  title: Core platform - Payment scheduler
+  version: 1.0.0
+  description: Endpoints to enable scheduler creation and processing.
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/scheduler-payments
+    description: Sandbox API server for testing
+tags:
+  - name: Schedules
+    description: Endpoints to enable scheduler creation and processing
+  - name: Migrations
+    description: >-
+      Pismo internal usage endpoints to migrate and process pre-schedules
+      payments.
+components:
+  responses:
+    200Ok:
+      description: Ok
+    201Created:
+      description: Created
+    202Accepted:
+      description: Accepted
+    204NoContent:
+      description: No content
+    400BadRequest:
+      description: Bad request
+    403Forbidden:
+      description: Operation forbidden
+    404NotFound:
+      description: The specified resource was not found
+    500InternalServer:
+      description: Internal server error
+  parameters:
+    accountId:
+      in: path
+      name: accountId
+      schema:
+        type: integer
+        format: int64
+      description: Pismo account ID
+      required: true
+    cursor:
+      in: query
+      name: cursor
+      description: Pagination cursor
+      schema:
+        type: string
+      required: false
+    limit:
+      in: query
+      name: limit
+      description: Pagination limit
+      schema:
+        type: integer
+        minimum: 0
+        default: 10
+      required: false
+    order:
+      in: query
+      name: order
+      description: >-
+        Returned results order. Items are sorted on the `created_at` field. By
+        default, the order is descending (`DESC`), with the newest schedules
+        returned first.
+      schema:
+        type: string
+        enum:
+          - ASC
+          - DESC
+        default: DESC
+      required: false
+    scheduleId:
+      in: path
+      name: scheduleId
+      schema:
+        type: string
+      description: Schedule ID
+      required: true
+    statementId:
+      in: query
+      name: statementId
+      description: Statement ID
+      schema:
+        type: integer
+      required: false
+  schemas:
+    AccountID:
+      description: Account ID
+      type: integer
+      format: int64
+      example: 8675309
+    AllowExecutionAfterDayChange:
+      type: boolean
+      description: >-
+        Can the schedule be executed after the day changes? For single and
+        transfer schedules that are scheduled for after 11:30pm UTC, this field
+        is required to be `true`.
+      example: false
+      default: false
+    Amount:
+      type: number
+      format: float
+      description: Credit or debit amount
+      example: 100.23
+    Authorization:
+      type: object
+      description: Authorization
+      properties:
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        tracking_id:
+          $ref: '#/components/schemas/TrackingID'
+        payment_date:
+          $ref: '#/components/schemas/PaymentDatetime'
+        status:
+          $ref: '#/components/schemas/StatusAuthorization'
+        response_code:
+          $ref: '#/components/schemas/ResponseCode'
+        denial_code:
+          $ref: '#/components/schemas/DenialCode'
+    BankslipDetails:
+      type: object
+      description: Bank slip details
+      properties:
+        type:
+          type: string
+          description: |
+            Bank slip type.
+               - `COMPENSATION_FORM`: Bank slip was processed with this method. 
+               - `DEALERSHIP`: Entity, such as a merchant, or individual, issued this bank slip.
+          enum:
+            - COMPENSATION_FORM
+            - DEALERSHIP
+          example: DEALERSHIP
+        bar_code:
+          $ref: '#/components/schemas/Barcode'
+        digitable_line:
+          $ref: '#/components/schemas/DigitableLine'
+    BankslipScheduleDetails:
+      type: object
+      description: Bank slip schedule details
+      properties:
+        start_date:
+          $ref: '#/components/schemas/StartDate'
+    BankslipScheduleRequest:
+      type: object
+      description: Request to create a new single schedule
+      required:
+        - schedule_id
+        - schedule_details
+        - account_id
+        - amount
+        - bankslip_details
+      properties:
+        description:
+          $ref: '#/components/schemas/Description'
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+        schedule_details:
+          $ref: '#/components/schemas/BankslipScheduleDetails'
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        amount:
+          $ref: '#/components/schemas/Amount'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        bankslip_details:
+          $ref: '#/components/schemas/BankslipDetails'
+    BankslipScheduleResponse:
+      type: object
+      description: Response from the creation of a new bank slip schedule
+      properties:
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+    Barcode:
+      type: string
+      description: Code number of the bank slip's barcode
+      example: '1234'
+    Count:
+      type: integer
+      example: 1
+      description: Number of items
+    CreatedAt:
+      type: string
+      format: date-time
+      description: >
+        Date of schedule creation in the UTC-0 RFC3339 format. Format:
+        YYYY-MM-DDTHH:mm:ss.sssZ.
+      example: '2023-01-02T07:35:05.125Z'
+    Currency:
+      type: string
+      deprecated: true
+      description: >-
+        Three-letter currency code of the operation in ISO 4217. This field is
+        deprecated and scheduled for removal. Use `currency_code` instead. The
+        `currency_code` field takes precedence when both it and `currency` are
+        passed.
+      example: BRL
+    CurrencyCode:
+      type: string
+      description: >-
+        Three-letter currency code of the operation in ISO 4217. This field
+        takes precedence over the `currency` field.
+      example: BRL
+    DayType:
+      type: string
+      description: >-
+        `BUSINESS_DAY` type ignores weekends and holidays, `CALENDAR_DAY`
+        includes all calendar days.
+      enum:
+        - BUSINESS_DAY
+        - CALENDAR_DAY
+      example: CALENDAR_DAY
+    Description:
+      type: string
+      description: Optional text that describes the operation
+      example: Custom purchase
+      maxLength: 100
+    DenialCode:
+      type: string
+      description: Authorization denial code
+      example: DAL
+    DigitableLine:
+      type: string
+      description: >-
+        Digitable line code of a bank slip (numbers on the bank slip that
+        represent the barcode information)
+      example: '5678'
+    EndDate:
+      type: string
+      format: date-time
+      description: >
+        End date of schedule executions in the UTC-0 RFC3339 format. Format:
+        YYYY-MM-DDTHH:mm:ss.sssZ.
+      example: '2023-01-02T07:00:00.000Z'
+    ExecuteRequest:
+      type: object
+      description: Request to execute an existing pre-schedule
+      properties:
+        pismo_metadata:
+          $ref: '#/components/schemas/Metadata'
+    Execution:
+      type: object
+      description: Execution object
+      properties:
+        execution_id:
+          $ref: '#/components/schemas/ExecutionID'
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+        execution_status:
+          $ref: '#/components/schemas/ExecutionStatus'
+        authorizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Authorization'
+    ExecutionID:
+      type: string
+      description: Execution ID
+      example: eec3df75-629d-43dc-8eb7-e3b186188341
+    ExecutionStatus:
+      type: string
+      description: Status of execution.
+      enum:
+        - EXECUTED
+        - EXECUTED_WITH_RESTRICTIONS
+        - EXECUTED_WITH_ERROR_NEXT_DAY_NOT_ALLOWED
+        - EXECUTED_WITHOUT_SCRAPING
+        - EXECUTED_WITH_ERROR_BANK_SLIP
+      example: EXECUTED_WITH_RESTRICTIONS
+    GetAllScheduleResponse:
+      type: object
+      description: Response of getting the existing schedules of the account
+      properties:
+        has_next:
+          $ref: '#/components/schemas/HasNext'
+        next_cursor:
+          $ref: '#/components/schemas/NextCursor'
+        count:
+          $ref: '#/components/schemas/Count'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Schedule'
+    GetScheduleExecutionsResponse:
+      type: object
+      description: Response of getting existing executions of the schedule
+      properties:
+        has_next:
+          $ref: '#/components/schemas/HasNext'
+        next_cursor:
+          $ref: '#/components/schemas/NextCursor'
+        count:
+          $ref: '#/components/schemas/Count'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Execution'
+    HasNext:
+      type: boolean
+      example: true
+      description: Is there a next page?
+    Interval:
+      type: string
+      description: Schedule execution frequency
+      enum:
+        - DAILY
+        - WEEKLY
+        - MONTHLY
+        - YEARLY
+      example: DAILY
+    IntervalRecurrence:
+      type: integer
+      description: Interval for retries, in minutes
+      minimum: 1
+      maximum: 60
+      example: 5
+    Metadata:
+      type: object
+      description: Any key-value object with custom information
+      example:
+        any-key: any-value
+    MigrationID:
+      type: string
+      description: Unique migration ID for this operation
+      example: eec3df75-629d-43dc-8eb7-e3b186188341
+    MigrationRequest:
+      type: object
+      description: Request to create a new pre-schedule
+      required:
+        - migration_id
+        - version_date
+        - schedule_id
+        - schedule_details
+        - account_id
+        - processing_code
+        - amount
+      properties:
+        migration_id:
+          $ref: '#/components/schemas/MigrationID'
+        version_date:
+          $ref: '#/components/schemas/VersionDate'
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+        schedule_details:
+          $ref: '#/components/schemas/PreScheduleDetails'
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        amount:
+          $ref: '#/components/schemas/Amount'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        description:
+          $ref: '#/components/schemas/Description'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+    MigrationResponse:
+      type: object
+      description: >-
+        Response from the creation of a new pre-schedule from the migration
+        process
+      properties:
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+    NextCursor:
+      type: string
+      description: Cursor value to apply in a subsequent query to continue pagination
+      example: c737895c-8159-4c0c-a92a-a4f8600bff37
+    NumberOfAttempts:
+      type: integer
+      description: Maximum number of execution retries
+      minimum: 1
+      maximum: 10
+      example: 5
+    PaymentDatetime:
+      type: string
+      format: date-time
+      description: >
+        Effective payment date in the UTC-0 RFC3339 format. Format:
+        YYYY-MM-DDTHH:mm:ss.sssZ.
+
+        Payments can be backdated, but future dates are not allowed.
+      example: '2023-01-02T07:35:05.125Z'
+    PismoMetadata:
+      type: object
+      description: >-
+        Any key-value object with custom information that must be passed forward
+        in the authorization flow. Used for internal purposes only.
+      example:
+        any-key: any-value
+    PreScheduleDetails:
+      type: object
+      description: Pre-schedule details
+      properties:
+        statement:
+          $ref: '#/components/schemas/Statement'
+    BulkPreScheduleRequest:
+      type: array
+      description: List of pre-schedule requests to be created
+      items:
+        $ref: '#/components/schemas/PreScheduleRequest'
+    PreScheduleRequest:
+      type: object
+      description: Request to create a new pre-schedule
+      required:
+        - schedule_id
+        - schedule_details
+        - account_id
+        - processing_code
+        - amount
+      properties:
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+        schedule_details:
+          $ref: '#/components/schemas/PreScheduleDetails'
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        amount:
+          $ref: '#/components/schemas/Amount'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        description:
+          $ref: '#/components/schemas/Description'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+    PreScheduleResponse:
+      type: object
+      description: >-
+        Response from the creation of a new pre-schedule from the migration
+        process
+      properties:
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+    ProcessingCode:
+      type: string
+      description: Processing code that identifies the credit or debit operation
+      example: '219803'
+    ProcessingCodeCredit:
+      type: string
+      description: Processing code that identifies the credit operation
+      example: '219803'
+    ProcessingCodeDebit:
+      type: string
+      description: Processing code that identifies the debit operation
+      example: '219803'
+    ProcessingCodes:
+      type: object
+      description: Object with the processing codes for credit and debit operations
+      properties:
+        credit:
+          $ref: '#/components/schemas/ProcessingCodeCredit'
+        debit:
+          $ref: '#/components/schemas/ProcessingCodeDebit'
+    ResponseCode:
+      type: string
+      description: >-
+        Alphanumeric two-character standard card network response code or an
+        alternative custom response code, which provides the precise reason for
+        the success or denial of the operation by the card network, platform, or
+        anti-fraud solution.
+      example: '00'
+    Restrictions:
+      type: object
+      description: Restrictions applied to the schedule
+      properties:
+        minimum_daily_available:
+          type: number
+          format: float
+          description: >
+            Establishes a minimum limit value to always be maintained in the
+            customer's balance. If the value of the customer's balance is lower
+            than the minimum limit value, the schedule is executed, otherwise
+            its execution is stopped and saved as "Executed with restrictions".
+          example: 100.23
+        minimum_monthly_average_available:
+          type: number
+          format: float
+          description: >
+            Follows the same logic as `minimum_daily_available`, except it
+            considers an average limit value from the first day of the month
+            until the day before the scheduled execution to compare with the
+            customer’s balance value.
+          example: 100.23
+        minimum_days_account_inactivity:
+          type: integer
+          description: >
+            If the days of account inactivity are greater than this field value,
+            the schedule execution is stopped and saved as "Executed with
+            restrictions".
+          example: 5
+    Retries:
+      type: object
+      description: Configuration to define retry policy for failed executions.
+      properties:
+        interval_recurrence:
+          $ref: '#/components/schemas/IntervalRecurrence'
+        number_of_attempts:
+          $ref: '#/components/schemas/NumberOfAttempts'
+    Schedule:
+      type: object
+      description: Schedule object
+      properties:
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+        schedule_kind:
+          $ref: '#/components/schemas/ScheduleKind'
+        description:
+          $ref: '#/components/schemas/Description'
+        schedule_details:
+          $ref: '#/components/schemas/ScheduleDetails'
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        status:
+          $ref: '#/components/schemas/Status'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        pismo_metadata:
+          $ref: '#/components/schemas/PismoMetadata'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        processing_codes:
+          $ref: '#/components/schemas/ProcessingCodes'
+        amount:
+          $ref: '#/components/schemas/Amount'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+        restrictions:
+          $ref: '#/components/schemas/Restrictions'
+        strategy:
+          $ref: '#/components/schemas/Strategy'
+        transfers:
+          $ref: '#/components/schemas/Transfers'
+    ScheduleDetails:
+      type: object
+      description: Schedule details
+      properties:
+        type:
+          $ref: '#/components/schemas/Type'
+        interval:
+          $ref: '#/components/schemas/Interval'
+        day_type:
+          $ref: '#/components/schemas/DayType'
+        start_date:
+          $ref: '#/components/schemas/StartDateTime'
+        end_date:
+          $ref: '#/components/schemas/EndDate'
+        retries:
+          $ref: '#/components/schemas/Retries'
+        allow_execution_after_day_change:
+          $ref: '#/components/schemas/AllowExecutionAfterDayChange'
+        statement:
+          $ref: '#/components/schemas/Statement'
+    ScheduleID:
+      type: string
+      description: Schedule ID (idempotency field for this operation)
+      minLength: 36
+      maxLength: 50
+      example: eec3df75-629d-43dc-8eb7-e3b186188341
+    ScheduleKind:
+      type: string
+      description: Schedule type
+      enum:
+        - SINGLE
+        - MULTIPLE
+        - PRE
+      example: SINGLE
+    ScrapingScheduleDetails:
+      type: object
+      description: Scraping schedule details
+      properties:
+        start_date:
+          $ref: '#/components/schemas/StartDateTime'
+    ScrapingScheduleRequest:
+      type: object
+      description: Request to create a new scraping schedule
+      required:
+        - schedule_id
+        - schedule_details
+        - account_id
+        - processing_codes
+      properties:
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+        schedule_details:
+          $ref: '#/components/schemas/ScrapingScheduleDetails'
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCodes'
+        description:
+          $ref: '#/components/schemas/Description'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        pismo_metadata:
+          $ref: '#/components/schemas/PismoMetadata'
+    ScrapingScheduleResponse:
+      type: object
+      description: Response from the creation of a new scraping schedule
+      properties:
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+    SingleScheduleDetails:
+      type: object
+      description: Single schedule details
+      properties:
+        type:
+          $ref: '#/components/schemas/Type'
+        interval:
+          $ref: '#/components/schemas/Interval'
+        day_type:
+          $ref: '#/components/schemas/DayType'
+        start_date:
+          $ref: '#/components/schemas/StartDateTime'
+        end_date:
+          $ref: '#/components/schemas/EndDate'
+        retries:
+          $ref: '#/components/schemas/Retries'
+        allow_execution_after_day_change:
+          $ref: '#/components/schemas/AllowExecutionAfterDayChange'
+    SingleScheduleRequest:
+      type: object
+      description: Request to create a new single schedule
+      required:
+        - schedule_id
+        - schedule_details
+        - account_id
+        - processing_code
+        - amount
+        - currency_code
+      properties:
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+        schedule_details:
+          $ref: '#/components/schemas/SingleScheduleDetails'
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        amount:
+          $ref: '#/components/schemas/Amount'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        description:
+          $ref: '#/components/schemas/Description'
+        restrictions:
+          $ref: '#/components/schemas/Restrictions'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+    SingleScheduleResponse:
+      type: object
+      description: Response from the creation of a new single schedule
+      properties:
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+    StartDate:
+      type: string
+      format: date
+      description: 'Start date of execution. Format: YYYY-MM-DD.'
+      example: '2025-01-13'
+    StartDateTime:
+      type: string
+      format: date-time
+      description: >
+        Start date of executions in the UTC-0 RFC3339 format. Format:
+        YYYY-MM-DDTHH:mm:ss.sssZ.
+      example: '2023-01-02T07:00:00.000Z'
+    Statement:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Pismo ID of the statement linked to the pre-schedule
+          example: 1234455
+    Status:
+      type: string
+      description: Schedule status
+      enum:
+        - CREATED
+        - IN_PROGRESS
+        - CANCELED
+        - COMPLETED
+      example: COMPLETED
+    StatusAuthorization:
+      type: string
+      description: Authorization status
+      enum:
+        - APPROVED
+        - REJECTED
+      example: REJECTED
+    Strategy:
+      type: string
+      description: >
+        If the `strategy` field is not specified, you must provide the `amount`
+        field for each transfer in the `transfers` array. The following strategy
+        types determine the transfer amounts when a strategy is specified. 
+
+
+        - `SWEEP`: Transfers the entire balance from the child account to the
+        parent account. The terms "parent" and "child" refer to account roles,
+        but no relationship validation is performed.
+
+           Child → Parent
+
+        - `OVERDRAFT_SWEEEP`: Follows the same logic as `SWEEP`, except when a
+        child account is negative, in which case the main account sends enough
+        money to zero out the child account.
+
+           Parent → Child
+      enum:
+        - OVERDRAFT_SWEEP
+        - SWEEP
+      example: SWEEP
+    TrackingID:
+      type: string
+      description: Unique tracking ID for this operation
+      minLength: 36
+      maxLength: 50
+      example: 249fbd1c-cfcd-48aa-8bcb-1ffe3a5f7978
+    Transfers:
+      type: array
+      description: |
+        List of transfers, including their origin and destination accounts.
+        The `amount` field must be provided if the `strategy` is not specified.
+      items:
+        type: object
+        properties:
+          description:
+            type: string
+            description: Transfer description
+            example: Transfer to savings account
+          amount:
+            $ref: '#/components/schemas/Amount'
+          metadata:
+            $ref: '#/components/schemas/Metadata'
+          to:
+            type: object
+            description: Information about the destination account for the transfer
+            properties:
+              account_id:
+                $ref: '#/components/schemas/AccountID'
+              processing_code:
+                $ref: '#/components/schemas/ProcessingCode'
+          from:
+            type: object
+            description: Information about the source account for the transfer
+            properties:
+              account_id:
+                $ref: '#/components/schemas/AccountID'
+              processing_code:
+                $ref: '#/components/schemas/ProcessingCode'
+    TransferScheduleDetails:
+      type: object
+      description: Transfer schedule details
+      properties:
+        type:
+          $ref: '#/components/schemas/Type'
+        interval:
+          $ref: '#/components/schemas/Interval'
+        day_type:
+          $ref: '#/components/schemas/DayType'
+        end_date:
+          $ref: '#/components/schemas/EndDate'
+        start_date:
+          $ref: '#/components/schemas/StartDateTime'
+        allow_execution_after_day_change:
+          $ref: '#/components/schemas/AllowExecutionAfterDayChange'
+    TransferScheduleRequest:
+      type: object
+      description: Request to create a new transfer schedule
+      required:
+        - schedule_id
+        - schedule_details
+        - transfers
+      properties:
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+        schedule_details:
+          $ref: '#/components/schemas/TransferScheduleDetails'
+        description:
+          $ref: '#/components/schemas/Description'
+        strategy:
+          $ref: '#/components/schemas/Strategy'
+        transfers:
+          $ref: '#/components/schemas/Transfers'
+    TransferScheduleResponse:
+      type: object
+      description: Response from the creation of a new transfer schedule
+      properties:
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+    Type:
+      type: string
+      description: >
+        Should a schedule be executed once or in a recurring fashion?
+
+        - `ONCE`: Executed only once on the date specified in `start_date`.
+
+        - `RECURRING`: Executed repeatedly according to the interval defined in
+        `interval`, within the period between `start_date` and `end_date`. A
+        recurring schedule can run daily, weekly, monthly, or yearly, which is
+        set in the `interval` field.
+      enum:
+        - ONCE
+        - RECURRING
+      example: RECURRING
+    UpdateSchedulerRequest:
+      type: object
+      description: Request to update an existing schedule
+      properties:
+        single:
+          type: object
+          description: Single schedule object
+          properties:
+            description:
+              $ref: '#/components/schemas/Description'
+            metadata:
+              $ref: '#/components/schemas/Metadata'
+            restrictions:
+              $ref: '#/components/schemas/Restrictions'
+            schedule_details:
+              type: object
+              description: Schedule details
+              properties:
+                end_date:
+                  $ref: '#/components/schemas/EndDate'
+                retries:
+                  $ref: '#/components/schemas/Retries'
+        pre:
+          type: object
+          description: Pre-schedule object
+          properties:
+            schedule_details:
+              $ref: '#/components/schemas/PreScheduleDetails'
+            processing_code:
+              $ref: '#/components/schemas/ProcessingCode'
+            amount:
+              $ref: '#/components/schemas/Amount'
+            currency:
+              $ref: '#/components/schemas/Currency'
+            currency_code:
+              $ref: '#/components/schemas/CurrencyCode'
+            description:
+              $ref: '#/components/schemas/Description'
+            metadata:
+              $ref: '#/components/schemas/Metadata'
+        transfer:
+          type: object
+          description: Transfer schedule object
+          properties:
+            description:
+              $ref: '#/components/schemas/Description'
+            metadata:
+              $ref: '#/components/schemas/Metadata'
+            schedule_details:
+              type: object
+              description: Schedule details
+              properties:
+                end_date:
+                  $ref: '#/components/schemas/EndDate'
+    VersionDate:
+      type: string
+      format: date-time
+      description: >
+        Version date of migration in the UTC-0 RFC3339 format. Format:
+        YYYY-MM-DDTHH:mm:ss.sssZ.
+      example: '2023-01-02T07:35:05.125Z'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account access token. Tokens can expire quickly, which can result in an
+        "Unauthorized" error.
+      bearerFormat: JWT
+security:
+  - BearerAuth: []
+paths:
+  /v1/schedules:
+    post:
+      summary: Create single schedule
+      operationId: post-v1-create-single-schedule
+      description: >
+        Create a single schedule, which executes a simple payment operation on a
+        single account. Configure the schedule's execution frequency and other
+        details in the `schedule_details` field.
+
+
+        In some cases, due to errors and retries, execution of the scheduled
+        transaction might occur on the following day instead of the originally
+        scheduled date. To address this, the `allow_execution_after_day_change`
+        flag in `schedule_details` enables you to pre-authorize execution of the
+        scheduled transaction on the next day. This flag must be set to `true`
+        for schedules that are set to be executed at the end of the day (after
+        11:30pm UTC). If the schedule is not executed on the expected day for
+        any reason, and this field isn't set to `true`, the schedule is not
+        executed and is marked as `EXECUTED_WITH_ERROR_NEXT_DAY_NOT_ALLOWED`.
+
+
+        This endpoint generates the [Scheduled payment created or
+        modified](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-1)
+        event with the `status` field set to `CREATED`.
+
+
+        Each execution of the schedule also generates the [Scheduled payment
+        executed](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-execution-1)
+        event.
+
+
+        Refer to the [Payment scheduler](doc:payment-scheduler) guide for more
+        information.
+      tags:
+        - Schedules
+      requestBody:
+        description: Request processing body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SingleScheduleRequest'
+      responses:
+        '200':
+          description: >-
+            Request was processed successfully, existing schedule with the
+            corresponding `schedule_id` returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleScheduleResponse'
+        '201':
+          description: Request was processed successfully, new schedule created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleScheduleResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/transfers:
+    post:
+      summary: Create transfer schedule
+      operationId: post-v1-create-transfer-schedules
+      description: >
+        Create a transfer schedule, which represents a transfer operation from a
+        parent (main) account to one or more associated child accounts.
+        Configure the schedule's execution frequency and other details in the
+        `schedule_details` field.
+
+
+        Transfer amounts can be set as follows.
+
+        - If you fill out the `strategy` field, the platform uses the strategy
+        logic to determine transfer amounts.
+
+        - If you don't fill out the `strategy` field, you must specify the
+        `amount` field for each transfer in the `transfers` array.
+
+
+        In some cases, due to errors and retries, execution of the scheduled
+        transaction might occur on the following day instead of the originally
+        scheduled date. To address this, the `allow_execution_after_day_change`
+        flag in `schedule_details` enables you to pre-authorize execution of the
+        scheduled transaction on the next day. This flag must be set to `true`
+        for schedules that are set to be executed at the end of the day (after
+        11:30pm UTC). If the schedule is not executed on the expected day for
+        any reason, and this field isn't set to `true`, the schedule is not
+        executed and is marked as `EXECUTED_WITH_ERROR_NEXT_DAY_NOT_ALLOWED`.
+
+
+        This endpoint generates the [Scheduled payment created or
+        modified](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-1)
+        event with the `status` field set to `CREATED`.
+
+
+        Each execution of the schedule also generates the [Scheduled payment
+        executed](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-execution-1)
+        event.
+
+
+        Refer to the [Payment scheduler](doc:payment-scheduler) guide for more
+        information.
+      tags:
+        - Schedules
+      requestBody:
+        description: Request processing body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferScheduleRequest'
+      responses:
+        '200':
+          description: >-
+            Request was processed successfully, existing schedule with the
+            corresponding `schedule_id` returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferScheduleResponse'
+        '201':
+          description: >-
+            Request was processed successfully and new transfer schedule was
+            created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferScheduleResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/pre-schedules:
+    post:
+      summary: Create pre-schedule
+      description: >
+        Create a pre-schedule, which is executed by a direct call from the Pismo
+        platform at the end of the closing cycle. To configure execution of a
+        pre-schedule, contact your Pismo representative or call the [Execute
+        pre-schedule](ref:post-execute-pre-schedule) endpoint.
+
+
+        This endpoint generates the [Scheduled payment created or
+        modified](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-1)
+        event with the `status` field set to `CREATED`.
+
+
+        Once the pre-schedule is created, its execution generates the following
+        events.
+
+
+        - First execution of the pre-schedule on the start date generates the
+        [Scheduled payment created or
+        modified](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-1)
+        event with the `status` field set to `IN_PROGRESS`.
+
+        - Last execution of the pre-schedule on the end date generates the
+        [Scheduled payment created or
+        modified](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-1)
+        event with the `status` field set to `COMPLETED`.
+
+        - Each execution of the pre-schedule also generates the [Scheduled
+        payment
+        executed](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-execution-1)
+        event with the corresponding execution status.
+
+
+        Refer to the [Payment scheduler](doc:payment-scheduler) guide for more
+        information.
+      operationId: post-pre-schedules
+      tags:
+        - Schedules
+      requestBody:
+        description: Request processing body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreScheduleRequest'
+      responses:
+        '200':
+          description: >-
+            Request was processed successfully, existing schedule with the
+            corresponding `schedule_id` returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreScheduleResponse'
+        '201':
+          description: Request was processed successfully, new pre-schedule created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreScheduleResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/pre-schedules/bulk:
+    post:
+      summary: Create bulk pre-schedules
+      description: >
+        Create multiple pre-schedules in a single request. This request triggers
+        an asynchronous process to create the pre-schedules. Once processing is
+        complete, the [Bulk pre-schedules
+        created](https://developers.pismo.io/events/docs/scheduler-payments-bulk-pre-scheduled-payments-1)
+        event is sent with the result of the operation.
+
+
+        Pre-schedule is a type of schedule that is executed by a direct call
+        from the Pismo platform at the end of the closing cycle. To configure a
+        pre-schedule execution, contact your Pismo representative or call the
+        [Execute pre-schedule](ref:post-execute-pre-schedule) endpoint.
+
+
+        This endpoint generates the [Scheduled payment created or
+        modified](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-1)
+        event with the `status` field set to `CREATED`.
+
+
+        Once the pre-schedule is created, its execution generates the following
+        events.
+
+
+        - First execution of the pre-schedule on the start date generates the
+        [Scheduled payment created or
+        modified](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-1)
+        event with the `status` field set to `IN_PROGRESS`.
+
+        - Last execution of the pre-schedule on the end date generates the
+        [Scheduled payment created or
+        modified](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-1)
+        event with the `status` field set to `COMPLETED`.
+
+        - Each execution of the pre-schedule also generates the [Scheduled
+        payment
+        executed](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-execution-1)
+        event with the corresponding execution status.
+
+
+        Refer to the [Payment scheduler](doc:payment-scheduler) guide for more
+        information.
+      operationId: post-bulk-pre-schedules
+      tags:
+        - Schedules
+      requestBody:
+        description: Request processing body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkPreScheduleRequest'
+      responses:
+        '202':
+          description: >-
+            Request was processed successfully, new multiple pre-schedules
+            accepted.
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/accounts/{accountId}/pre-schedules/{scheduleId}/execute:
+    parameters:
+      - $ref: '#/components/parameters/accountId'
+      - $ref: '#/components/parameters/scheduleId'
+    post:
+      summary: Execute pre-schedule
+      description: >
+        Execute the pre-schedule.
+
+
+        This endpoint generates the [Scheduled payment
+        executed](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-execution-1)
+        event.
+      operationId: post-execute-pre-schedule
+      tags:
+        - Schedules
+      requestBody:
+        description: Request processing body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/202Accepted'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/accounts/{accountId}/schedules:
+    parameters:
+      - $ref: '#/components/parameters/accountId'
+      - $ref: '#/components/parameters/statementId'
+      - $ref: '#/components/parameters/cursor'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/order'
+    get:
+      summary: List account schedules
+      description: |
+        List account schedules with paging and filter options.
+      operationId: get-all-schedules
+      tags:
+        - Schedules
+      responses:
+        '200':
+          description: Request was processed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAllScheduleResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/accounts/{accountId}/schedules/{scheduleId}/executions:
+    parameters:
+      - $ref: '#/components/parameters/accountId'
+      - $ref: '#/components/parameters/scheduleId'
+    get:
+      summary: List schedule executions
+      description: |
+        List account schedule executions.
+      operationId: get-schedule-executions
+      tags:
+        - Schedules
+      responses:
+        '200':
+          description: >-
+            Request was processed successfully, existing executions with the
+            corresponding schedule ID returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetScheduleExecutionsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/accounts/{accountId}/schedules/{scheduleId}:
+    parameters:
+      - $ref: '#/components/parameters/accountId'
+      - $ref: '#/components/parameters/scheduleId'
+    get:
+      summary: Get schedule
+      description: |
+        Get account schedule by schedule ID.
+      operationId: get-schedule
+      tags:
+        - Schedules
+      responses:
+        '200':
+          description: >-
+            Request was processed successfully, existing schedule with the
+            corresponding ID returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    patch:
+      summary: Update schedule
+      description: |
+        Update account schedule by schedule ID.
+      operationId: patch-schedule
+      tags:
+        - Schedules
+      requestBody:
+        description: Request processing body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSchedulerRequest'
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      summary: Cancel schedule
+      description: >
+        Cancel account schedule by schedule ID.
+
+
+        This endpoint generates the [Scheduled payment created or
+        modified](https://developers.pismo.io/events/docs/scheduler-payments-scheduled-payments-1)
+        event with the `status` field set to `CANCELED`.
+      operationId: delete-schedule
+      tags:
+        - Schedules
+      responses:
+        '200':
+          description: Request was processed successfully.
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/accounts/{accountId}/pre-schedules/migrations:
+    parameters:
+      - $ref: '#/components/parameters/accountId'

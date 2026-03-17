@@ -1,0 +1,1309 @@
+openapi: 3.1.0
+info:
+  title: Seller management - Transactions
+  version: 1.0.0
+  description: API for merchant transactions operations
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/sellers
+    description: Sandbox API server for testing
+tags:
+  - name: Split requests
+    description: Endpoints for managing split requests
+  - name: Balance
+    description: Balance endpoints
+  - name: Merchant transactions
+    description: Endpoint for managing merchant transactions
+  - name: Status authorization
+    description: Status authorization endpoint
+security:
+  - bearerAuth: []
+components:
+  parameters:
+    AuthorizationHeader:
+      in: header
+      name: Authorization
+      description: Authorization token
+      required: true
+      schema:
+        type: string
+      example: <your_token>
+    balanceDateQuery:
+      in: query
+      name: date
+      description: >
+        Target date to compose the balance amount. The date format used is ISO
+        8601.
+
+        minLength: 10
+
+        maxLength: 10
+
+
+        The date must be the current or a future date. If not provided, it
+        defaults to the current date of the target merchant timezone.
+      schema:
+        type: string
+        format: date
+      example: '2025-04-20T00:00:00.000Z'
+    endDateQuery:
+      in: query
+      name: endDate
+      description: |
+        The end date of the split requests. The date format used is ISO 8601.
+        minLength: 10
+        maxLength: 10
+      schema:
+        type: string
+        format: date
+      example: '2023-10-30T00:00:00.000Z'
+    marketplaceIdPath:
+      in: path
+      name: marketplaceId
+      required: true
+      description: Marketplace ID
+      schema:
+        type: integer
+        format: uint64
+        minimum: 1
+        maximum: 18446744073709552000
+      example: 1
+    merchantIdPath:
+      in: path
+      name: merchantId
+      required: true
+      description: Merchant ID
+      schema:
+        type: integer
+        format: uint64
+        minimum: 1
+        maximum: 18446744073709552000
+      example: 1
+    merchantTransactionIdPath:
+      in: path
+      name: merchantTransactionId
+      description: Merchant transaction ID
+      required: true
+      schema:
+        type: integer
+        format: uint64
+        minimum: 1
+        maximum: 18446744073709552000
+      example: 1
+    pageQuery:
+      in: query
+      name: page
+      description: |
+        Page number of the returned split request list.
+        When this value is not provided, it defaults to 1.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 2147483647
+      example: 1
+    parentIdPath:
+      in: path
+      name: parentId
+      description: Parent split request ID
+      required: true
+      schema:
+        type: integer
+        format: uint64
+        minimum: 1
+        maximum: 18446744073709552000
+      example: 1
+    perPageQuery:
+      in: query
+      name: perPage
+      description: |
+        Number of rows per page.
+        When this value is not provided, it defaults to 10.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 2147483647
+      example: 1
+    splitIdPath:
+      in: path
+      name: splitId
+      description: Split request ID
+      required: true
+      schema:
+        type: integer
+        format: uint64
+        minimum: 1
+        maximum: 18446744073709552000
+      example: 1
+    startDateQuery:
+      in: query
+      name: startDate
+      description: |
+        The start date of the split requests. Format is ISO 8601.
+        minLength: 10
+        maxLength: 10
+      schema:
+        type: string
+        format: date
+      example: '2023-10-05T00:00:00.000Z'
+  schemas:
+    CurrencyCode:
+      description: >
+        Represents the currency with an ISO-4217 alphabetic or numeric (3
+        characters) string. For example, you represent Brazilian real with
+        either BRL or 986.
+
+        If you don't provide this code, the system uses the currency from the
+        merchant program.
+      type: string
+      examples:
+        - BRL
+        - '986'
+    CurrencyCodeResponse:
+      description: |
+        ISO-4217 alphabetic (3 characters) currency code
+      type: string
+      example: BRL
+    BalanceRequestGetResponse:
+      type: object
+      properties:
+        date:
+          $ref: '#/components/schemas/TargetDate_date'
+        current_available_amount:
+          $ref: '#/components/schemas/CurrentAvailableAmount'
+        estimated_available_amount:
+          $ref: '#/components/schemas/EstimatedAvailableAmount'
+        scheduled_amount:
+          $ref: '#/components/schemas/ScheduledAmount'
+    CurrentAvailableAmount:
+      type: number
+      format: float
+      description: >-
+        Amount available in the merchant account. It is always the exact amount
+        in that account, regardless of the target date
+    DefaultErrorResponse:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          $ref: '#/components/schemas/ErrorMessage'
+        details:
+          $ref: '#/components/schemas/ErrorDetails'
+    ErrorCode:
+      type: string
+      description: Pismo internal error code
+    ErrorDetails:
+      type: object
+      description: If necessary, this field shows which fields failed validation
+      properties:
+        payload:
+          type: array
+          description: Array of fields with error
+          items:
+            type: object
+            properties:
+              field:
+                $ref: '#/components/schemas/ErrorField'
+              message:
+                $ref: '#/components/schemas/ErrorFieldMessage'
+    ErrorField:
+      type: string
+      description: Name of field with error
+    ErrorFieldMessage:
+      type: string
+      description: Error Message referring to the field
+    ErrorMessage:
+      type: string
+      description: Error message
+    EstimatedAvailableAmount:
+      type: number
+      format: float
+      description: >-
+        Estimated available amount in the merchant account on the target date.
+        This includes all scheduled amounts that are projected to be settled and
+        available in the merchant account by that date.
+    EventDate:
+      type: string
+      format: datetime
+      description: Event datetime. The datetime format follows the ISO 8601 format (UTC).
+      example: '2023-01-01T12:00:00Z'
+    ScheduledPaymentDate:
+      type: string
+      format: datetime
+      description: >-
+        The scheduled payment date for the transaction. The datetime format
+        follows the ISO 8601 format (UTC).
+      example: '2023-01-02'
+    Installments:
+      type: integer
+      format: int32
+      description: Number of installments
+      minimum: 1
+      maximum: 2147483647
+      example: 1
+    Installment:
+      type: integer
+      format: int32
+      description: Current instalment
+      minimum: 1
+      maximum: 2147483647
+      example: 1
+    NumberOfInstallments:
+      type: integer
+      format: int32
+      description: Number of installments
+      minimum: 1
+      maximum: 2147483647
+      example: 1
+    InternalServerErrorMessage:
+      type: string
+      description: Internal server error
+    InternalServerErrorResponse:
+      type: object
+      properties:
+        message:
+          $ref: '#/components/schemas/InternalServerErrorMessage'
+    MarketplaceId:
+      type: integer
+      format: uint64
+      description: Marketplace ID
+      minimum: 1
+      maximum: 18446744073709552000
+      example: 1
+    MerchantId:
+      type: integer
+      format: uint64
+      description: Merchant ID
+      minimum: 1
+      maximum: 18446744073709552000
+      example: 1
+    CreditorId:
+      type: integer
+      format: int64
+      nullable: true
+      description: Creditor identifier
+    MerchTransId:
+      type: integer
+      format: int64
+      description: Merchant transaction identifier
+    OriginMerchTransId:
+      type: integer
+      format: int64
+      nullable: true
+      description: Sale Merchant transaction identifier
+    MdrAmount:
+      type: number
+      format: float
+      description: Merchant transaction MDR amount
+    MdrWithoutFee:
+      type: number
+      format: float
+      description: Merchant transaction MDR amount without fee
+    MdrTax:
+      type: number
+      format: float
+      description: Merchant transaction MDR amount of marketplace
+    Fee:
+      type: number
+      format: float
+      description: Merchant transaction fee
+    MerchTransProcessingCode:
+      type: string
+      description: Merchant transaction processing code
+      nullable: true
+      example: '999999'
+    SplitMerchTransactionsStatus:
+      type: string
+      enum:
+        - PENDING
+        - SCHEDULED
+        - SETTLED
+        - CANCELED
+      description: Merchant transaction status
+      nullable: true
+      example: SCHEDULED
+    ParentId:
+      type: integer
+      format: int64
+      nullable: true
+      description: |
+        Parent ID assigned to the child split request
+    ProcessingCode:
+      type: string
+      description: >
+        Processing code.<br>
+
+        For more information, refer to [Processing
+        codes](doc:processing-codes-and-transaction-types).
+      example: '999999'
+    ScheduledAmount:
+      type: number
+      format: float
+      description: >-
+        Scheduled amount on the target date. The scheduled amount is the amount
+        that is not yet available, but is scheduled to be settled on the target
+        date.
+    SplitRequestAmount:
+      type: number
+      format: float
+      description: Split request amount
+    MerchantTransactionAmount:
+      type: number
+      format: float
+      nullable: false
+      description: Merchant transaction amount
+    AuthorizationId:
+      type: number
+      format: int64
+      nullable: true
+      description: Authorization identifier
+    ParentAuthorizationId:
+      type: number
+      format: int64
+      nullable: true
+      description: Parent authorization identifier
+    OrgOperationId:
+      type: number
+      format: int64
+      nullable: true
+      description: Org operation identifier
+    MerchTransactionRequestStatus:
+      type: string
+      nullable: true
+      description: >
+        Defines the status of the merchant transaction request.
+
+
+        - The default value is **SCHEDULED** for merchant schedulers, or
+        **WAITING_SPLIT** for marketplace schedulers.
+
+        - The **WAITING_SPLIT** status should only be used when the transaction
+        needs to wait for split request processing,
+
+        and only if the `merchant_id` provided is the `schedule_id`.
+
+        - The `schedule_id` can be obtained through the [marketplace query
+        API](https://developers.pismo.io/pismo-docs/reference/getmarketplacebyidv2).
+      enum:
+        - PENDING
+        - SCHEDULED
+        - SETTLED
+        - CANCELED
+        - WAITING_SPLIT
+    MerchTransactionStatus:
+      type: string
+      nullable: false
+      description: Merchant transaction status
+    MerchTransactionType:
+      type: string
+      nullable: false
+      description: Merchant transaction type
+    AdvancementRequestId:
+      type: integer
+      format: int64
+      nullable: true
+      description: Advancement Requested id
+    SplitRequestGetDefinitionsResponse:
+      type: object
+      properties:
+        merchant_id:
+          $ref: '#/components/schemas/MerchantId'
+        transaction_status:
+          $ref: '#/components/schemas/SplitMerchTransactionsStatus'
+        processing_code:
+          $ref: '#/components/schemas/MerchTransProcessingCode'
+        total_amount:
+          $ref: '#/components/schemas/SplitRequestTotalAmount'
+        merchant_transactions_ids:
+          $ref: '#/components/schemas/SplitRequestMerchTransId'
+    SplitRequestGetResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/SplitRequestId'
+        event_date:
+          $ref: '#/components/schemas/EventDate'
+        amount:
+          $ref: '#/components/schemas/SplitRequestAmount'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCodeResponse'
+        installments:
+          $ref: '#/components/schemas/Installments'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        merchant_transaction_id:
+          $ref: '#/components/schemas/MerchTransId'
+        marketplace_id:
+          $ref: '#/components/schemas/MarketplaceId'
+        parent_id:
+          $ref: '#/components/schemas/ParentId'
+        type:
+          $ref: '#/components/schemas/SplitRequestType'
+        status:
+          $ref: '#/components/schemas/SplitRequestStatus'
+        message:
+          $ref: '#/components/schemas/SplitRequestMessage'
+        definitions:
+          type: array
+          description: >-
+            Determines how the transaction amount is split among merchants and
+            specifies the applicable taxes and discounts. `definitions` defines
+            the number of merchants involved in the transaction, amount of tax
+            or discount to apply, and the percentage or amount allocated to each
+            merchant.
+          items:
+            $ref: '#/components/schemas/SplitRequestGetDefinitionsResponse'
+    SplitRequestListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SplitRequestListItemResponse'
+        page:
+          $ref: '#/components/schemas/SplitRequestPageNumber'
+        per_page:
+          $ref: '#/components/schemas/SplitRequestPerPage'
+        has_next:
+          $ref: '#/components/schemas/SplitRequestHasNextPage'
+    SplitRequestGetTotalsResponse:
+      type: object
+      properties:
+        amount:
+          $ref: '#/components/schemas/SplitRequestGetTotalGrossAmount'
+        marketplace_id:
+          $ref: '#/components/schemas/MarketplaceId'
+        definitions:
+          type: array
+          description: >-
+            Determines how the transaction amount is split among merchants and
+            specify the applicable taxes and discounts. `definitions` defines
+            the number of merchants involved in the transaction, amount of tax
+            or discount to apply, and the percentage or amount allocated to each
+            merchant.
+          items:
+            $ref: '#/components/schemas/SplitRequestGetTotalsDefinitionsResponse'
+    SplitRequestGetTotalsDefinitionsResponse:
+      type: object
+      properties:
+        merchant_id:
+          $ref: '#/components/schemas/MerchantId'
+        amount:
+          $ref: '#/components/schemas/SplitRequestGrossAmount'
+        merchant_transactions_ids:
+          $ref: '#/components/schemas/SplitRequestMerchTransId'
+    SplitRequestGetTotalGrossAmount:
+      type: number
+      format: float
+      description: >-
+        The gross amount of all split requests using `splitId` and `parentId` as
+        reference
+    SplitRequestGrossAmount:
+      type: number
+      format: float
+      description: Gross amount of the merchant transaction
+    SplitRequestHasNextPage:
+      type: boolean
+      description: |
+        Is there a next page?
+    SplitRequestId:
+      type: integer
+      format: int64
+      description: Split request ID
+    SplitRequestListItemResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/SplitRequestId'
+        parent_id:
+          $ref: '#/components/schemas/ParentId'
+        marketplace_id:
+          $ref: '#/components/schemas/MarketplaceId'
+        merchant_transaction_id:
+          $ref: '#/components/schemas/MerchTransId'
+        amount:
+          $ref: '#/components/schemas/SplitRequestAmount'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCodeResponse'
+        event_date:
+          $ref: '#/components/schemas/EventDate'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        type:
+          $ref: '#/components/schemas/SplitRequestType'
+        status:
+          $ref: '#/components/schemas/SplitRequestStatus'
+        message:
+          $ref: '#/components/schemas/SplitRequestMessage'
+    SplitRequestMerchTransId:
+      type: array
+      items:
+        type: integer
+        format: uint64
+        description: >-
+          IDs assigned to all merchant transactions you create using `parent_id`
+          as reference.
+    SplitRequestMessage:
+      type: string
+      description: Message associated with the split request
+      nullable: true
+    SplitRequestPageNumber:
+      type: integer
+      format: int64
+      description: Page number
+    SplitRequestPerPage:
+      type: integer
+      format: int64
+      description: Number of items per page
+    SplitRequestPostCancelDefinitionsRequest:
+      type: object
+      required:
+        - merchant_id
+      properties:
+        merchant_id:
+          $ref: '#/components/schemas/MerchantId'
+        amount:
+          type: number
+          format: float
+          nullable: true
+          description: >
+            Requested amount of the merchant.
+
+            If the amount is null, the amount is calculated using the proportion
+            of the amount from each merchant.
+          example: 100
+        processing_code:
+          $ref: '#/components/schemas/MerchTransProcessingCode'
+    SplitRequestPostCancelRequest:
+      type: object
+      required:
+        - event_date
+        - processing_code
+      properties:
+        event_date:
+          $ref: '#/components/schemas/EventDate'
+        installments:
+          $ref: '#/components/schemas/Installments'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        definitions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SplitRequestPostCancelDefinitionsRequest'
+          description: >
+            Determines how the transaction amount is split among merchants and
+            specify the applicable taxes and discounts. `definitions` defines
+            the number of merchants involved in the transaction, amount of tax
+            or discount to apply, and the percentage or amount allocated to each
+            merchant.<br>
+
+            If you cancel a split request without specifying any values in the
+            object, the amounts split among all merchants are canceled.
+    SplitRequestPostResponse:
+      type: object
+      description: Split request ID
+      properties:
+        id:
+          type: integer
+          format: uint64
+          description: Marketplace ID
+    SplitRequestPostSaleDefinitionsRequest:
+      type: object
+      anyOf:
+        - required:
+            - merchant_id
+            - amount
+        - required:
+            - merchant_id
+            - amount_percentage
+      properties:
+        merchant_id:
+          $ref: '#/components/schemas/MerchantId'
+        amount:
+          $ref: '#/components/schemas/SplitRequestPostSaleDefinitionsTotalAmount'
+        amount_percentage:
+          $ref: >-
+            #/components/schemas/SplitRequestPostSaleDefinitionsTotalAmountPercentage
+        transaction_status:
+          $ref: '#/components/schemas/SplitMerchTransactionsStatus'
+        processing_code:
+          $ref: '#/components/schemas/MerchTransProcessingCode'
+    SplitRequestPostSaleDefinitionsTotalAmount:
+      type: number
+      format: float
+      description: >
+        Merchant's requested amount
+
+        If the sum of all defined amounts is less than the authorized amount,
+        the difference is applied to the first merchant in the list.
+
+        Example:
+          - Amount: 100.00
+        - Amounts: [ 10.00, 20.00, 30.00 ]
+          - Adjusted Amounts: [ 50.00, 20.00, 30.00 ]
+      example: 100
+    SplitRequestPostSaleDefinitionsTotalAmountPercentage:
+      type: number
+      format: float
+      description: >
+        Percentage of the gross amount of the merchant transactions. 10% is
+        0.10, 100% is 1.00
+      example: 0.25
+    SplitRequestPostSaleRequest:
+      type: object
+      required:
+        - event_date
+        - installments
+        - processing_code
+        - definitions
+      properties:
+        event_date:
+          $ref: '#/components/schemas/EventDate'
+        installments:
+          $ref: '#/components/schemas/Installments'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        definitions:
+          type: array
+          description: >
+            Determines how the transaction amount is split among merchants and
+            specify the applicable taxes and discounts. `definitions` defines
+            the number of merchants involved in the transaction, amount of tax
+            or discount to apply, and the percentage or amount allocated to each
+            merchant.
+          items:
+            $ref: '#/components/schemas/SplitRequestPostSaleDefinitionsRequest'
+    SplitRequestStatus:
+      type: string
+      enum:
+        - PENDING
+        - PROCESSED
+        - ERROR
+      description: Split request status
+    SplitRequestTotalAmount:
+      type: number
+      format: float
+      description: Gross amount of the merchant transactions
+    SplitRequestType:
+      type: string
+      enum:
+        - SALES
+        - CANCELLATION
+      description: Split request type
+    TargetDate_date:
+      type: string
+      format: date
+      description: Target date to estimate the merchant balance
+    MerchantTransactionSalePostRequest:
+      type: object
+      required:
+        - event_date
+        - amount
+        - installments
+        - processing_code
+      properties:
+        event_date:
+          $ref: '#/components/schemas/EventDate'
+        amount:
+          $ref: '#/components/schemas/MerchantTransactionAmount'
+        installments:
+          $ref: '#/components/schemas/Installments'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+        authorization_id:
+          $ref: '#/components/schemas/AuthorizationId'
+        transaction_status:
+          $ref: '#/components/schemas/MerchTransactionRequestStatus'
+    MerchantTransactionCancelPostRequest:
+      type: object
+      required:
+        - event_date
+        - amount
+        - authorization
+        - processing_code
+      properties:
+        event_date:
+          $ref: '#/components/schemas/EventDate'
+        amount:
+          $ref: '#/components/schemas/MerchantTransactionAmount'
+        authorization:
+          $ref: '#/components/schemas/MerchantTransactionAuthorizationRequest'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+    MerchantTransactionAuthorizationRequest:
+      type: object
+      required:
+        - id
+        - parent_id
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Authorization identifier
+        parent_id:
+          type: integer
+          format: int64
+          description: Parent authorization identifier from the original transaction
+    MerchantTransactionsResponseList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MerchantTransactionResponse'
+    MerchantTransactionResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/MerchTransId'
+        merchant_id:
+          $ref: '#/components/schemas/MerchantId'
+        creditor_id:
+          $ref: '#/components/schemas/CreditorId'
+        authorization_id:
+          $ref: '#/components/schemas/AuthorizationId'
+        parent_authorization_id:
+          $ref: '#/components/schemas/ParentAuthorizationId'
+        org_operation_id:
+          $ref: '#/components/schemas/OrgOperationId'
+        amount:
+          $ref: '#/components/schemas/MerchantTransactionAmount'
+        mdr_amount:
+          $ref: '#/components/schemas/MdrAmount'
+        mdr_without_fee:
+          $ref: '#/components/schemas/MdrWithoutFee'
+        mdr_tax:
+          $ref: '#/components/schemas/MdrTax'
+        fee:
+          $ref: '#/components/schemas/Fee'
+        installment:
+          $ref: '#/components/schemas/Installment'
+        number_of_installments:
+          $ref: '#/components/schemas/NumberOfInstallments'
+        event_date:
+          $ref: '#/components/schemas/EventDate'
+        scheduled_payment_date:
+          $ref: '#/components/schemas/ScheduledPaymentDate'
+        status:
+          $ref: '#/components/schemas/MerchTransactionStatus'
+        advanced_amount:
+          $ref: '#/components/schemas/MerchTransId'
+        type:
+          $ref: '#/components/schemas/MerchTransactionType'
+        origin_merchant_transaction_id:
+          $ref: '#/components/schemas/OriginMerchTransId'
+        advancement_request_id:
+          $ref: '#/components/schemas/AdvancementRequestId'
+        marketplace_id:
+          $ref: '#/components/schemas/MarketplaceId'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCodeResponse'
+  responses:
+    200GetMerchantBalanceResponse:
+      description: Successfully get merchant balance
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BalanceRequestGetResponse'
+          examples:
+            Get merchant balance:
+              $ref: '#/components/examples/BalanceRequestGetResponse'
+    200SplitRequestGetDetails:
+      description: Successfully get split request totals
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SplitRequestGetResponse'
+          examples:
+            Get split request details:
+              $ref: '#/components/examples/SplitRequestGetResponse'
+    200SplitRequestGetTotalsResponse:
+      description: Successfully get split request totals
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SplitRequestGetTotalsResponse'
+          examples:
+            Get split request totals:
+              $ref: '#/components/examples/SplitRequestGetTotalsResponse'
+    200SplitRequestListResponse:
+      description: Successfully list split requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SplitRequestListResponse'
+          examples:
+            List split request success:
+              $ref: '#/components/examples/SplitRequestListResponse'
+    201MerchantTransactionListResponse:
+      description: Successfully list merchant transactions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MerchantTransactionsResponseList'
+          examples:
+            List merchant transactions success:
+              $ref: '#/components/examples/MerchantTransactionListResponse'
+    202CreateSplitRequestAccepted:
+      description: Successfully create split requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SplitRequestPostResponse'
+          examples:
+            Create split request:
+              $ref: '#/components/examples/SplitRequestPostResponse'
+    202CancelSplitRequestAccepted:
+      description: Successfully canceled split requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SplitRequestPostResponse'
+          examples:
+            Cancel split request:
+              $ref: '#/components/examples/SplitRequestPostResponse'
+    400BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DefaultErrorResponse'
+          examples:
+            400 Bad request:
+              $ref: '#/components/examples/DefaultErrorResponse'
+    404NotFound:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DefaultErrorResponse'
+          examples:
+            Not found:
+              $ref: '#/components/examples/DefaultNotFoundResponse'
+    500InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InternalServerErrorResponse'
+          examples:
+            Internal server error:
+              $ref: '#/components/examples/InternalServerErrorResponse'
+  examples:
+    BalanceRequestGetResponse:
+      summary: Get merchant balance response
+      value:
+        date: '2025-03-01'
+        current_available_amount: 233.21
+        estimated_available_amount: 300
+        scheduled_amount: 203.1
+    DefaultErrorResponse:
+      summary: Bad request response
+      value:
+        code: ESMT0001
+        message: Failed during validation of request payload
+        details:
+          payload:
+            - field: field_name
+              message: validation message
+    DefaultNotFoundResponse:
+      summary: Not found response
+      value:
+        code: ESMT0003
+        message: Merchant not found
+    InternalServerErrorResponse:
+      summary: Internal Server Error Response
+      value:
+        message: Internal Server Error
+    SplitRequestGetResponse:
+      summary: Split request get response
+      value:
+        id: 1
+        event_date: '2023-01-01T12:00:00Z'
+        amount: 100
+        currency_code: BRL
+        installments: 1
+        processing_code: '999999'
+        merchant_transaction_id: 12345
+        marketplace_id: 1
+        parent_id: null
+        type: SALES
+        status: PENDING
+        message: ''
+        definitions:
+          - merchant_id: 2
+            transactions_status: SCHEDULED
+            processing_code: '999999'
+            total_amount: 100
+            merchant_transactions_ids:
+              - 1
+              - 2
+              - 3
+    SplitRequestGetTotalsResponse:
+      summary: Split request totals response
+      value:
+        amount: 100
+        marketplace_id: 2
+        definitions:
+          - merchant_id: 2
+            amount: 100
+            merchant_transactions_ids:
+              - 1
+              - 2
+              - 3
+    SplitRequestListResponse:
+      summary: Split request list response
+      value:
+        items:
+          - id: 1
+            parent_id: null
+            marketplace_id: 1
+            merchant_transaction_id: 12345
+            amount: 100
+            currency_code: BRL
+            event_date: '2023-01-01T12:00:00Z'
+            processing_code: '999999'
+            type: SALES
+            status: PENDING
+            message: ''
+        page: 1
+        per_page: 10
+        has_next: false
+    SplitRequestPostCancelRequest:
+      summary: Split request cancel request
+      value:
+        event_date: '2023-01-01T12:00:00Z'
+        installments: 1
+        processing_code: '999999'
+        definitions:
+          - merchant_id: 2
+            amount: 100
+    SplitRequestPostResponse:
+      summary: Split request post response
+      value:
+        id: 1
+    SplitRequestPostSaleRequest:
+      summary: Split request post request
+      value:
+        event_date: '2023-01-01T12:00:00Z'
+        installments: 1
+        processing_code: '999999'
+        definitions:
+          - merchant_id: 2
+            amount_percentage: 0.25
+    MerchantTransactionSalePostRequest:
+      summary: Merchant transaction sale post request
+      value:
+        event_date: '2024-02-14T10:30:00Z'
+        amount: 1500
+        installments: 12
+        processing_code: '003000'
+        currency_code: BRL
+        authorization_id: 123456
+        transaction_status: SCHEDULED
+    MerchantTransactionCancelPostRequest:
+      summary: Merchant transaction cancel post request
+      value:
+        event_date: '2024-02-14T10:30:00Z'
+        amount: 1500
+        authorization:
+          id: 123456
+          parent_id: 654321
+        processing_code: '003001'
+    MerchantTransactionListResponse:
+      summary: Merchant transaction response
+      value:
+        items:
+          - id: 789013
+            merchant_id: 12345
+            creditor_id: 67890
+            authorization_id: 123456
+            parent_authorization_id: 654321
+            org_operation_id: 111
+            amount: 1500
+            mdr_amount: 30
+            mdr_without_fee: 25
+            mdr_tax: 5
+            fee: 10
+            installment: 1
+            number_of_installments: 12
+            event_date: '2024-02-14T10:30:00Z'
+            scheduled_payment_date: '2024-03-21'
+            status: SCHEDULED
+            advanced_amount: 0
+            type: SALES
+            origin_merchant_transaction_id: null
+            advancement_request_id: null
+            marketplace_id: 98765
+            currency_code: BRL
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+paths:
+  /v1/transactions/{merchantTransactionId}/split:
+    post:
+      summary: Create split request
+      description: >
+        Create a new split request for a merchant transaction.<br>
+
+        Managing financial transactions often requires dividing a single
+        transaction into multiple parts for accurate record-keeping and
+        reporting. The split transaction feature addresses this need by allowing
+        you to split a transaction into different categories or assign portions
+        to various accounts. This functionality is particularly useful for
+        handling shared expenses, allocating costs across different budget
+        categories, or separating business and personal expenses.
+
+        When a split request is created, it's created with a `PENDING` status.
+        Before you request a split, make sure the merchant transaction is
+        already in the `WAITING_SPLIT` status.<br>
+
+        This endpoint generates a [Merchant transaction
+        created](https://developers.pismo.io/events/docs/merchants-merchant-transaction-created-1)
+        event.
+      tags:
+        - Split requests
+      operationId: post-split-request
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/merchantTransactionIdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SplitRequestPostSaleRequest'
+            examples:
+              split-request-post:
+                $ref: '#/components/examples/SplitRequestPostSaleRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/202CreateSplitRequestAccepted'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/transactions/{merchantTransactionId}/split/cancel:
+    post:
+      summary: Cancel split request
+      description: >
+        Cancel a merchant transaction split request.<br>
+
+        This endpoint generates a [Merchant transaction
+        created](https://developers.pismo.io/events/docs/merchants-merchant-transaction-created-1)
+        event.
+      tags:
+        - Split requests
+      operationId: cancel-split-request
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/merchantTransactionIdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SplitRequestPostCancelRequest'
+            examples:
+              split-request-post:
+                $ref: '#/components/examples/SplitRequestPostCancelRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/202CancelSplitRequestAccepted'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/marketplaces/{marketplaceId}/split-requests:
+    get:
+      summary: List split requests
+      description: List split requests for a given marketplace.
+      tags:
+        - Split requests
+      operationId: get-split-requests
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/marketplaceIdPath'
+        - $ref: '#/components/parameters/pageQuery'
+        - $ref: '#/components/parameters/perPageQuery'
+        - $ref: '#/components/parameters/startDateQuery'
+        - $ref: '#/components/parameters/endDateQuery'
+      responses:
+        '200':
+          $ref: '#/components/responses/200SplitRequestListResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/marketplaces/{marketplaceId}/split-requests/{splitId}:
+    get:
+      summary: Get split request details
+      description: Get the details of a specific split request in a marketplace.
+      tags:
+        - Split requests
+      operationId: get-split-details
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/splitIdPath'
+        - $ref: '#/components/parameters/marketplaceIdPath'
+      responses:
+        '200':
+          $ref: '#/components/responses/200SplitRequestGetDetails'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/marketplaces/{marketplaceId}/split-requests/{parentId}/totals:
+    get:
+      summary: Get split request totals
+      description: >
+        Get the total amount for a specific split request in a marketplace.<br>
+
+        This endpoint returns the gross amount for a specific parent split
+        request with the `PROCESSED` status. It also return the gross amount for
+        each participating merchant, as well as marketplace merchants.
+      tags:
+        - Split requests
+      operationId: get-sale-split-request-totals
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/parentIdPath'
+        - $ref: '#/components/parameters/marketplaceIdPath'
+      responses:
+        '200':
+          $ref: '#/components/responses/200SplitRequestGetTotalsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/marketplaces/{marketplaceId}/merchants/{merchantId}/balance:
+    get:
+      summary: Get merchant balance
+      description: >
+        The merchant balance endpoint provides an estimate of the available
+        funds in the merchant account on a specified target date. It takes into
+        account the scheduled merchant transactions in the specified marketplace
+        to calculate the estimated values.
+
+
+        `estimated_available_amount` represents the forecasted amount that might
+        be available to the merchant on the target date, based on the current
+        scheduled transactions. This estimate is subject to change due to
+        cancellations, new transactions, and advancements made by the merchant
+        until the target date arrives.
+
+
+        If the merchant's scheduled balance is negative, the amount accumulates
+        in the `scheduled_amount` field until it becomes positive and is
+        available for settlement. Therefore, a negative `scheduled_amount` is
+        not considered for settlement until it turns positive.
+      tags:
+        - Balance
+      operationId: get-merchant-balance
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/marketplaceIdPath'
+        - $ref: '#/components/parameters/merchantIdPath'
+        - $ref: '#/components/parameters/balanceDateQuery'
+      responses:
+        '200':
+          $ref: '#/components/responses/200GetMerchantBalanceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/marketplaces/{marketplaceId}/merchants/{merchantId}/transactions:
+    post:
+      summary: Create merchant transaction
+      description: >
+        Create a new merchant transaction (sale) for a specific merchant
+        associated with a marketplace.
+
+
+        This endpoint allows for the creation of merchant sale transactions with
+        installment support, MDR calculations, and scheduled payment dates. The
+        default status is **SCHEDULED**. However, if the merchant is a
+        marketplace scheduler, the transaction will automatically be set to
+        **WAITING_SPLIT** status.
+
+
+        This endpoint generates a [Merchant transaction
+        created](https://developers.pismo.io/events/docs/merchants-merchant-transaction-created-1)
+        event.
+      tags:
+        - Merchant transactions
+      operationId: post-merchant-transaction-sale
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/marketplaceIdPath'
+        - $ref: '#/components/parameters/merchantIdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MerchantTransactionSalePostRequest'
+            examples:
+              merchant-transaction-sale-post:
+                $ref: '#/components/examples/MerchantTransactionSalePostRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/201MerchantTransactionListResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/marketplaces/{marketplaceId}/merchants/{merchantId}/transactions/cancel:
+    post:
+      summary: Cancel merchant transaction
+      description: >
+        Cancel a previously created merchant transaction.
+
+
+        This endpoint allows for the creation of cancellation transactions that
+        reverse the financial impact of original sale transactions.
+
+        Cancellation transactions maintain negative amounts of all financial
+        values (amount, MDR, fees) and reference the original transaction via
+        origin_merchant_transaction_id.
+
+
+        When the original transaction was split, the cancellation status is
+        automatically set to WAITING_SPLIT, otherwise it follows the default
+        status (SCHEDULED).
+
+
+        This endpoint generates a [Merchant transaction
+        created](https://developers.pismo.io/events/docs/merchants-merchant-transaction-created-1)
+        event.
+      tags:
+        - Merchant transactions
+      operationId: post-merchant-transaction-cancel
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/marketplaceIdPath'
+        - $ref: '#/components/parameters/merchantIdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MerchantTransactionCancelPostRequest'
+            examples:
+              merchant-transaction-cancel-post:
+                $ref: '#/components/examples/MerchantTransactionCancelPostRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/201MerchantTransactionListResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'

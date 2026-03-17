@@ -1,0 +1,2671 @@
+openapi: 3.1.0
+info:
+  title: Platform setup - Rates and fees
+  description: Rates and fees API endpoint documentation.
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+  version: 1.0.0
+servers:
+  - url: https://sandbox.pismolabs.io/rates
+    description: Sandbox API server for testing
+tags:
+  - name: Exchange rates
+    description: Exchange rate endpoints.
+  - name: Fee models
+    description: Fee model endpoints.
+  - name: Simulation
+    description: Simulation endpoints
+  - name: Health
+    description: Health check endpoint
+security:
+  - bearerAuth: []
+components:
+  examples:
+    SimulationConfigDailyPercentage:
+      value:
+        description: This is my simulation configurations
+        plans:
+          - id: customId1
+            description: Electronics
+            calculation_parameters:
+              calculation_method: DAILY_PERCENTAGE
+              value: 0.03
+            installments:
+              - 1
+              - 2
+              - 3
+            day_count_method: MONTH_ACTUAL_YEAR_365
+            billing_method: CARD
+            installment_parameters:
+              minimum_installment_value:
+                type:
+                  - DYNAMIC
+                values:
+                  '1': 3
+                  '2': 10
+              number_of_initial_periods_to_skip:
+                type: FIXED
+                value: 1
+            interest_limitation:
+              calculation_basis: PRINCIPAL_AMOUNT
+              percentage: 3.2
+            down_payment_method:
+              type: INSTALLMENT_EQUIVALENT
+            filters:
+              merchants:
+                - abcdefg
+              processing_codes:
+                - '01'
+                - '02'
+              custom_filters:
+                - custom_filter_01
+                - custom_filter_02
+          - id: customId2
+            description: Furniture
+            calculation_parameters:
+              calculation_method: DAILY_PERCENTAGE
+              value: 0.04
+            installments:
+              - 4
+              - 5
+              - 6
+            billing_method: BNPL
+            frequency: MONTHLY
+            day_count_method: MONTH_ACTUAL_YEAR_365
+            installment_parameters:
+              minimum_installment_value:
+                type: DYNAMIC
+                values:
+                  '1': 10
+                  '2': 3
+              number_of_initial_periods_to_skip:
+                type: FIXED
+                value: 1
+            filters:
+              merchants:
+                - abcdefg
+              processing_codes:
+                - '01'
+                - '02'
+              custom_filters:
+                - custom_filter_01
+                - custom_filter_02
+    SimulationConfigPriceTable:
+      value:
+        description: This is my simulation configurations
+        plans:
+          - id: customId1
+            description: Electronics
+            calculation_parameters:
+              calculation_method: PRICE_TABLE
+              daily_iof_rate: 0.0082
+              index: INSTALLMENT
+              fixed_iof_rate: 0.38
+              interest_rate:
+                type: FIXED
+                value: 13.49
+              fixed: 0
+              percentage: 0
+            installments:
+              - 1
+              - 2
+              - 3
+            day_count_method: MONTH_30_YEAR_360
+            billing_method: BNPL
+            frequency: MONTHLY
+            installment_parameters:
+              minimum_installment_value:
+                type:
+                  - DYNAMIC
+                values:
+                  '1': 3
+                  '2': 10
+              number_of_initial_periods_to_skip:
+                type: FIXED
+                value: 1
+            interest_limitation:
+              calculation_basis: PRINCIPAL_AMOUNT
+              percentage: 3.2
+            down_payment_method:
+              type: INSTALLMENT_EQUIVALENT
+            filters:
+              merchants:
+                - abcdefg
+              processing_codes:
+                - '01'
+                - '02'
+              custom_filters:
+                - custom_filter_01
+                - custom_filter_02
+          - id: customId2
+            description: Furniture
+            calculation_parameters:
+              calculation_method: PRICE_TABLE
+              daily_iof_rate: 0.0082
+              index: INSTALLMENT
+              fixed_iof_rate: 0.38
+              interest_rate:
+                type: FIXED
+                value: 13.49
+              fixed: 0
+              percentage: 0
+            installments:
+              - 4
+              - 5
+              - 6
+            billing_method: BNPL
+            frequency: MONTHLY
+            installment_parameters:
+              minimum_installment_value:
+                type: DYNAMIC
+                values:
+                  '1': 10
+                  '2': 3
+              number_of_initial_periods_to_skip:
+                type: FIXED
+                value: 1
+            filters:
+              merchants:
+                - abcdefg
+              processing_codes:
+                - '01'
+                - '02'
+              custom_filters:
+                - custom_filter_01
+                - custom_filter_02
+  parameters:
+    AccountIDpath:
+      in: path
+      name: account_id
+      schema:
+        type: integer
+      description: Pismo account ID
+      required: true
+    AuthNoAccount:
+      name: Authorization
+      in: header
+      schema:
+        type: string
+      required: true
+      description: >
+        Access token, not an account-specific token. Tokens can expire quickly,
+        which can result in an <b>401 Unauthorized</b> message
+    ModelIDpath:
+      name: model_id
+      in: path
+      schema:
+        type: string
+      description: Fee model ID
+      required: true
+    ProgramIDpath:
+      in: path
+      name: program_id
+      description: Pismo program ID
+      required: true
+      schema:
+        type: integer
+    ProgramIDquery:
+      in: query
+      name: programId
+      description: Pismo program ID filter
+      required: false
+      schema:
+        type: integer
+    SimulationConfigIDpath:
+      in: path
+      name: simulation_config_id
+      description: Simulation configuration ID
+      required: true
+      schema:
+        type: string
+    WithAttachmentsResumequery:
+      in: query
+      name: withAttachmentsResume
+      description: >-
+        Allows you to add information relating to model attachments to the query
+        result
+      required: false
+      schema:
+        type: boolean
+        default: false
+  schemas:
+    AdditionalFee:
+      type: object
+      required:
+        - calculation
+        - id
+        - description
+        - type
+      properties:
+        description:
+          type: string
+          description: Fee description.
+          example: Foreign currency surchange.
+        type:
+          description: >-
+            Fee type, represents the fee classification, and is linked with the
+            `id` field.
+          type: string
+          example: sellos
+        id:
+          $ref: '#/components/schemas/FeeID'
+        calculation:
+          oneOf:
+            - $ref: '#/components/schemas/FeeCalculationFixed'
+            - $ref: '#/components/schemas/FeeCalculationGreater'
+            - $ref: '#/components/schemas/FeeCalculationPercentage'
+    BadRequestError:
+      type: object
+      properties:
+        error_code:
+          type: string
+          description: Error code ID
+          example: RCAPI-INVALID-REQUEST-PAYLOAD
+        message:
+          type: string
+          description: Error description
+          example: The request payload is invalid
+    CalculationMethodSubset:
+      type: string
+      description: Calculation method.
+      enum:
+        - FIXED
+        - PERCENTAGE
+      example: FIXED
+    ConfigDescription:
+      type: string
+      description: Simulation configuration description
+      example: This is my simulation configurations
+    ConfigID:
+      type: string
+      description: Simulation configuration ID.
+      example: 47589-uuye7-84k9
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+          example: RCAPI-DOMAIN-VIOLATION
+          description: Error code ID.
+        message:
+          type: string
+          example: Internal server error
+          description: Error description.
+    Exchange:
+      type: object
+      required:
+        - exchange_rate_id
+        - origin
+        - destination
+        - program_id
+        - conversion_rate
+        - spread
+        - exchange_rate
+        - created_date
+        - date
+        - hour
+      properties:
+        exchange_rate_id:
+          type: number
+          description: Exchange ID
+          example: 1845
+        origin:
+          type: string
+          description: Origin ISO 4217 currency code.
+          example: '032'
+        destination:
+          type: string
+          description: Destination ISO 4217 currency code.
+          example: '968'
+        program_id:
+          $ref: '#/components/schemas/ProgramID'
+        conversion_rate:
+          type: number
+          description: Fee charged for the conversion as decimal number.
+          example: 4.8
+        spread:
+          type: number
+          description: >-
+            Day rate multiplier to two decimal places (hundredths), 1.05 =
+            1.05%, 15 = 15%, and so on.
+          example: 1.05
+        exchange_rate:
+          type: number
+          description: >-
+            Wholesale exchange rate amount in the destination currency as
+            decimal number.
+          example: 4.8
+        created_date:
+          type: string
+          description: Exchange rate created date.
+          example: '2022-04-25 17:55:02'
+        date:
+          type: string
+          description: Exchange rate start date, format = yyyy-mm-dd.
+          example: '2022-04-25'
+        hour:
+          type: string
+          description: Exchange rate start time, format = hh:mm:ssZ.
+          example: 18:25:43Z
+        apply_fees_without_spread:
+          type: boolean
+          description: >-
+            Flag that indicates whether spread should be disconsidered in
+            exchange transactions when calculating fee model taxes. If not
+            informed, false will be assumed.
+          example: true
+    ExchangeRates:
+      type: object
+      required:
+        - date
+        - destination_currency_id
+        - origin_currency_id
+        - exchange_rate
+        - spread
+      properties:
+        date:
+          type: string
+          description: Date for today or tomorrow, format = yyyy-mm-dd.
+          format: date
+          example: '2022-01-02'
+        destination_currency_id:
+          type: string
+          description: Destination ISO 4217 currency.
+          example: '840'
+        origin_currency_id:
+          type: string
+          description: Origin ISO 4217 currency.
+          example: '032'
+        exchange_rate:
+          type: number
+          description: >-
+            Wholesale exchange rate amount to 4 decimal places in the
+            destination currency. For example 4.8123.
+          example: 4.8123
+        spread:
+          type: number
+          description: >-
+            Day rate multiplier to 4 decimal places. For example, 1.1205 is
+            equivalent to 1.1205%, 15.12 is equivalent to 15.12%..
+          example: 1.0567
+        hour:
+          type: string
+          description: >
+
+            Hour in UTC time zone, format = HH:MM:SSZ. Using this field, you be
+            able to work with seconds precision in your international
+            purchases.  
+
+
+            **Note:** This field will be validated considering an offset of UTC
+            subtracted three seconds just in the validation layer, to prevent
+            you to need increase a few seconds just to pass our validation.
+          format: time
+          example: 14:30:00Z
+        program_id:
+          $ref: '#/components/schemas/ProgramID'
+        apply_fees_without_spread:
+          type: boolean
+          description: >-
+            Whether `spread` should be ignored in exchange transactions when
+            calculating fee model taxes. Default = `false`.
+          example: true
+    Exchanges:
+      type: object
+      properties:
+        last_page:
+          type: boolean
+          description: Is this the last page flag
+          example: false
+        exchange_rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Exchange'
+    Fee:
+      type: object
+      required:
+        - description
+        - id
+        - type
+        - calculation
+        - filters
+      properties:
+        description:
+          type: string
+          description: Fee description.
+          minLength: 1
+          maxLength: 255
+          example: Fee wdl
+        id:
+          $ref: '#/components/schemas/FeeID'
+        type:
+          description: >
+            Fee type, represents the fee classification, and is linked with the
+            `id` field.
+          type: string
+          example: sellos
+        precedence:
+          description: >
+            Calculation order. All fees with the same precedence number are
+            calculated in the same iteration. The next iteration uses the
+            previous output as its calculation basis.
+          type: integer
+          example: 0
+        deduct_from_transaction_value:
+          description: |
+            Should fee be deducted from transaction value flag. Default=`false`.
+          type: boolean
+          example: true
+        calculation_basis:
+          type: string
+          description: >
+            * `PRINCIPAL_AMOUNT` - Taxes are applied to original transaction
+            amount only. This is the default.
+
+            * `CONTRACT_AMOUNT` -  Taxes are applied to original transaction
+            amount plus fees.
+          example: PRINCIPAL_AMOUNT
+        calculation:
+          oneOf:
+            - $ref: '#/components/schemas/FeeCalculationFixed'
+            - $ref: '#/components/schemas/FeeCalculationGreater'
+            - $ref: '#/components/schemas/FeeCalculationPercentage'
+            - $ref: '#/components/schemas/FeeCalculationDailyPercentage'
+            - $ref: '#/components/schemas/FeeCalculationCompoundInterest'
+            - $ref: '#/components/schemas/FeeCalculationAccumulator'
+            - $ref: '#/components/schemas/FeeCalculationDynamicByAmount'
+            - $ref: '#/components/schemas/FeeCalculationPriceTable'
+            - $ref: '#/components/schemas/FeeCalculationEqualInstallments'
+            - $ref: '#/components/schemas/FeeCalculationAging'
+            - $ref: '#/components/schemas/FeeCalculationIof'
+            - $ref: '#/components/schemas/FeeCalculationConstantRepayment'
+        filters:
+          $ref: '#/components/schemas/Filters'
+        additional_fees:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdditionalFee'
+    FeeCalculationAccumulator:
+      type: object
+      description: Fee calculation for ACCUMULATOR model.
+      required:
+        - calculation_method
+        - index
+        - identifier
+        - rules
+      properties:
+        calculation_method:
+          type: string
+          description: Calculation method - `ACCUMULATOR`.
+          enum:
+            - ACCUMULATOR
+        index:
+          type: string
+          description: |
+            Field used to index the calculation.
+              `AMOUNT` - Fee is based on transaction totals.
+              `QUANTITY` - Fee is based on number of transactions.
+          enum:
+            - AMOUNT
+            - QUANTITY
+          example: QUANTITY
+        identifier:
+          type: string
+          description: >
+            Accumulator configuration ID. Client-assigned and passed to the <a
+            href="https://developers.pismo.io/pismo-docs/reference/post-v1-accumulator-config"
+            target="_blank">Create accumulator configuration</a> endpoint.
+          example: ACC_CASH_OUT
+        rules:
+          type: array
+          description: Ranges and strategies
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/RuleRange'
+              - $ref: '#/components/schemas/RuleGreater'
+    FeeCalculationDynamicByAmount:
+      type: object
+      description: Fee calculation for `DYNAMIC_BY_AMOUNT` model.
+      required:
+        - calculation_method
+        - rules
+      properties:
+        calculation_method:
+          type: string
+          description: Calculation method - `DYNAMIC_BY_AMOUNT`.
+          enum:
+            - DYNAMIC_BY_AMOUNT
+        rules:
+          type: array
+          description: Ranges and strategies
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/RuleRange'
+              - $ref: '#/components/schemas/RuleGreater'
+    FeeCalculationAging:
+      type: object
+      required:
+        - calculation_method
+        - rate
+      properties:
+        calculation_method:
+          type: string
+          description: Calculation method - `AGING`.
+          enum:
+            - AGING
+        index:
+          type: string
+          description: Define range type when rate is dynamic.
+          enum:
+            - DAY
+        rate:
+          $ref: '#/components/schemas/Rate'
+    FeeCalculationPriceTable:
+      type: object
+      required:
+        - calculation_method
+        - fixed_iof_rate
+        - interest_rate
+        - daily_iof_rate
+      properties:
+        calculation_method:
+          type: string
+          description: Calculation method - `PRICE_TABLE`.
+          enum:
+            - PRICE_TABLE
+        index:
+          type: string
+          description: Define range type when interest rate is dynamic.
+          enum:
+            - INSTALLMENT
+        fixed:
+          type: number
+          description: Fixed fee amount as decimal field.
+          example: 50
+        percentage:
+          type: number
+          description: Percentage amount as decimal field.
+          example: 1.3
+        fixed_iof_rate:
+          type: number
+          description: Percentage amount as decimal field. IOF = Brazilian tax.
+          example: 0.38
+        daily_iof_rate:
+          type: number
+          description: Percentage amount as decimal field. IOF = Brazilian tax.
+          example: 0.0082
+        interest_rate:
+          $ref: '#/components/schemas/InterestRate'
+    FeeCalculationEqualInstallments:
+      type: object
+      required:
+        - calculation_method
+        - interest_rate
+        - precedence
+        - fees
+        - calculation
+      properties:
+        calculation:
+          type: object
+          properties:
+            calculation_method:
+              type: string
+              description: Calculation method - `EQUAL_INSTALLMENTS`.
+              enum:
+                - EQUAL_INSTALLMENTS
+            day_count_method:
+              type: string
+              enum:
+                - MONTH_30_YEAR_360
+              example: MONTH_30_YEAR_360
+            interest_rate:
+              $ref: '#/components/schemas/InterestRateWithGracePeriod'
+            fees:
+              $ref: '#/components/schemas/fees'
+    FeeCalculationCompoundInterest:
+      type: object
+      required:
+        - calculation_method
+        - value
+        - days_range
+      properties:
+        calculation_method:
+          type: string
+          description: >-
+            Calculation method - `COMPOUND_INTEREST`. Applied to loan-type
+            products.
+          enum:
+            - COMPOUND_INTEREST
+        value:
+          type: number
+          description: Percentage amount as decimal field.
+          example: 1.3
+        days_range:
+          type: integer
+          description: >
+            Calculation's range of days. 
+
+
+            For example: 10% interest and `days_range` = 20 for $100 purchase;
+            considering 10 days between purchase and cycle close, is applied
+            0.5% per day (10/20). In the first day, the value will be 0.5 (100 x
+            0.5%), in the second day the value will be 0.55 (100.05 x 0.5%), and
+            so on.
+          example: 30
+    FeeCalculationDailyPercentage:
+      type: object
+      required:
+        - calculation_method
+        - value
+      properties:
+        calculation_method:
+          type: string
+          description: >-
+            Calculation method - `DAILY_PERCENTAGE`. Applied to credit card cash
+            advances and other loan-type products.
+          enum:
+            - DAILY_PERCENTAGE
+        value:
+          type: number
+          description: Percentage amount as decimal field.
+          example: 1.3
+    FeeCalculationFixed:
+      type: object
+      required:
+        - calculation_method
+        - value
+      properties:
+        calculation_method:
+          type: string
+          description: Calculation method - `FIXED`
+          enum:
+            - FIXED
+        value:
+          type: number
+          description: Fixed fee amount as decimal field.
+          example: 2.5
+    FeeCalculationIof:
+      type: object
+      required:
+        - calculation_method
+        - value
+      properties:
+        calculation_method:
+          type: string
+          description: Calculation method - `IOF`.
+          enum:
+            - IOF
+        value:
+          type: number
+          description: >-
+            Percentage amount as decimal and used as base to calculate the fee
+            amount.
+          example: 100
+    FeeCalculationGreater:
+      type: object
+      required:
+        - calculation_method
+        - fixed
+        - percentage
+      properties:
+        calculation_method:
+          type: string
+          description: >-
+            Calculation method - `GREATER`. Whichever value is greater - `fixed`
+            or `percentage` is applied.
+          enum:
+            - GREATER
+        fixed:
+          type: number
+          description: Fixed fee amount as decimal field.
+          example: 50
+        percentage:
+          type: number
+          description: Percentage amount as decimal field.
+          example: 1.3
+    FeeCalculationPercentage:
+      type: object
+      required:
+        - calculation_method
+        - value
+      properties:
+        calculation_method:
+          type: string
+          description: Calculation method - `PERCENTAGE`.
+          enum:
+            - PERCENTAGE
+        value:
+          type: number
+          description: Percentage amount as decimal field.
+          example: 1.3
+    FeeCalculationConstantRepayment:
+      type: object
+      required:
+        - calculation_method
+        - day_count_method
+        - interest_rate
+      properties:
+        calculation_method:
+          type: string
+          description: Calculation method - `CONSTANT_REPAYMENT`
+          enum:
+            - CONSTANT_REPAYMENT
+        day_count_method:
+          type: string
+          description: Day count method used to calculate interest.
+          enum:
+            - MONTH_30_YEAR_360
+          example: MONTH_30_YEAR_360
+        payment_postponement_rules:
+          type: object
+          description: Rules for payment postponement.
+          properties:
+            basis:
+              type: string
+              description: Postponement basis.
+              enum:
+                - PRINCIPAL
+                - INTEREST
+              example: INTEREST
+            cycles:
+              type: string
+              description: Number of cycles to postpone.
+              example: '1'
+        interest_rate:
+          $ref: '#/components/schemas/InterestRate'
+        fees:
+          type: array
+          description: List of additional fees.
+          items:
+            type: object
+            required:
+              - calculation
+              - id
+              - precedence
+              - value
+              - calculation_basis
+            properties:
+              calculation:
+                type: string
+                enum:
+                  - FIXED
+                  - PERCENTAGE
+                  - DAILY_PERCENTAGE
+                example: FIXED
+              id:
+                type: string
+                example: tax1
+              precedence:
+                type: integer
+                example: 1
+              value:
+                type: number
+                example: 10
+              calculation_basis:
+                type: string
+                enum:
+                  - PRINCIPAL_AMOUNT
+                  - CONTRACT_AMOUNT
+                example: PRINCIPAL_AMOUNT
+    FeeID:
+      type: string
+      description: >
+        Fee ID - a reference from transaction postings. The Pismo transaction
+        team uses fee ID fields to make accounting entries. Talk to your Pismo
+        representative about getting fee IDs for your operations.
+      example: sellos_baires
+    FeeModel:
+      type: object
+      required:
+        - model_description
+        - fees
+      properties:
+        model_description:
+          type: string
+          description: Model description.
+          minLength: 1
+          maxLength: 255
+          example: Fee model applied to org
+        fees:
+          type: array
+          items:
+            $ref: '#/components/schemas/Fee'
+    Filters:
+      type: object
+      required:
+        - processing_codes
+      properties:
+        processing_codes:
+          type: array
+          example:
+            - '02'
+            - '0040'
+          description: >
+            Processing codes to apply the fee to.  Processing codes identify an
+            operation, such as purchases or debits. Each financial operation
+            within the platform has its processing code. Some you can configure,
+            while others are fixed in the card network flow. Talk to your Pismo
+            representative to get, or create, processing codes. For more
+            information, see <a
+            href="https://developers.pismo.io/pismo-docs/docs/processing-codes-and-transaction-types"
+            target="_blank">Processing codes and transaction types</a>.
+          items:
+            type: string
+        operation_types:
+          type: array
+          description: >-
+            Operation types to apply the fee to. If not specified, fees will be
+            applied to all types.
+          items:
+            type: string
+            enum:
+              - authorization
+              - confirmation
+            example: authorization
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+    HTTPErrors:
+      type: array
+      items:
+        type: object
+        properties:
+          field:
+            type: string
+            example: body.date
+            description: Incorrect field
+          violation:
+            type: string
+            example: >-
+              Does not match pattern
+              '^\d{4}\-(0?[1-9]|1[012])\-(0?[1-9]|[12][0-9]|3[01])$'
+            description: Describes the rule that the field did not match.
+    HTTPGetErrors:
+      type: array
+      items:
+        type: object
+        properties:
+          field:
+            type: string
+            example: date
+            description: Identifies incorrect field.
+          violation:
+            type: string
+            example: Invalid date, does not match yyyy-mm-dd format.
+            description: Describes the rule that the field did not match.
+    HTTPPutErrors:
+      type: array
+      items:
+        type: object
+        properties:
+          error_code:
+            type: string
+            example: RCAPI-INTEGRITY-VIOLATION
+            description: Error code ID.
+          message:
+            type: string
+            example: Attachment has been created already
+            description: Error description
+    fees:
+      type: array
+      description: List of additional fees.
+      items:
+        type: object
+        required:
+          - calculation
+          - id
+          - precedence
+          - value
+          - calculation_basis
+        properties:
+          calculation:
+            type: string
+            enum:
+              - FIXED
+              - PERCENTAGE
+              - DAILY_PERCENTAGE
+              - IOF
+            example: FIXED
+          id:
+            type: string
+            example: tax1
+          precedence:
+            type: integer
+            example: 1
+          value:
+            type: number
+            example: 10
+          calculation_basis:
+            type: string
+            enum:
+              - PRINCIPAL_AMOUNT
+              - CONTRACT_AMOUNT
+            example: PRINCIPAL_AMOUNT
+          fixed_iof_rate:
+            type: number
+            example: 3.5
+          daily_iof_rate:
+            type: number
+            example: 0.0082
+    InterestRateWithGracePeriod:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          description: |
+            Fee type:
+              `FIXED` - Field `value` is required and will be used as interest rate.
+              `DYNAMIC` - Field `rules` is required and the value used as interest rate will be selected according to the installment ranges configured.
+          enum:
+            - FIXED
+            - DYNAMIC
+          example: FIXED
+        value:
+          type: number
+          description: >-
+            Percentage amount as decimal field. Value used as interest rate.
+            **REQUIRED** for `FIXED` type.
+          example: 0.2
+        grace_period:
+          type: object
+          properties:
+            type:
+              type: string
+              example: FIXED
+            value:
+              type: numeric
+              example: 1
+        rules:
+          type: array
+          description: >-
+            Installment ranges responsible to configure the value used as
+            interest rate. **REQUIRED** for `DYNAMIC` type.
+          items:
+            $ref: '#/components/schemas/InterestRateRule'
+    InterestRate:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          description: |
+            Fee type:
+              `FIXED` - Field `value` is required and will be used as interest rate.
+              `DYNAMIC` - Field `rules` is required and the value used as interest rate will be selected according to the installment ranges configured.
+          enum:
+            - FIXED
+            - DYNAMIC
+          example: FIXED
+        value:
+          type: number
+          description: >-
+            Percentage amount as decimal field. Value used as interest rate.
+            **REQUIRED** for `FIXED` type.
+          example: 0.2
+        rules:
+          type: array
+          description: >-
+            Installment ranges responsible to configure the value used as
+            interest rate. **REQUIRED** for `DYNAMIC` type.
+          items:
+            $ref: '#/components/schemas/InterestRateRule'
+    InterestRateRule:
+      type: object
+      required:
+        - minimum
+        - maximum
+        - calculation
+      properties:
+        minimum:
+          type: number
+          minimum: 2
+          description: >
+            First installment the rule is applied to. For example, if you enter
+            "4", rule application begins on the 4th installment.
+
+            Must be 2 or higher.
+          example: 10
+        maximum:
+          type: number
+          maximum: 70
+          description: >
+            Last installment the rule is applied to. For example, if you enter
+            "10", rule application ends after the 10th installment.
+          example: 30
+        calculation:
+          $ref: '#/components/schemas/RuleCalculation'
+        progression:
+          $ref: '#/components/schemas/Progression'
+    minimumRule:
+      type: number
+      description: >
+        First tranasction this rule is applied to. For example, if you enter
+        "4", the rule starts being applied on the 4th transaction.
+      example: 4
+    maximumRule:
+      type: number
+      description: >
+        Last transaction the rule is applied to. For example, if you enter "10",
+        rule application ends after the 10th transaction.
+      example: 100
+    ModelID:
+      type: number
+      description: Pismo fee model ID
+      example: 455586868
+    ModelList:
+      type: array
+      items:
+        $ref: '#/components/schemas/ModelListItem'
+    ModelListItem:
+      type: object
+      required:
+        - model_id
+        - description
+        - updated_at
+        - has_program_attachment
+        - has_org_attachment
+        - has_account_attachment
+      properties:
+        model_id:
+          $ref: '#/components/schemas/ModelID'
+        description:
+          type: string
+          description: Fee description.
+          example: Foreign currency surchange.
+        updated_at:
+          type: string
+          description: Model update date.
+          example: '2022-07-27T17:37:23.000Z'
+        has_program_attachment:
+          type: boolean
+          description: Identifies whether the model has an attachment per program
+          example: false
+        has_org_attachment:
+          type: boolean
+          description: Identifies whether the model has an attachment per org
+          example: false
+        has_account_attachment:
+          type: boolean
+          description: Identifies whether the model has an attachment per account
+          example: false
+    NotFoundError:
+      type: object
+      properties:
+        error_code:
+          type: string
+          description: Error code ID
+          example: RCAPI-NOT_FOUND-VIOLATION
+        message:
+          type: string
+          description: Error description
+          example: ''
+    NotFoundModelError:
+      type: object
+      properties:
+        error_code:
+          type: string
+          description: Error code ID
+          example: RCAPI-NOT_FOUND-VIOLATION
+        message:
+          type: string
+          description: Error description.
+          example: Model with the provided key does not exist
+    NotFoundSimulationConfigError:
+      type: object
+      properties:
+        error_code:
+          type: string
+          description: Error code ID
+          example: RCAPI-NOT_FOUND-VIOLATION
+        message:
+          type: string
+          description: Error description.
+          example: Simulation configuration with the provided key does not exist
+    Plans:
+      type: object
+      required:
+        - id
+        - installments
+        - calculation_parameters
+      properties:
+        id:
+          type: string
+          description: Customer plan identifier
+          example: customId1
+        description:
+          type: string
+          description: Custom simulation plan description
+          example: Electronics
+        calculation_parameters:
+          oneOf:
+            - $ref: '#/components/schemas/SimulationCalculationPriceTable'
+            - $ref: '#/components/schemas/SimulationCalculationDailyPercentage'
+        interest_limitation:
+          $ref: '#/components/schemas/SimulationInterestLimitation'
+        down_payment_method:
+          $ref: '#/components/schemas/SimulationDownPaymentMethod'
+        installments:
+          type: array
+          items:
+            type: integer
+          description: >-
+            Array containing the installment numbers for which the plan is
+            applicable
+          example:
+            - 6
+            - 10
+            - 12
+        day_count_method:
+          type: string
+          description: Day count method used to calculate interest.
+          enum:
+            - MONTH_30_YEAR_360
+          example: MONTH_30_YEAR_360
+        billing_method:
+          type: string
+          description: |
+            Plan billing method:
+              `BNPL` - Field `frequency` is **REQUIRED**
+              `CARD` - Field `frequency` is the same as the card, and the field should be **NULL**.
+          enum:
+            - BNPL
+            - CARD
+          example: BNPL
+        frequency:
+          type: string
+          description: Frequency of the billing. Required for billing_method = `BNPL`
+          enum:
+            - MONTHLY
+          example: MONTHLY
+        filters:
+          type: object
+          description: Simulation configuration filters
+          properties:
+            merchants:
+              type: array
+              description: Array containing the merchants for whom the plan applies
+              example:
+                - abcdef
+              items:
+                type: string
+            processing_codes:
+              type: array
+              description: Array containing the processing codes for whom the plan applies
+              example:
+                - '01'
+                - '02'
+              items:
+                type: string
+            custom_filters:
+              type: array
+              description: Array containing plan custom filters
+              items:
+                type: string
+              example:
+                - custom_filter_01
+                - custom_filter_02
+    Plans2:
+      type: array
+      description: Customer plans created
+      items:
+        $ref: '#/components/schemas/PlansOutput'
+      example:
+        - id: customId1
+          description: Electronics
+        - id: customId2
+          description: Furniture
+    PlansOutput:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Customer plans identifier
+          example: customId1
+        description:
+          type: string
+          description: Plan configuration description
+          example: Electronic
+    ProgramID:
+      type: number
+      description: Pismo program ID
+      example: 76589
+    Progression:
+      type: object
+      description: Rate progression configuration.
+      required:
+        - value
+        - steps
+      properties:
+        value:
+          type: number
+          description: >-
+            Percentage amount as decimal field added to `rule.calculation.value`
+            base value.
+          example: 0.02
+        steps:
+          type: integer
+          description: Frequency `value` is applied.
+          example: 10
+    Rate:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          description: |
+            Fee type:
+              `FIXED` - Field `value` is **REQUIRED** and used as rate.
+              `DYNAMIC` - Field `rules` is **REQUIRED** and the value used as rate is selected according to the day ranges configured.
+          enum:
+            - FIXED
+            - DYNAMIC
+          example: FIXED
+        value:
+          type: number
+          description: >-
+            Percentage amount as decimal field. Value is used as rate.
+            **REQUIRED** for `FIXED` type.
+          example: 0.2
+        rules:
+          type: array
+          description: >-
+            Ranges responsible to configure the value used as rate. **REQUIRED**
+            for `DYNAMIC` type.
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/RateRuleRange'
+              - $ref: '#/components/schemas/RateRuleGreater'
+    RateRuleRange:
+      type: object
+      required:
+        - calculation
+        - minimum
+        - maximum
+      properties:
+        calculation:
+          $ref: '#/components/schemas/RuleCalculation'
+        minimum:
+          $ref: '#/components/schemas/minimumRule'
+        maximum:
+          $ref: '#/components/schemas/maximumRule'
+        progression:
+          $ref: '#/components/schemas/Progression'
+    RateRuleGreater:
+      type: object
+      required:
+        - greater_than
+        - calculation
+      properties:
+        greater_than:
+          type: number
+          description: Rule is applied to numbers greater than this value.
+          example: 10
+        calculation:
+          $ref: '#/components/schemas/RuleCalculation'
+        progression:
+          $ref: '#/components/schemas/Progression'
+    RuleRange:
+      type: object
+      required:
+        - calculation
+        - minimum
+        - maximum
+      properties:
+        calculation:
+          $ref: '#/components/schemas/RuleCalculation'
+        minimum:
+          $ref: '#/components/schemas/minimumRule'
+        maximum:
+          $ref: '#/components/schemas/maximumRule'
+    RuleGreater:
+      type: object
+      required:
+        - greater_than
+        - calculation
+      properties:
+        greater_than:
+          type: number
+          description: >-
+            Rule applies to numbers greater than this value. For example, if you
+            enter "4", accumulation starts on the 5th transaction.
+          example: 10
+        calculation:
+          $ref: '#/components/schemas/RuleCalculation'
+    RuleCalculation:
+      type: object
+      required:
+        - calculation_method
+        - value
+      properties:
+        calculation_method:
+          $ref: '#/components/schemas/CalculationMethodSubset'
+        value:
+          type: number
+          description: Value to be applied
+          example: 0.04
+    SimulationInstallmentParameters:
+      type: object
+      properties:
+        minimum_installment_value:
+          type: object
+          properties:
+            type:
+              type: array
+              description: Fee type
+              items:
+                type: string
+                enum:
+                  - FIXED
+                  - DYNAMIC
+                example: FIXED
+            value:
+              type: number
+              description: Fee value
+              example: 100
+            values:
+              type: object
+              description: Minimum installment value allowed for this plan
+              additionalProperties:
+                type: object
+                description: Addition properties
+                properties:
+                  installment:
+                    type: string
+                    description: Installment number
+                  minimumInstallmentValue:
+                    type: number
+                    description: Minimum installment value
+                example:
+                  '2': 100
+                  '3': 150
+          example:
+            type:
+              - FIXED
+            value: 10
+        number_of_initial_periods_to_skip:
+          type: object
+          description: Number of initial installments to be skipped
+          properties:
+            type:
+              type: array
+              description: Type
+              items:
+                type: string
+                enum:
+                  - FIXED
+                  - DYNAMIC
+                example: FIXED
+            value:
+              type: number
+              description: Value
+              example: 2
+            values:
+              type: object
+              description: Values
+              additionalProperties:
+                type: object
+                description: Additional properties
+                properties:
+                  installment:
+                    type: string
+                    description: Installment
+                  numberOfInitialPeriodsToSkip:
+                    type: number
+                    description: Number of initial periods to skip
+                example:
+                  '2': 1
+                  '3': 3
+          example:
+            type:
+              - FIXED
+            value: 1
+    SimulationInterestLimitation:
+      type: object
+      properties:
+        interest_limitation:
+          type: object
+          properties:
+            calculation_basis:
+              type: string
+              description: Type
+              enum:
+                - PRINCIPAL_AMOUNT
+              example: PRINCIPAL_AMOUNT
+            percentage:
+              type: number
+              description: Percentage
+              example: 3.2
+    SimulationDownPaymentMethod:
+      type: object
+      properties:
+        down_payment_method:
+          oneOf:
+            - $ref: '#/components/schemas/downPaymentMethodPercentage'
+            - $ref: '#/components/schemas/downPaymentMethodInstallmentEquivalent'
+    downPaymentMethodPercentage:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Type
+          enum:
+            - PERCENTAGE
+          example: PERCENTAGE
+        value:
+          type: number
+          description: Value
+          example: 3.5
+    downPaymentMethodInstallmentEquivalent:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Type
+          enum:
+            - INSTALLMENT_EQUIVALENT
+          example: INSTALLMENT_EQUIVALENT
+    SimulationCalculationPriceTable:
+      type: object
+      required:
+        - calculation_method
+        - fixed_iof_rate
+        - interest_rate
+        - daily_iof_rate
+      properties:
+        calculation_method:
+          type: string
+          description: Calculation method - `PRICE_TABLE`.
+          enum:
+            - PRICE_TABLE
+        index:
+          type: string
+          description: Define range type when interest rate is dynamic.
+          enum:
+            - INSTALLMENT
+        fixed:
+          type: number
+          description: Fixed fee amount as decimal field.
+          example: 50
+        percentage:
+          type: number
+          description: Percentage amount as decimal field.
+          example: 1.3
+        fixed_iof_rate:
+          type: number
+          description: Percentage amount as decimal field. IOF = Brazilian tax.
+          example: 0.38
+        daily_iof_rate:
+          type: number
+          description: Percentage amount as decimal field. IOF = Brazilian tax.
+          example: 0.0082
+        interest_rate:
+          $ref: '#/components/schemas/InterestRate'
+    SimulationCalculationDailyPercentage:
+      type: object
+      required:
+        - calculation_method
+      properties:
+        calculation_method:
+          type: string
+          description: >-
+            Calculation method - `DAILY_PERCENTAGE`. Applied to credit card cash
+            advances and other loan-type products.
+          enum:
+            - DAILY_PERCENTAGE
+        value:
+          type: number
+          description: Percentage amount as decimal field.
+          example: 0.3
+    SimulationConfigDetails:
+      type: object
+      properties:
+        config_id:
+          $ref: '#/components/schemas/ConfigID'
+        description:
+          $ref: '#/components/schemas/ConfigDescription'
+        plans:
+          type: array
+          description: Customer plans created
+          items:
+            $ref: '#/components/schemas/Plans'
+    SimulationConfigIdPayload:
+      type: object
+      properties:
+        config_id:
+          type: string
+          description: Simulation configuration ID
+          example: 477589-59572-95734
+    SimulationConfigOutput:
+      type: object
+      properties:
+        config_id:
+          $ref: '#/components/schemas/ConfigID'
+        description:
+          $ref: '#/components/schemas/ConfigDescription'
+        plans:
+          $ref: '#/components/schemas/Plans2'
+    SimulationConfigRequest:
+      type: object
+      required:
+        - plans
+      properties:
+        description:
+          $ref: '#/components/schemas/ConfigDescription'
+        plans:
+          type: array
+          description: Configuration of Simulation Plans
+          items:
+            $ref: '#/components/schemas/Plans'
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    400BadRequestExchange:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HTTPErrors'
+    400BadRequestError:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BadRequestError'
+    401Unauthorized:
+      description: InvalidToken
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    404ExchangeNotFound:
+      description: Exchange not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NotFoundError'
+    404ModelNotFound:
+      description: Fee model not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NotFoundModelError'
+    404SimulationConfigNotFound:
+      description: Simulation configuration not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NotFoundSimulationConfigError'
+    409Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HTTPPutErrors'
+    500InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+paths:
+  /v1/exchange-rates:
+    post:
+      summary: Create exchange rate
+      description: >
+        Define the exchange rate for international transactions. 
+
+
+        You **must** use this endpoint or [Pismo Control
+        Center](doc:exchange-rates) to define the exchange rate for today or
+        tomorrow. 
+
+
+        Exchange rates are defined at the organization level but, optionally,
+        you can define rates for a specific program and the platform uses this
+        rate and not the org rate for all program-related transactions.
+
+
+
+        **Note:**  For more information, refer to [Exchange rates for
+        international
+        transactions](https://developers.pismo.io/pismo-docs/docs/exchange-rate#exchange-rates-for-international-transactions).
+      operationId: createExchangeRates
+      tags:
+        - Exchange rates
+      parameters:
+        - $ref: '#/components/parameters/AuthNoAccount'
+      requestBody:
+        description: Add exchange rates
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeRates'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content: {}
+        '400':
+          $ref: '#/components/responses/400BadRequestExchange'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    get:
+      summary: Get exchange rates
+      description: Returns exchange rates with paging and filter options
+      operationId: getExchange
+      tags:
+        - Exchange rates
+      parameters:
+        - name: beginCreatedAt
+          in: query
+          description: Start date filter, format = yyyy-mm-dd
+          example: '2022-05-04'
+          required: true
+          schema:
+            type: string
+        - name: endCreatedAt
+          in: query
+          description: >-
+            End date filter, format = yyyy-mm-dd. 30 days maximum between
+            `beginCreatedAt` and `endCreatedAt`.
+          example: '2022-06-01T00:00:00.000Z'
+          required: true
+          schema:
+            type: string
+        - name: perPage
+          in: query
+          description: Records per page - 100 records maximum.
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: Current page number.
+          required: true
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/AuthNoAccount'
+        - $ref: '#/components/parameters/ProgramIDquery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Exchanges'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPGetErrors'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404ExchangeNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/fee/models:
+    post:
+      summary: Create fee model
+      description: >
+        Create fee model. 
+
+
+        A fee model is a structure that defines a collection of fees with custom
+        calculations. You can define the method used to calculate the fee, using
+        a fixed value or a percentage. Fee models can be applied to
+        organizations, programs, and accounts. For more information, see the
+        [Fee model](doc:fee-model) guide.
+
+
+        An accumulator fee model requires you call the <a
+        href="https://developers.pismo.io/pismo-docs/reference/post-v1-accumulator-config"
+        target="_blank">Create accumulator configuration</a> endpoint first to
+        define how transaction totals are kept. 
+
+
+        Once the fee model is created, it needs to be <a
+        href="https://developers.pismo.io/pismo-docs/reference/attachmentbyaccount">attached
+        to an account</a>, <a
+        href="https://developers.pismo.io/pismo-docs/reference/attachmentbyprogram">attached
+        to a program</a> or <a
+        href="https://developers.pismo.io/pismo-docs/reference/attachmentbytenant">attached
+        to an org</a>.
+      operationId: postModel
+      tags:
+        - Fee models
+      parameters:
+        - $ref: '#/components/parameters/AuthNoAccount'
+      requestBody:
+        description: Create fee model body parameters
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeeModel'
+            examples:
+              Calculation method Percentage:
+                value:
+                  model_description: Fee model applied to org
+                  fees:
+                    - description: Fee wdl
+                      type: dom
+                      id: dom_wdl
+                      deduct_from_transaction_value: false
+                      calculation_basis: PRINCIPAL_AMOUNT
+                      calculation:
+                        calculation_method: PERCENTAGE
+                        value: 2.5
+                      filters:
+                        processing_codes:
+                          - '02'
+                          - '0040'
+                      additional_fees:
+                        - description: Foreign currency surchange.
+                          id: dom_wdl
+                          calculation:
+                            calculation_method: PERCENTAGE
+                            value: 0.5
+                          type: selios
+              Calculation method Fixed:
+                value:
+                  model_description: Fee model to org
+                  fees:
+                    - description: Fee wdl
+                      type: dom
+                      id: dom_wdl
+                      deduct_from_transaction_value: true
+                      calculation_basis: PRINCIPAL_AMOUNT
+                      calculation:
+                        calculation_method: FIXED
+                        value: 30
+                      filters:
+                        processing_codes:
+                          - '02'
+                          - '0040'
+                      additional_fees:
+                        - description: Foreign currency surchange.
+                          id: dom_wdl
+                          calculation:
+                            calculation_method: FIXED
+                            value: 10
+                          type: selios
+              Calculation method IOF:
+                value:
+                  model_description: Fee model to org
+                  fees:
+                    - description: Fee wdl
+                      type: dom
+                      id: dom_wdl
+                      deduct_from_transaction_value: true
+                      calculation_basis: PRINCIPAL_AMOUNT
+                      calculation:
+                        calculation_method: IOF
+                        value: 50
+                      filters:
+                        processing_codes:
+                          - '02'
+                          - '0040'
+                      additional_fees:
+                        - description: Foreign currency surchange.
+                          id: dom_wdl
+                          calculation:
+                            calculation_method: FIXED
+                            value: 10
+                          type: selios
+              Calculation method Greater:
+                value:
+                  model_description: Fee model to org
+                  fees:
+                    - description: Fee wdl
+                      type: dom
+                      id: dom_wdl
+                      deduct_from_transaction_value: false
+                      calculation_basis: PRINCIPAL_AMOUNT
+                      calculation:
+                        calculation_method: GREATER
+                        fixed: 30
+                        percentage: 2.5
+                      filters:
+                        processing_codes:
+                          - '02'
+                          - '0040'
+                      additional_fees:
+                        - description: Foreign currency surchange.
+                          id: dom_wdl
+                          calculation:
+                            calculation_method: GREATER
+                            fixed: 10
+                            percentage: 0.5
+                          type: selios
+              Calculation method Daily Percentage:
+                value:
+                  model_description: Fee model to org
+                  fees:
+                    - description: Fee wdl
+                      type: dom
+                      id: dom_wdl
+                      deduct_from_transaction_value: true
+                      calculation_basis: PRINCIPAL_AMOUNT
+                      calculation:
+                        calculation_method: DAILY_PERCENTAGE
+                        value: 1.3
+                      filters:
+                        processing_codes:
+                          - '02'
+                          - '0040'
+                      additional_fees:
+                        - description: Foreign currency surchange.
+                          id: dom_wdl
+                          calculation:
+                            calculation_method: PERCENTAGE
+                            value: 0.3
+                          type: selios
+              Calculation method Compound Interest:
+                value:
+                  model_description: Fee model to org
+                  fees:
+                    - description: Fee wdl
+                      type: dom
+                      id: dom_wdl
+                      deduct_from_transaction_value: false
+                      calculation_basis: PRINCIPAL_AMOUNT
+                      calculation:
+                        calculation_method: COMPOUND_INTEREST
+                        value: 1.3
+                        days_range: 30
+                      filters:
+                        processing_codes:
+                          - '02'
+                          - '0040'
+                      additional_fees:
+                        - description: Foreign currency surchange.
+                          id: dom_wdl
+                          calculation:
+                            calculation_method: FIXED
+                            value: 0.3
+                          type: selios
+              Calculation method Accumulator:
+                value:
+                  model_description: Fee model to org
+                  fees:
+                    - description: Fee wdl
+                      type: dom
+                      id: dom_wdl
+                      deduct_from_transaction_value: false
+                      calculation_basis: PRINCIPAL_AMOUNT
+                      calculation:
+                        calculation_method: ACCUMULATOR
+                        index: QUANTITY
+                        identifier: ACC_CASH_OUT
+                        rules:
+                          - minimum: 10
+                            maximum: 30
+                            calculation:
+                              calculation_method: FIXED
+                              value: 10
+                          - greater_than: 30
+                            calculation:
+                              calculation_method: FIXED
+                              value: 12
+                      filters:
+                        processing_codes:
+                          - '02'
+                          - '0040'
+                      additional_fees:
+                        - description: Foreign currency surchange.
+                          id: dom_wdl
+                          calculation:
+                            calculation_method: FIXED
+                            value: 0.1
+                          type: selios
+              Calculation method Dynamic by amount:
+                value:
+                  model_description: Fee model to org
+                  fees:
+                    - description: Fee
+                      type: dynamic
+                      id: dynamic_by_amount
+                      deduct_from_transaction_value: false
+                      calculation_basis: PRINCIPAL_AMOUNT
+                      calculation:
+                        calculation_method: DYNAMIC_BY_AMOUNT
+                        rules:
+                          - minimum: 10
+                            maximum: 30
+                            calculation:
+                              calculation_method: FIXED
+                              value: 10
+                          - greater_than: 30
+                            calculation:
+                              calculation_method: FIXED
+                              value: 12
+                      filters:
+                        processing_codes:
+                          - '02'
+                          - '0040'
+              Calculation method Price Table:
+                value:
+                  model_description: Fee model to org
+                  fees:
+                    - description: Fee wdl
+                      type: dom
+                      id: dom_wdl
+                      deduct_from_transaction_value: true
+                      calculation_basis: PRINCIPAL_AMOUNT
+                      calculation:
+                        calculation_method: PRICE_TABLE
+                        index: INSTALLMENT
+                        fixed: 5
+                        percentage: 1.3
+                        fixed_iof_rate: 0.4
+                        daily_iof_rate: 0.001
+                        interest_rate:
+                          type: DYNAMIC
+                          rules:
+                            - minimum: 2
+                              maximum: 12
+                              calculation:
+                                calculation_method: PERCENTAGE
+                                value: 0.8
+                            - minimum: 13
+                              maximum: 63
+                              calculation:
+                                calculation_method: PERCENTAGE
+                                value: 0.9
+                              progression:
+                                value: 0.02
+                                steps: 10
+                            - minimum: 64
+                              maximum: 70
+                              calculation:
+                                calculation_method: PERCENTAGE
+                                value: 1.2
+                      filters:
+                        processing_codes:
+                          - '02'
+                          - '0040'
+                      additional_fees:
+                        - description: Foreign currency surchange.
+                          id: dom_wdl
+                          calculation:
+                            calculation_method: PERCENTAGE
+                            value: 0.5
+                          type: selios
+              Calculation method Equal Installments:
+                value:
+                  model_description: Fee model to org
+                  fees:
+                    - description: Equal Installments
+                      id: '123'
+                      calculation:
+                        calculation_method: EQUAL_INSTALLMENTS
+                        day_count_method: MONTH_30_YEAR_360
+                        interest_rate:
+                          type: FIXED
+                          value: 1
+                          grace_period:
+                            type: FIXED
+                            value: 1
+                          precedence: 2
+                        fees:
+                          - calculation: PERCENTAGE
+                            calculation_basis: PRINCIPAL_AMOUNT
+                            id: id
+                            precedence: 0
+                            value: 0.38
+                          - calculation: IOF
+                            calculation_basis: PRINCIPAL_AMOUNT
+                            id: id
+                            precedence: 1
+                            fixed_iof_rate: 3.5
+                            daily_iof_rate: 0.0082
+              Calculation method Aging:
+                value:
+                  model_description: Fee model applied to org
+                  fees:
+                    - description: Fee wdl
+                      type: dom
+                      id: dom_wdl
+                      deduct_from_transaction_value: true
+                      calculation_basis: PRINCIPAL_AMOUNT
+                      calculation:
+                        calculation_method: AGING
+                        index: DAY
+                        rate:
+                          type: DYNAMIC
+                          rules:
+                            - minimum: 1
+                              maximum: 30
+                              calculation:
+                                calculation_method: PERCENTAGE
+                                value: 1.5
+                            - minimum: 31
+                              maximum: 180
+                              calculation:
+                                calculation_method: PERCENTAGE
+                                value: 3.5
+                              progression:
+                                value: 0.5
+                                steps: 10
+                            - minimum: 181
+                              maximum: 360
+                              calculation:
+                                calculation_method: PERCENTAGE
+                                value: 10
+                            - greater_than: 360
+                              calculation:
+                                calculation_method: PERCENTAGE
+                                value: 12
+                      filters:
+                        processing_codes:
+                          - '02'
+                          - '0040'
+                      additional_fees:
+                        - description: Foreign currency surchange.
+                          id: dom_wdl
+                          calculation:
+                            calculation_method: PERCENTAGE
+                            value: 0.5
+                          type: selios
+              Calculation method Constant Repayment:
+                value:
+                  model_description: Fee model applied to org
+                  fees:
+                    - description: Fee wdl
+                      type: dom
+                      id: dom_wdl
+                      deduct_from_transaction_value: false
+                      calculation_basis: PRINCIPAL_AMOUNT
+                      precedence: 1
+                      calculation:
+                        calculation_method: CONSTANT_REPAYMENT
+                        day_count_method: MONTH_30_YEAR_360
+                        payment_postponement_rules:
+                          basis: INTEREST
+                          cycles: '1'
+                        interest_rate:
+                          type: FIXED
+                          index: INSTALLMENT
+                          id: test
+                          value: 12
+                          precedence: 3
+                          rules:
+                            - minimum: 2
+                              maximum: 70
+                              calculation:
+                                calculation_method: PERCENTAGE
+                                value: 22.5
+                        fees:
+                          - calculation: FIXED
+                            id: tax1
+                            precedence: 1
+                            value: 10
+                            calculation_basis: PRINCIPAL_AMOUNT
+                          - calculation: PERCENTAGE
+                            id: tax2
+                            precedence: 2
+                            value: 12
+                            calculation_basis: CONTRACT_AMOUNT
+                      filters:
+                        processing_codes:
+                          - '02'
+                          - '0040'
+                      additional_fees:
+                        - description: Foreign currency surchange.
+                          id: dom_wdl
+                          calculation:
+                            calculation_method: PERCENTAGE
+                            value: 0.5
+                          type: selios
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelID'
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    get:
+      tags:
+        - Fee models
+      summary: List fee models
+      description: >-
+        Get an organization's fee models. The org ID is derived from the access
+        token.
+      operationId: listModel
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelList'
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/fee/models/{model_id}:
+    get:
+      summary: Get fee model
+      description: Get a fee model given its ID in the path.
+      operationId: getModel
+      tags:
+        - Fee models
+      parameters:
+        - $ref: '#/components/parameters/ModelIDpath'
+        - $ref: '#/components/parameters/AuthNoAccount'
+        - $ref: '#/components/parameters/WithAttachmentsResumequery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeeModel'
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404ModelNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    put:
+      summary: Update fee model
+      description: Update a fee model
+      operationId: putFeeModel
+      tags:
+        - Fee models
+      parameters:
+        - $ref: '#/components/parameters/ModelIDpath'
+      requestBody:
+        description: Update fee model
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeeModel'
+        required: true
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404ModelNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/fee/models/{model_id}/attachment/account/{account_id}:
+    put:
+      summary: Attach fee model to account
+      description: Attach the fee model to an account.
+      operationId: attachmentByAccount
+      tags:
+        - Fee models
+      parameters:
+        - $ref: '#/components/parameters/ModelIDpath'
+        - $ref: '#/components/parameters/AccountIDpath'
+        - $ref: '#/components/parameters/AuthNoAccount'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404ModelNotFound'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/fee/models/attachment/account/{account_id}:
+    get:
+      summary: Get account fee model
+      description: Get the fee model attached to the account.
+      operationId: getByAccount
+      tags:
+        - Fee models
+      parameters:
+        - $ref: '#/components/parameters/AccountIDpath'
+        - $ref: '#/components/parameters/AuthNoAccount'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelID'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404ModelNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    delete:
+      summary: Delete account fee model
+      description: Delete the fee model from an account.
+      operationId: deleteByAccount
+      tags:
+        - Fee models
+      parameters:
+        - $ref: '#/components/parameters/AccountIDpath'
+        - $ref: '#/components/parameters/AuthNoAccount'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404ModelNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/fee/models/{model_id}/attachment/program/{program_id}:
+    put:
+      summary: Attach fee model to program
+      description: Attach the fee model to a program.
+      operationId: attachmentByProgram
+      tags:
+        - Fee models
+      parameters:
+        - $ref: '#/components/parameters/ModelIDpath'
+        - $ref: '#/components/parameters/ProgramIDpath'
+        - $ref: '#/components/parameters/AuthNoAccount'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404ModelNotFound'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/fee/models/attachment/program/{program_id}:
+    get:
+      summary: Get program fee model
+      description: Get the fee model attached to a program.
+      operationId: getByProgram
+      tags:
+        - Fee models
+      parameters:
+        - $ref: '#/components/parameters/ProgramIDpath'
+        - $ref: '#/components/parameters/AuthNoAccount'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelID'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404ModelNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    delete:
+      summary: Delete program fee model
+      description: Delete the fee model from the program.
+      operationId: deleteAttachByProgram
+      tags:
+        - Fee models
+      parameters:
+        - $ref: '#/components/parameters/ProgramIDpath'
+        - $ref: '#/components/parameters/AuthNoAccount'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404ModelNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/fee/models/attachment/tenant:
+    get:
+      summary: Get org fee model
+      description: Get fee model by organization, which is derived from the access token.
+      operationId: getModelByOrg
+      tags:
+        - Fee models
+      parameters:
+        - $ref: '#/components/parameters/AuthNoAccount'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelID'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404ModelNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/fee/models/{model_id}/attachment/tenant:
+    put:
+      summary: Attach fee model to org
+      description: >-
+        Attach a fee model to an org. The org ID is derived from the access
+        token.
+      operationId: attachmentByTenant
+      tags:
+        - Fee models
+      parameters:
+        - $ref: '#/components/parameters/ModelIDpath'
+        - $ref: '#/components/parameters/AuthNoAccount'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404ModelNotFound'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/simulation/configs:
+    post:
+      summary: Create simulation config
+      description: |
+        Create simulation configuration for possible custom payment option.
+      operationId: simulationConfigs
+      tags:
+        - Simulation
+      requestBody:
+        description: Create simulation configs
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulationConfigRequest'
+            examples:
+              Calculation method Price Table:
+                $ref: '#/components/examples/SimulationConfigPriceTable'
+              Calculation method Daily Percentage:
+                $ref: '#/components/examples/SimulationConfigDailyPercentage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationConfigOutput'
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/simulation/configs/{simulation_config_id}:
+    get:
+      summary: Get simulation config
+      description: Get simulation configuration given its ID in the path.
+      operationId: getSimulationConfigs
+      tags:
+        - Simulation
+      parameters:
+        - $ref: '#/components/parameters/SimulationConfigIDpath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationConfigDetails'
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404SimulationConfigNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    put:
+      summary: Update simulation config
+      description: Update a simulation configuration
+      operationId: putSimulationConfigs
+      tags:
+        - Simulation
+      parameters:
+        - $ref: '#/components/parameters/SimulationConfigIDpath'
+      requestBody:
+        description: Update simulation configs
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulationConfigRequest'
+            examples:
+              Calculation method Price Table:
+                $ref: '#/components/examples/SimulationConfigPriceTable'
+              Calculation method Daily Percentage:
+                $ref: '#/components/examples/SimulationConfigDailyPercentage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationConfigOutput'
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/simulation/configs/{simulation_config_id}/attachment/tenant:
+    put:
+      summary: Attach simulation config to org
+      description: >-
+        Attach a simulation configuration to an organization/tenant. The org ID
+        is derived from the access token.
+      operationId: attachOrgSimulationConfig
+      tags:
+        - Simulation
+      parameters:
+        - $ref: '#/components/parameters/SimulationConfigIDpath'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404SimulationConfigNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/simulation/configs/attachment/tenant:
+    get:
+      summary: Get org simulation config
+      description: >-
+        Get simulation configuration attached to an org. The org ID is derived
+        from the access token.
+      operationId: getOrgSimulationAttachment
+      tags:
+        - Simulation
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationConfigIdPayload'
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404SimulationConfigNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/simulation/configs/{simulation_config_id}/attachment/program/{program_id}:
+    put:
+      summary: Attach simulation config to program
+      description: Attach a simulation configuration to a program.
+      operationId: attachProgramSimulationConfig
+      tags:
+        - Simulation
+      parameters:
+        - $ref: '#/components/parameters/SimulationConfigIDpath'
+        - $ref: '#/components/parameters/ProgramIDpath'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404SimulationConfigNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/simulation/configs/attachment/program/{program_id}:
+    get:
+      summary: Get program simulation config
+      description: Get the ID of the simulation config attached to a program.
+      operationId: getProgramSimulationAttachment
+      tags:
+        - Simulation
+      parameters:
+        - $ref: '#/components/parameters/ProgramIDpath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationConfigIdPayload'
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404SimulationConfigNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    delete:
+      summary: Detach program simulation config
+      description: Detach simulation configuration from a program.
+      operationId: detachProgramSimulationConfig
+      tags:
+        - Simulation
+      parameters:
+        - $ref: '#/components/parameters/ProgramIDpath'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404SimulationConfigNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/simulation/configs/{simulation_config_id}/attachment/account/{account_id}:
+    put:
+      summary: Attach simulation config to account
+      description: Attach simulation configuration to an account.
+      operationId: attachAccountSimulationConfig
+      tags:
+        - Simulation
+      parameters:
+        - $ref: '#/components/parameters/SimulationConfigIDpath'
+        - $ref: '#/components/parameters/AccountIDpath'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404SimulationConfigNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/simulation/configs/attachment/account/{account_id}:
+    get:
+      summary: Get account simulation config
+      description: Get the ID of the simulation configuration attached to an account.
+      operationId: getAccountSimulationAttachment
+      tags:
+        - Simulation
+      parameters:
+        - $ref: '#/components/parameters/AccountIDpath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationConfigIdPayload'
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404SimulationConfigNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    delete:
+      summary: Detach account simulation config
+      description: Detach simulation configuration from an account.
+      operationId: detachAccountSimulationConfig
+      tags:
+        - Simulation
+      parameters:
+        - $ref: '#/components/parameters/AccountIDpath'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404SimulationConfigNotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'

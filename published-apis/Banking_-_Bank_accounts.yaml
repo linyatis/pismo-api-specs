@@ -1,0 +1,3359 @@
+openapi: 3.1.0
+info:
+  title: Banking - Bank accounts
+  version: 1.0.0
+  description: API for managing bank accounts in global formats
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/intl-bankaccounts
+    description: Sandbox API server for testing
+security:
+  - BearerAuth: []
+tags:
+  - name: Bank accounts
+    description: Bank account management endpoints
+  - name: Beneficiaries
+    description: Beneficiaries management endpoints
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account token - token encoded with Pismo account ID. Tokens can expire
+        quickly, which can result in an **401 Unauthorized** error.
+      bearerFormat: JWT
+  parameters:
+    accountIDpath:
+      name: accountId
+      in: path
+      description: Pismo account ID
+      required: true
+      schema:
+        type: string
+      example: '78123456'
+    auth:
+      name: AuthorizationHeader
+      in: header
+      description: >
+        Account token - Token encoded with a Pismo account ID. Tokens can expire
+        quickly, which can result in a **401 Unauthorized** error. 
+      required: true
+      schema:
+        type: string
+      example: 1234
+    beneficiaryIDpath:
+      name: beneficiaryId
+      in: path
+      description: >
+        Beneficiary identifier (UUID). This field is returned from the <a
+        href="https://developers.pismo.io/pismo-docs/reference/post-intl-bank-accounts-v1-bank-accounts-beneficiaries">Register
+        beneficiary</a> endpoint.
+      required: true
+      schema:
+        type: string
+      example: 3456
+    schemeNamePath:
+      name: schemeNamePath
+      in: path
+      description: |
+        Bank account's scheme (account type): 
+        `IBAN` - International Bank Account Number  
+        `UK-SCAN` - UK bank account - sort code + account number (SCAN)
+        `BRAZIL` - Brazilian bank account 
+        `BBAN` - Basic Bank Account Number
+        `ACH` - Automated Clearing House for US Account
+        `FEDWIRE` - US Account scheme
+        `CLABE` - Mexico bank account scheme
+      required: true
+      schema:
+        type: string
+        enum:
+          - IBAN
+          - UK-SCAN
+          - BRAZIL
+          - BBAN
+          - ACH
+          - FEDWIRE
+          - CLABE
+      example: IBAN
+    sortCodePath:
+      in: path
+      name: sortCode
+      description: >-
+        Sort code - used to identify a UK bank-branch. The UK brank branch sort
+        code is a six-digit code that is split into pairs with dashes in
+        between.
+      required: true
+      schema:
+        type: string
+      example: 12-34-56
+  schemas:
+    accountID:
+      type: integer
+      description: Account ID
+      example: 78123456
+    usaAccountNumber:
+      type: string
+      minLength: 17
+      maxLength: 17
+      example: '12345678901234567'
+      description: Account number
+    usaRoutingNumber:
+      type: string
+      minLength: 9
+      maxLength: 9
+      example: '123456789'
+      description: >
+        A routing number is a nine-digit number used to identify a financial
+        institution in the United States. It is also known as an ABA (American
+        Bankers Association) number.
+    brazilAccountType:
+      type: string
+      enum:
+        - CACC
+        - SLRY
+        - SVGS
+        - TRAN
+      maxLength: 4
+      description: |
+        Account type:  
+          `CACC` - Checking/current account. Known as "conta corrente" in Portuguese, this is a bank account type designed for everyday financial transactions and is the most common type individuals and businesses use for day-to-day banking.
+          `SVGS` - Savings account
+          `TRAN` - Payment account. Payment institutions offer payment accounts to move funds and make payments, while banks offer checking accounts that include full financial services such as credit and investments.
+          `SLRY` - Salary account. Employer deposits a fixed amount every month.
+      example: TRAN
+    brazilBank:
+      type: string
+      minLength: 8
+      maxLength: 8
+      description: >-
+        <a
+        href="https://bank.codes/numero-do-banco/bank/banco-central-do-brasil/"
+        target="_blank">ISPB (Identificador do Sistema de Pagamento Brazil)</a>
+        - the Brazilian payment system bank ID, the value is eight digits long.
+      example: '76523428'
+    brazilBranch:
+      type: string
+      description: >-
+        Branch code, a 4-digit value. Values under four digits are left-padded
+        with zeroes.
+      minLength: 1
+      maxLength: 4
+      example: '0186'
+    brazilAccountNumber:
+      type: string
+      minLength: 1
+      maxLength: 13
+      example: '1773065291'
+      description: Account number. Cannot contain leading zeroes.
+    beneBankCode:
+      type: string
+      description: Beneficiary bank code.
+      maxLength: 20
+      example: '1086'
+    beneBranch:
+      maxLength: 50
+      description: Beneficiary branch.
+      type: string
+      example: '5555555'
+    beneAccountCode:
+      type: string
+      maxLength: 50
+      description: Beneficiary account code.
+      example: '7654321'
+    beneAlias:
+      type: string
+      maxLength: 20
+      description: Beneficiary alias.
+      example: Curveball
+    beneName:
+      type: string
+      description: Beneficiary's first and last name.
+      maxLength: 50
+      example: Al Freydough
+    beneDocNumber:
+      type: string
+      description: >
+        A government document number, such as a Social Security number (US) or
+        Cadastro de Pessoas Físicas number (Brazil). 
+      maxLength: 20
+      example: '123412341234'
+    beneID:
+      type: string
+      maxLength: 32
+      description: UUID identifying beneficiary.
+      example: 123e4567-e89b-12d3-a456-42661417
+    beneEnabled:
+      type: boolean
+      description: Is beneficiary active flag.
+      example: true
+    beneficiaries.Beneficiary:
+      type: object
+      properties:
+        account_code:
+          $ref: '#/components/schemas/beneAccountCode'
+        account_id:
+          $ref: '#/components/schemas/accountID'
+        account_type:
+          $ref: '#/components/schemas/brazilAccountType'
+        alias:
+          $ref: '#/components/schemas/beneAlias'
+        bank_code:
+          $ref: '#/components/schemas/beneBankCode'
+        beneficiary_id:
+          $ref: '#/components/schemas/beneID'
+        branch:
+          $ref: '#/components/schemas/beneBranch'
+        creation_datetime:
+          $ref: '#/components/schemas/creationDatetime'
+        document_number:
+          $ref: '#/components/schemas/beneDocNumber'
+        enabled:
+          $ref: '#/components/schemas/beneEnabled'
+        name:
+          $ref: '#/components/schemas/beneName'
+        region:
+          $ref: '#/components/schemas/regionCode'
+        schema:
+          $ref: '#/components/schemas/beneSchema'
+        updated_datetime:
+          $ref: '#/components/schemas/updatedDatetime'
+    beneficiaries.RegisterBeneficiaryRequest:
+      type: object
+      required:
+        - account_code
+        - account_id
+        - name
+        - region
+        - schema
+      properties:
+        account_code:
+          $ref: '#/components/schemas/beneAccountCode'
+        account_id:
+          $ref: '#/components/schemas/accountID'
+        name:
+          $ref: '#/components/schemas/beneName'
+        region:
+          $ref: '#/components/schemas/regionCode'
+        schema:
+          $ref: '#/components/schemas/beneSchema'
+        account_type:
+          $ref: '#/components/schemas/brazilAccountType'
+        alias:
+          $ref: '#/components/schemas/beneAlias'
+        bank_code:
+          $ref: '#/components/schemas/beneBankCode'
+        branch:
+          $ref: '#/components/schemas/beneBranch'
+        document_number:
+          $ref: '#/components/schemas/beneDocNumber'
+    beneficiaries.SearchBeneficiaryResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/beneficiaries.Beneficiary'
+        last_evaluated_creation_datetime:
+          type: string
+          description: Use this field to get next results
+        per_page:
+          type: integer
+          description: Items per page.
+          example: 10
+        total_items:
+          type: integer
+          description: Total items
+          example: 100
+    beneficiaries.UpdateBeneficiaryRequest:
+      type: object
+      properties:
+        alias:
+          $ref: '#/components/schemas/beneAlias'
+        name:
+          $ref: '#/components/schemas/beneName'
+    beneSchema:
+      type: string
+      description: |
+        Beneficiary schema validation: 
+
+          `BANKACCOUNT` -  `account_code` contains a Brazilian account number (used in junction with the `bank_code` and `branch` fields)
+
+          `PIX` - `account_code` contains a valid Pix key. For more information, see <a href="https://developers.pismo.io/pismo-docs/docs/pix-instant-payments" target="_blank">Pix instant payments</a>
+
+         `DOCUMENTNUMBER` - `account_code` contains a valid Brazilian document number. This is government document number, such as Cadastro de Pessoas Físicas number - a Brazilian tax registry number, similar to a Social Security number in the US. 
+      enum:
+        - BANKACCOUNT
+        - PIX
+        - DOCUMENTNUMBER
+      example: PIX
+    clearingCode:
+      type: string
+      description: >
+        A clearing code identifies specific banks or financial institutions for
+        transactions within a country's banking system. It varies by country.
+      maxLength: 20
+    creationDatetime:
+      type: string
+      format: date-time
+      description: >-
+        Account creation date time displayed in ISO 8601 format
+        `2023-04-12T23:20:50.52Z`.
+      example: '2023-04-12T23:20:50.52Z'
+    domain.Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error type code
+          example: EIBA0001
+        details:
+          type: string
+          description: Error details
+          example: Key not found
+        message:
+          type: string
+          description: Error message
+          example: Key not found
+    intlbankaccounts.BrazilScheme:
+      type: object
+      required:
+        - bank
+        - branch
+        - account_number
+        - supplementary_data
+      properties:
+        bank:
+          $ref: '#/components/schemas/brazilBank'
+        branch:
+          $ref: '#/components/schemas/brazilBranch'
+        account_number:
+          $ref: '#/components/schemas/brazilAccountNumber'
+        supplementary_data:
+          $ref: '#/components/schemas/intlbankaccounts.BrazilSupplementaryData'
+    intlbankaccounts.BbanScheme:
+      type: object
+      required:
+        - bban
+      properties:
+        bban:
+          type: string
+          description: >-
+            Basic Bank Account Number (BBAN). BBAN is a bank account numbering
+            system used in many countries, especially in Europe.
+          maxLength: 30
+          example: GB539007547034
+    intlbankaccounts.BrazilSupplementaryData:
+      type: object
+      required:
+        - account_type
+      properties:
+        account_type:
+          $ref: '#/components/schemas/brazilAccountType'
+    intlbankaccounts.IbanScheme:
+      type: object
+      required:
+        - iban
+      properties:
+        iban:
+          type: string
+          maxLength: 34
+          description: >
+            International Bank Account Number (IBAN).
+
+
+            IBAN structure varies by country, but typically includes a 2 letter
+            country code, two check digits for error detection, a bank
+            identifier and an account number.
+          example: GB29NWBK60161331926819
+    intlbankaccounts.AchScheme:
+      type: object
+      required:
+        - account_number
+        - routing_number
+      properties:
+        account_number:
+          $ref: '#/components/schemas/usaAccountNumber'
+        routing_number:
+          $ref: '#/components/schemas/usaRoutingNumber'
+    intlbankaccounts.FedWireScheme:
+      type: object
+      required:
+        - account_number
+        - routing_number
+      properties:
+        account_number:
+          $ref: '#/components/schemas/usaAccountNumber'
+        routing_number:
+          $ref: '#/components/schemas/usaRoutingNumber'
+    intlbankaccounts.ClabeScheme:
+      type: object
+      required:
+        - clabe
+      properties:
+        clabe:
+          type: string
+          length: 18
+          description: >
+            The Clave Bancaria Estandarizada (CLABE) is an 18-digit standardized
+            bank code used for identifying bank accounts in Mexico.
+          example: '003290103581700922'
+    intlbankaccounts.IntlBankAccountBbanRequest:
+      type: object
+      required:
+        - scheme
+      properties:
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.BbanScheme'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+    intlbankaccounts.IntlBankAccountBbanResponse:
+      type: object
+      required:
+        - scheme
+      properties:
+        account_id:
+          $ref: '#/components/schemas/accountID'
+        creation_datetime:
+          $ref: '#/components/schemas/creationDatetime'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.BbanScheme'
+    intlbankaccounts.IntlBankAccountBrazilRequest:
+      type: object
+      required:
+        - scheme
+      properties:
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.BrazilScheme'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+    intlbankaccounts.IntlBankAccountBrazilResponse:
+      type: object
+      required:
+        - scheme
+      properties:
+        account_id:
+          $ref: '#/components/schemas/accountID'
+        creation_datetime:
+          $ref: '#/components/schemas/creationDatetime'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.BrazilScheme'
+    intlbankaccounts.IntlBankAccountAchRequest:
+      type: object
+      required:
+        - scheme
+      properties:
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.AchScheme'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+    intlbankaccounts.IntlBankAccountAchResponse:
+      type: object
+      required:
+        - scheme
+      properties:
+        account_id:
+          $ref: '#/components/schemas/accountID'
+        creation_datetime:
+          $ref: '#/components/schemas/creationDatetime'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.AchScheme'
+    intlbankaccounts.IntlBankAccountFedWireRequest:
+      type: object
+      required:
+        - scheme
+      properties:
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.FedWireScheme'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+    intlbankaccounts.IntlBankAccountFedWireResponse:
+      type: object
+      required:
+        - scheme
+      properties:
+        account_id:
+          $ref: '#/components/schemas/accountID'
+        creation_datetime:
+          $ref: '#/components/schemas/creationDatetime'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.FedWireScheme'
+    intlbankaccounts.IntlBankAccountClabeRequest:
+      type: object
+      required:
+        - scheme
+      properties:
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.ClabeScheme'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+    intlbankaccounts.IntlBankAccountClabeResponse:
+      type: object
+      required:
+        - scheme
+      properties:
+        account_id:
+          $ref: '#/components/schemas/accountID'
+        creation_datetime:
+          $ref: '#/components/schemas/creationDatetime'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.ClabeScheme'
+    intlbankaccounts.IntlBankAccountExternal:
+      type: object
+      properties:
+        account_id:
+          $ref: '#/components/schemas/accountID'
+        creation_datetime:
+          $ref: '#/components/schemas/creationDatetime'
+        updated_datetime:
+          $ref: '#/components/schemas/updatedDatetime'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+        scheme:
+          oneOf:
+            - $ref: '#/components/schemas/intlbankaccounts.IbanScheme'
+            - $ref: '#/components/schemas/intlbankaccounts.UkScanScheme'
+            - $ref: '#/components/schemas/intlbankaccounts.BrazilScheme'
+            - $ref: '#/components/schemas/intlbankaccounts.BbanScheme'
+            - $ref: '#/components/schemas/intlbankaccounts.AchScheme'
+            - $ref: '#/components/schemas/intlbankaccounts.FedWireScheme'
+            - $ref: '#/components/schemas/intlbankaccounts.ClabeScheme'
+    intlbankaccounts.IntlBankAccountSearchRequest:
+      type: object
+      required:
+        - scheme
+      properties:
+        scheme:
+          oneOf:
+            - $ref: '#/components/schemas/intlbankaccounts.IbanScheme'
+            - $ref: '#/components/schemas/intlbankaccounts.UkScanScheme'
+            - $ref: '#/components/schemas/intlbankaccounts.BrazilScheme'
+            - $ref: '#/components/schemas/intlbankaccounts.BbanScheme'
+            - $ref: '#/components/schemas/intlbankaccounts.AchScheme'
+            - $ref: '#/components/schemas/intlbankaccounts.FedWireScheme'
+            - $ref: '#/components/schemas/intlbankaccounts.ClabeScheme'
+    intlbankaccounts.IntlBankAccountIbanRequest:
+      type: object
+      required:
+        - scheme
+      properties:
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.IbanScheme'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+    intlbankaccounts.IntlBankAccountIbanResponse:
+      type: object
+      required:
+        - scheme
+      properties:
+        account_id:
+          $ref: '#/components/schemas/accountID'
+        creation_datetime:
+          $ref: '#/components/schemas/creationDatetime'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.IbanScheme'
+    intlbankaccounts.IntlBankAccountUkScanRequest:
+      type: object
+      required:
+        - scheme
+      properties:
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.UkScanScheme'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+    intlbankaccounts.IntlBankAccountUkScanResponse:
+      type: object
+      required:
+        - scheme
+      properties:
+        account_id:
+          $ref: '#/components/schemas/accountID'
+        creation_datetime:
+          $ref: '#/components/schemas/creationDatetime'
+        metadata:
+          $ref: '#/components/schemas/metadata'
+        scheme:
+          $ref: '#/components/schemas/intlbankaccounts.UkScanScheme'
+    intlbankaccounts.UkScanScheme:
+      required:
+        - account_number
+        - sort_code
+      type: object
+      properties:
+        account_number:
+          type: string
+          maxLength: 8
+          description: Account number
+        sort_code:
+          $ref: '#/components/schemas/sortCode'
+    metadata:
+      additionalProperties: true
+      type: object
+      description: >-
+        A set of key-value pairs used to store custom data or additional
+        information.
+    regionCode:
+      type: string
+      description: ISO-3166 two letter country code. For example, BR=Brazil.
+      example: BR
+    sortCode:
+      type: string
+      description: >
+        In UK banking, a sort code is a unique identifier used to route money
+        transfers between banks and financial institutions. Similar to a routing
+        number in the US. It is a six-digit number that identifies both the bank
+        and the specific branch office. Each bank branch office has its own
+        unique sort code. The first two digits identity the bank and the
+        remaining 4 digits identify the branch.
+      maxLength: 6
+      minLength: 6
+      example: '123456'
+    intlbankaccounts.UpdateIntlBankAccountRequest:
+      required:
+        - scheme
+      type: object
+      properties:
+        metadata:
+          $ref: '#/components/schemas/metadata'
+        scheme:
+          type: object
+          description: Scheme-specific fields
+    sortcodes.GetSortCodeResponse:
+      type: object
+      properties:
+        address_line_1:
+          type: string
+          description: Bank office address line 1.
+          example: Bolton Customer Service Centre
+          maxLength: 35
+          minLength: 0
+        address_line_2:
+          type: string
+          description: Bank office address line 2.
+          example: PO Box 2027 Parklands
+          maxLength: 35
+          minLength: 0
+        address_line_3:
+          type: string
+          description: Bank office address line 3.
+          example: De Havilland Way
+          maxLength: 35
+          minLength: 0
+        address_line_4:
+          type: string
+          description: Bank office address line 4.
+          maxLength: 35
+          minLength: 0
+          example: Horwich
+        bank_full_name:
+          type: string
+          description: Bankers' Automated Clearing Services (BACS) approved name.
+          maxLength: 71
+          minLength: 1
+          example: NATIONAL WESTMINSTER BANK PLC
+        bank_short_name:
+          type: string
+          description: Bankers' Automated Clearing Services (BACS) approved short name.
+          maxLength: 20
+          minLength: 1
+          example: NAT WEST BANK PLC
+        city:
+          type: string
+          description: Bank office's town/city.
+          maxLength: 30
+          minLength: 0
+          example: Bolton
+        payment_schemes:
+          $ref: '#/components/schemas/sortcodes.PaymentSchemes'
+        sort_code:
+          $ref: '#/components/schemas/sortCode'
+        zip_code:
+          type: string
+          description: Bank office's postal code.
+          maxLength: 9
+          minLength: 0
+          example: BL6 BL6
+    sortcodes.PaymentSchemes:
+      type: object
+      properties:
+        bacs:
+          type: boolean
+          description: >
+            Does the bank/branch participate in the Banker's Automated Clearing
+            Service (BACS) payment system?
+          example: true
+        chaps:
+          type: boolean
+          description: >
+            Does the bank/branch participate in the Clearing House Automated
+            Payment System (CHAPS)?
+          example: true
+        fps:
+          type: boolean
+          description: |
+            Does the bank/branch participate in the Faster Payment System (FPS)?
+          example: true
+        ics:
+          type: boolean
+          description: >
+            Does the bank/branch participate in the Image Clearing System (ICS)
+            used for processing cheques in the UK?
+          example: true
+    updatedDatetime:
+      type: string
+      format: date-time
+      description: Updated date time. A RFC 3339 value, i.e., "2023-04-12T23:20:50.52Z".
+      example: '2023-04-12T23:20:50.52Z'
+paths:
+  /v2/accounts/{accountId}/bank-accounts/iban:
+    post:
+      tags:
+        - Bank accounts
+      summary: Register IBAN account
+      description: >
+        Register a new International Bank Account Number (IBAN) bank account. 
+
+
+        IBAN is a standardized international system developed to identify bank
+        accounts when making international transactions. For more information,
+        refer to <a href="https://www.investopedia.com/terms/i/iban.asp"
+        target="_blank"> What Is an International Bank Account Number (IBAN) and
+        How Does It Work</a>.
+
+
+        To read about Pismo's banking offerings, see [Banking
+        overview](doc:banking-overview).
+
+
+        This endpoint generates a <a
+        href="https://developers.pismo.io/events/docs/intl-bankaccounts-intl-bankaccount-register-1">Bank
+        account registered</a> event.
+      operationId: post-intl-bank-accounts-v2-accounts-account-id-bank-accounts-iban
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/accountIDpath'
+      requestBody:
+        description: Register IBAN request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/intlbankaccounts.IntlBankAccountIbanRequest'
+        required: true
+      responses:
+        '201':
+          description: Response body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/intlbankaccounts.IntlBankAccountIbanResponse
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0009:
+                  summary: Validation Error
+                  value:
+                    code: EIBA0009
+                    message: Validation error
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0028:
+                  summary: IntlBankAccount Already Exists
+                  value:
+                    code: EIBA0028
+                    message: IntlBankAccount - Already Exists
+        '500':
+          description: Internal Server
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+      x-codegen-request-body-name: RequestBody
+  /v2/accounts/{accountId}/bank-accounts/ach:
+    post:
+      tags:
+        - Bank accounts
+      summary: Register ACH account
+      description: >
+        Register a new Automated Clearing House (ACH) bank account. 
+
+
+        ACH is an electronic network for financial transactions in the United
+        States. ACH processes large volumes of credit and debit transactions in
+        batches.
+
+
+        To read about Pismo's banking offerings, see [Banking
+        overview](doc:banking-overview).
+
+
+        This endpoint generates a [Bank account
+        registered](https://developers.pismo.io/events/docs/intl-bankaccounts-intl-bankaccount-register-1)
+        event.
+      operationId: post-intl-bank-accounts-v2-accounts-account-id-bank-accounts-ach
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/accountIDpath'
+      requestBody:
+        description: Register ACH request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/intlbankaccounts.IntlBankAccountAchRequest'
+        required: true
+      responses:
+        '201':
+          description: Response body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/intlbankaccounts.IntlBankAccountAchResponse
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0009:
+                  summary: Validation Error
+                  value:
+                    code: EIBA0009
+                    message: Validation error
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0028:
+                  summary: IntlBankAccount Already Exists
+                  value:
+                    code: EIBA0028
+                    message: IntlBankAccount - Already Exists
+        '500':
+          description: Internal Server
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+      x-codegen-request-body-name: RequestBody
+  /v2/accounts/{accountId}/bank-accounts/fedwire:
+    post:
+      tags:
+        - Bank accounts
+      summary: Register Fedwire account
+      description: >
+        Register a new Fedwire bank account.
+
+
+        Fedwire is a real-time gross settlement funds transfer system operated
+        by the Federal Reserve Banks in the United States.
+
+
+        To read about Pismo's banking offerings, see [Banking
+        overview](doc:banking-overview).
+
+
+        This endpoint generates a [Bank account
+        registered](https://developers.pismo.io/events/docs/intl-bankaccounts-intl-bankaccount-register-1)
+        event.
+      operationId: post-intl-bank-accounts-v2-accounts-account-id-bank-accounts-fedwire
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/accountIDpath'
+      requestBody:
+        description: Register FedWire request Body
+        content:
+          application/json:
+            schema:
+              $ref: >-
+                #/components/schemas/intlbankaccounts.IntlBankAccountFedWireRequest
+        required: true
+      responses:
+        '201':
+          description: Response body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/intlbankaccounts.IntlBankAccountFedWireResponse
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0009:
+                  summary: Validation Error
+                  value:
+                    code: EIBA0009
+                    message: Validation error
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0028:
+                  summary: IntlBankAccount Already Exists
+                  value:
+                    code: EIBA0028
+                    message: IntlBankAccount - Already Exists
+        '500':
+          description: Internal Server
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+      x-codegen-request-body-name: RequestBody
+  /v2/accounts/{accountId}/bank-accounts/clabe:
+    post:
+      tags:
+        - Bank accounts
+      summary: Register CLABE account
+      description: >
+        Register a new Clave Bancaria Estandarizada (CLABE) bank code for
+        Mexican bank accounts. 
+
+
+        A Clave Bancaria Estandarizada, commonly known as CLABE, is an 18-digit
+        standardized banking code used in Mexico for domestic electronic fund
+        transfers. It functions as a unique identifier for each bank account,
+        similar to an International Bank Account Number (IBAN) in other
+        countries. The CLABE is required for sending and receiving inter-bank
+        transfers within Mexico. 
+
+
+        To read about Pismo's banking offerings, see [Banking
+        overview](doc:banking-overview).
+
+
+        This endpoint generates a <a
+        href="https://developers.pismo.io/events/docs/intl-bankaccounts-intl-bankaccount-register-1">Bank
+        account registered</a> event.
+      operationId: post-intl-bank-accounts-v2-accounts-account-id-bank-accounts-clabe
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/accountIDpath'
+      requestBody:
+        description: Register CLABE request Body
+        content:
+          application/json:
+            schema:
+              $ref: >-
+                #/components/schemas/intlbankaccounts.IntlBankAccountClabeRequest
+        required: true
+      responses:
+        '201':
+          description: Response body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/intlbankaccounts.IntlBankAccountClabeResponse
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0009:
+                  summary: Validation Error
+                  value:
+                    code: EIBA0009
+                    message: Validation error
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0028:
+                  summary: IntlBankAccount Already Exists
+                  value:
+                    code: EIBA0028
+                    message: IntlBankAccount - Already Exists
+        '500':
+          description: Internal Server
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+      x-codegen-request-body-name: RequestBody
+  /v2/accounts/{accountId}/bank-accounts/uk-scan:
+    post:
+      tags:
+        - Bank accounts
+      summary: Register UK bank account
+      description: >
+        Register a new bank account with UK's sort code + account number (SCAN)
+        scheme.
+
+
+        In UK banking, a sort code is a unique identifier used to route money
+        transfers between banks and financial institutions. Its similar to a
+        routing number in the US. It is a six-digit number that identifies both
+        the bank and the specific branch. Each bank and branch has its own
+        unique sort code. The first two digits identify the bank and the
+        remaining 4 digits identify the branch.
+
+
+        To read about Pismo's banking offerings, see [Banking
+        overview](doc:banking-overview).
+
+
+        This endpoint generates a <a
+        href="https://developers.pismo.io/events/docs/intl-bankaccounts-intl-bankaccount-register-1">Bank
+        account registered</a> event.
+      operationId: post-intl-bank-accounts-v2-accounts-account-id-bank-accounts-uk-scan
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/accountIDpath'
+      requestBody:
+        description: Register UK bank account request body
+        content:
+          application/json:
+            schema:
+              $ref: >-
+                #/components/schemas/intlbankaccounts.IntlBankAccountUkScanRequest
+        required: true
+      responses:
+        '201':
+          description: Response
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/intlbankaccounts.IntlBankAccountUkScanResponse
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0009:
+                  summary: Validation Error
+                  value:
+                    code: EIBA0009
+                    message: Validation error
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0028:
+                  summary: IntlBankAccount Already Exists
+                  value:
+                    code: EIBA0028
+                    message: IntlBankAccount - Already Exists
+        '500':
+          description: Internal Server
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+      x-codegen-request-body-name: RequestBody
+  /v2/accounts/{accountId}/bank-accounts/brazil:
+    post:
+      tags:
+        - Bank accounts
+      summary: Register Brazilian bank account
+      description: >
+        Register a new bank account with Brazilian bank + branch + account
+        number scheme.
+
+
+        To read about Pismo's banking offerings, see [Banking
+        overview](doc:banking-overview).
+
+
+        This endpoint generates a <a
+        href="https://developers.pismo.io/events/docs/intl-bankaccounts-intl-bankaccount-register-1">Bank
+        account registered</a> event.
+      operationId: post-intl-bank-accounts-v2-accounts-account-id-bank-accounts-brazil
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/accountIDpath'
+      requestBody:
+        description: Register Brazilian bank account request body
+        content:
+          application/json:
+            schema:
+              $ref: >-
+                #/components/schemas/intlbankaccounts.IntlBankAccountBrazilRequest
+        required: true
+      responses:
+        '201':
+          description: Register Brazilian bank account response body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/intlbankaccounts.IntlBankAccountBrazilResponse
+        '400':
+          description: Bad
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0009:
+                  summary: Validation Error
+                  value:
+                    code: EIBA0009
+                    message: Validation error
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0028:
+                  summary: IntlBankAccount Already Exists
+                  value:
+                    code: EIBA0028
+                    message: IntlBankAccount - Already Exists
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+      x-codegen-request-body-name: RequestBody
+  /v2/accounts/{accountId}/bank-accounts/bban:
+    post:
+      tags:
+        - Bank accounts
+      summary: Register BBAN account
+      description: >
+        Register a new Basic Bank Account Number (BBAN) bank account.
+
+
+        BBAN is a bank account numbering system used in many countries,
+        especially in Europe. For international transactions, the BBAN is
+        combined with the country code and a checksum to create an IBAN
+        (International Bank Account Number).
+
+
+        To read about Pismo's banking offerings, see [Banking
+        overview](doc:banking-overview).
+
+
+        This endpoint generates a <a
+        href="https://developers.pismo.io/events/docs/intl-bankaccounts-intl-bankaccount-register-1">Bank
+        account registered</a> event.
+      operationId: post-intl-bank-accounts-v2-accounts-account-id-bank-accounts-bban
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/accountIDpath'
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/intlbankaccounts.IntlBankAccountBbanRequest'
+        required: true
+      responses:
+        '201':
+          description: Response Body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/intlbankaccounts.IntlBankAccountBbanResponse
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0009:
+                  summary: Validation Error
+                  value:
+                    code: EIBA0009
+                    message: Validation error
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0028:
+                  summary: IntlBankAccount Already Exists
+                  value:
+                    code: EIBA0028
+                    message: IntlBankAccount - Already Exists
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+      x-codegen-request-body-name: RequestBody
+  /v2/accounts/{accountId}/bank-accounts/{schemeNamePath}:
+    get:
+      tags:
+        - Bank accounts
+      summary: Get bank account
+      description: >
+        Get a bank account given its Pismo account ID and scheme name in the
+        path.
+
+
+        To read about Pismo's banking offerings, see [Banking
+        overview](doc:banking-overview).
+      operationId: >-
+        get-intl-bank-accounts-v2-bank-accounts-account-id-bank-accounts-scheme-name
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/accountIDpath'
+        - $ref: '#/components/parameters/schemeNamePath'
+      responses:
+        '200':
+          description: Response
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/intlbankaccounts.IntlBankAccountExternal'
+        '400':
+          description: Bad
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+                EIBA0016:
+                  summary: Account ID mismatch
+                  value:
+                    code: EIBA0016
+                    message: >-
+                      Account ID in header does not match account ID in request
+                      body
+                EIBA0030:
+                  summary: Invalid Value for Scheme Name
+                  value:
+                    code: EIBA0030
+                    message: Invalid value for scheme_name
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+                EIBA0029:
+                  summary: IntlBankAccount not found
+                  value:
+                    code: EIBA0022
+                    message: IntlBankAccount not found
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+    delete:
+      tags:
+        - Bank accounts
+      summary: Delete bank account
+      description: >
+        Delete a bank account given its Pismo account ID and scheme name in the
+        path.
+
+
+        To read about Pismo's banking offerings, see [Banking
+        overview](doc:banking-overview).
+
+
+        This endpoint generates a <a
+        href="https://developers.pismo.io/events/docs/intl-bankaccounts-intl-bankaccount-update-1">Bank
+        account updated</a> event.
+      operationId: >-
+        delete-intl-bank-accounts-v2-accounts-account-id-bank-accounts-scheme-name
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/accountIDpath'
+        - $ref: '#/components/parameters/schemeNamePath'
+      responses:
+        '204':
+          description: Response does not contain a body in case of successful deletion
+          content: {}
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+                EIBA0016:
+                  summary: Account ID mismatch
+                  value:
+                    code: EIBA0016
+                    message: >-
+                      Account ID in header does not match account ID in request
+                      body
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+        '500':
+          description: Internal Server
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+    patch:
+      tags:
+        - Bank accounts
+      summary: Update bank account
+      description: >
+        Update a bank account given its Pismo account ID and scheme name in the
+        path.
+
+
+        To read about Pismo's banking offerings, see [Banking
+        overview](doc:banking-overview).
+
+
+        This endpoint generates a <a
+        href="https://developers.pismo.io/events/docs/intl-bankaccounts-intl-bankaccount-update-1">Bank
+        account updated</a> event.
+      operationId: >-
+        update-intl-bank-accounts-v2-accounts-account-id-bank-accounts-scheme-name
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/accountIDpath'
+        - $ref: '#/components/parameters/schemeNamePath'
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: >-
+                #/components/schemas/intlbankaccounts.UpdateIntlBankAccountRequest
+        required: true
+      responses:
+        '204':
+          description: Response does not contain a body in case of successful update
+          content: {}
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+                EIBA0016:
+                  summary: Account ID mismatch
+                  value:
+                    code: EIBA0016
+                    message: >-
+                      Account ID in header does not match account ID in request
+                      body
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+        '500':
+          description: Internal Server
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+  /v1/sortcodes/{sortCode}:
+    get:
+      summary: Get UK bank branch info
+      description: >
+        Get information for a United Kingdom (UK) bank-branch given its *sort
+        code* in the path.
+
+
+        To read about Pismo's banking offerings, see [Banking
+        overview](doc:banking-overview).
+
+
+        In UK banking, a sort code is a unique identification code used to route
+        money transfers between banks and financial institutions. Its similar to
+        a routing number in the US. It is a six-digit number that identifies
+        both the bank and the specific branch. Each bank and branch has its own
+        unique sort code. The first two digits identity the bank and the
+        remaining 4 digits identify the branch.
+      operationId: get-intl-bank-accounts-v1-sort-codes-sort-code
+      tags:
+        - Bank accounts
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/sortCodePath'
+      responses:
+        '200':
+          description: Get UK bank-branch office info response
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/sortcodes.GetSortCodeResponse'
+        '400':
+          description: Bad
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0031:
+                  summary: Invalid Sort Code
+                  value:
+                    code: EIBA0005
+                    message: Invalid sort code path parameter, expected 6-digit number
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0031:
+                  summary: Sort Code Not Found
+                  value:
+                    code: EIBA0005
+                    message: Sort Code not found
+        '500':
+          description: Internal Server
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+  /v1/beneficiaries:
+    post:
+      tags:
+        - Beneficiaries
+      summary: Register beneficiary
+      description: >
+        Register a new beneficiary with Pismo.
+
+
+        A newly-registerd beneficiary is not initially enabled and must be <a
+        href="https://developers.pismo.io/pismo-docs/reference/post-intl-bank-accounts-v1-bank-accounts-beneficiaries-beneficiary-id-activate">activated</a>
+        before use in transactions.
+      operationId: post-intl-bank-accounts-v1-bank-accounts-beneficiaries
+      parameters:
+        - $ref: '#/components/parameters/auth'
+      requestBody:
+        description: Register beneficiary request body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/beneficiaries.RegisterBeneficiaryRequest'
+        required: true
+      responses:
+        '201':
+          description: Register beneficiary response body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/beneficiaries.Beneficiary'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0009:
+                  summary: Validation Error
+                  value:
+                    code: EIBA0009
+                    message: Validation error
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+                EIBA0016:
+                  summary: Account ID mismatch
+                  value:
+                    code: EIBA0016
+                    message: >-
+                      Account ID in header does not match account ID in request
+                      body
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0017:
+                  summary: Beneficiary Already Exists
+                  value:
+                    code: EIBA0017
+                    message: Beneficiary - Already Exists
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+    get:
+      tags:
+        - Beneficiaries
+      summary: List beneficiaries
+      description: |
+        List registered beneficiaries with query filtering options.
+      operationId: get-intl-bank-accounts-v1-bank-accounts-beneficiaries
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - name: lastEvaluatedCreationDatetime
+          in: query
+          description: >
+            This is the `last_evaluated_creation_datetime` field from the
+            response. You can use it to get the next page of results on a
+            subsequent call.
+          schema:
+            type: string
+        - name: perPage
+          in: query
+          description: Number of items per page, min=1, max=100, default=20.
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: >-
+            Sort order. Results are ordered on the `created_datetime` field.
+            Default=`DESC`.
+          schema:
+            type: string
+            enum:
+              - DESC
+              - ASC
+        - name: name
+          in: query
+          description: Beneficiary name
+          schema:
+            type: string
+            maxLength: 50
+        - name: alias
+          in: query
+          description: Beneficiary alias
+          schema:
+            type: string
+            maxLength: 20
+        - name: enabled
+          in: query
+          description: >-
+            Return only active or non-active beneficiaries flag. If not passed,
+            all beneficiares are returned.
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Response Body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/beneficiaries.SearchBeneficiaryResponse'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+                EIBA0018:
+                  summary: Invalid perPage Query Parameter
+                  value:
+                    code: EIBA0018
+                    message: Invalid value for query param 'perPage'
+                EIBA0019:
+                  summary: Invalid Datetime Query Parameter
+                  value:
+                    code: EIBA0019
+                    message: >-
+                      Invalid value for datetime query parameter. RFC3339 format
+                      must be used
+                EIBA0020:
+                  summary: Invalid Boolean Query Parameter
+                  value:
+                    code: EIBA0020
+                    message: Invalid value for boolean query parameter
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+      x-codegen-request-body-name: RequestBody
+  /v1/beneficiaries/{beneficiaryId}/activate:
+    post:
+      tags:
+        - Beneficiaries
+      summary: Activate beneficiary
+      description: >
+        Activate a beneficiary. 
+
+
+        Activating a beneficiary authorizes or confirms a particular individual,
+        organization, or account can receive frunds from another account. This
+        is usually required before initiating transactions, especially fund
+        transfers, to ensure that the recipient is approved to receive money.
+      operationId: >-
+        post-intl-bank-accounts-v1-bank-accounts-beneficiaries-beneficiary-id-activate
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/beneficiaryIDpath'
+      responses:
+        '200':
+          description: Response Body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/beneficiaries.Beneficiary'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+                EIBA0016:
+                  summary: Account ID mismatch
+                  value:
+                    code: EIBA0016
+                    message: >-
+                      Account ID in header does not match account ID in request
+                      body
+                EIBA0021:
+                  summary: Invalid UUID Path Parameter
+                  value:
+                    code: EIBA0021
+                    message: Invalid value for UUID path parameter
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+                EIBA0022:
+                  summary: Beneficiary Not Found
+                  value:
+                    code: EIBA0022
+                    message: Beneficiary not found
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+  /v1/beneficiaries/{beneficiaryId}:
+    get:
+      tags:
+        - Beneficiaries
+      summary: Get beneficiary
+      description: Get a beneficiary's information given its ID in the path.
+      operationId: get-intl-bank-accounts-v1-bank-accounts-beneficiaries-beneficiary-id
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/beneficiaryIDpath'
+      responses:
+        '200':
+          description: Get beneficiary response body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/beneficiaries.Beneficiary'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+                EIBA0016:
+                  summary: Account ID mismatch
+                  value:
+                    code: EIBA0016
+                    message: >-
+                      Account ID in header does not match account ID in request
+                      body
+                EIBA0021:
+                  summary: Invalid UUID Path Parameter
+                  value:
+                    code: EIBA0021
+                    message: Invalid value for UUID path parameter
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+                EIBA0022:
+                  summary: Beneficiary Not Found
+                  value:
+                    code: EIBA0022
+                    message: Beneficiary not found
+        '500':
+          description: Internal Server
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+    patch:
+      tags:
+        - Beneficiaries
+      summary: Update beneficiary
+      description: Update a beneficiary given its ID in the path.
+      operationId: patch-intl-bank-accounts-v1-beneficiaries-beneficiary-id
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/beneficiaryIDpath'
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/beneficiaries.UpdateBeneficiaryRequest'
+        required: true
+      responses:
+        '200':
+          description: Response
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/beneficiaries.Beneficiary'
+        '400':
+          description: Bad
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0009:
+                  summary: Validation Error
+                  value:
+                    code: EIBA0009
+                    message: Validation error
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+                EIBA0016:
+                  summary: Account ID mismatch
+                  value:
+                    code: EIBA0016
+                    message: >-
+                      Account ID in header does not match account ID in request
+                      body
+                EIBA0021:
+                  summary: Invalid UUID Path Parameter
+                  value:
+                    code: EIBA0021
+                    message: Invalid value for UUID path parameter
+                EIBA0024:
+                  summary: No Updatable Fields
+                  value:
+                    code: EIBA0024
+                    message: Request body contains no fields that can be updated
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+                EIBA0022:
+                  summary: beneficiary Not Found
+                  value:
+                    code: EIBA0022
+                    message: Beneficiary not found
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+    delete:
+      tags:
+        - Beneficiaries
+      summary: Delete beneficiary
+      description: Delete a beneficiary given its ID in the path.
+      operationId: delete-intl-bank-accounts-v1-beneficiaries-beneficiary-id
+      parameters:
+        - $ref: '#/components/parameters/auth'
+        - $ref: '#/components/parameters/beneficiaryIDpath'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+                EIBA0016:
+                  summary: Account ID mismatch
+                  value:
+                    code: EIBA0016
+                    message: >-
+                      Account ID in header does not match account ID in request
+                      body
+                EIBA0021:
+                  summary: Invalid UUID Path Parameter
+                  value:
+                    code: EIBA0021
+                    message: Invalid value for UUID path parameter
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+                EIBA0007:
+                  summary: Invalid account ID header
+                  value:
+                    code: EIBA0007
+                    message: 'Invalid account ID header: ''x-account-id'''
+                EIBA0023:
+                  summary: Account status not NORMAL
+                  value:
+                    code: EIBA0023
+                    message: Account status not NORMAL
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0010:
+                  summary: Account not found
+                  value:
+                    code: EIBA0010
+                    message: Account not found
+                EIBA0022:
+                  summary: Beneficiary Not Found
+                  value:
+                    code: EIBA0022
+                    message: Beneficiary not found
+        '500':
+          description: Internal Server
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error
+      x-codegen-request-body-name: RequestBody
+  /v3/bank-accounts/{schemeNamePath}/search:
+    post:
+      tags:
+        - Bank accounts
+      summary: Search bank account
+      description: Search for a bank account using various account schemes.
+      operationId: post-intl-bank-accounts-v3-bank-accounts-scheme-name-search
+      parameters:
+        - $ref: '#/components/parameters/schemeNamePath'
+      requestBody:
+        description: Request body matching the scheme specified in the path parameter.
+        content:
+          application/json:
+            schema:
+              $ref: >-
+                #/components/schemas/intlbankaccounts.IntlBankAccountSearchRequest
+        required: true
+      responses:
+        '200':
+          description: Success
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/intlbankaccounts.IntlBankAccountExternal'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0009:
+                  summary: Validation Error
+                  value:
+                    code: EIBA0009
+                    message: Validation error
+                EIBA0012:
+                  summary: Accounts API invalid request
+                  value:
+                    code: EIBA0012
+                    message: Accounts - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0006:
+                  summary: Missing tenant header
+                  value:
+                    code: EIBA0006
+                    message: 'Missing required header: ''x-tenant'''
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0029:
+                  summary: Intl Bank Account not found
+                  value:
+                    code: EIBA0029
+                    message: IntlBankAccount not found
+        '500':
+          description: Internal Server
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIBA0005:
+                  summary: HTTP error
+                  value:
+                    code: EIBA0005
+                    message: HTTP error
+                EIBA0011:
+                  summary: Accounts API server error
+                  value:
+                    code: EIBA0011
+                    message: Accounts - API returned 5xx error
+                EIBA0013:
+                  summary: Accounts API timeout
+                  value:
+                    code: EIBA0013
+                    message: Accounts - API timeout
+                EIBA0015:
+                  summary: Database error
+                  value:
+                    code: EIBA0015
+                    message: Database internal error

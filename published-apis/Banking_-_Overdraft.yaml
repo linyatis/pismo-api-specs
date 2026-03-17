@@ -1,0 +1,1114 @@
+openapi: 3.1.0
+info:
+  title: Banking - Overdraft
+  version: 1.0.0
+  description: >-
+    This API manages overdraft functionality, allowing account holders to
+    perform debit transactions even when their balance is insufficient.
+    Additionally, it enables the configuration of grace periods and interest
+    rates for overdrafts.
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/overdraft
+    description: Sandbox API server for testing
+security:
+  - BearerAuth: []
+tags:
+  - name: Product
+    description: Endpoints that manage overdraft products
+  - name: Account
+    description: >-
+      Endpoints that manage account attachments and detachment of overdraft
+      products
+components:
+  parameters:
+    accountIdPath:
+      name: accountId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Account ID
+      example: '123456'
+    programIdPath:
+      name: programId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Program ID
+      example: '123456'
+    authorizationTokenHeader:
+      name: AuthorizationToken
+      in: header
+      schema:
+        type: string
+      required: true
+      description: >
+        Account token. Token encoded with a Pismo account ID. Tokens can expire
+        quickly, which can result in a `401 Unauthorized` error.
+      example: '1234'
+    productIdPath:
+      name: productId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Overdraft product ID
+      example: 2c336e9d-d04f-4fd0-8f6e-25808f48d70c
+    xAccountIdHeader:
+      name: x-account-id
+      in: header
+      required: true
+      schema:
+        type: integer
+      description: Pismo account ID
+      example: 9812461
+  schemas:
+    AccountAttachment:
+      type: object
+      properties:
+        account_id:
+          type: integer
+          description: Pismo account ID
+        attach_datetime:
+          type: string
+          format: date-time
+          description: >
+            Datetime when the product was attached to the account. Format:
+            `YYYY-MM-DDThh:mm:ss.sss`.
+        status:
+          type: string
+          description: Status of the product attachment
+        overdraft:
+          $ref: '#/components/schemas/Product'
+        metadata:
+          type: object
+          additionalProperties: true
+          minLength: 0
+          maxLength: 1024
+          description: >
+            Additional details about the product attachment. The information
+            must be in `key:value` pair format. For example,
+            `name:<your_name>`.<br>
+
+            `minLength` = `0`
+
+            `maxLength` = `1024`
+    CreateProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Overdraft product name. This name is defined by the client.
+          example: Overdraft Limit 1000
+        interest_plan_id:
+          type: string
+          format: uuid
+          description: >-
+            Interest plan ID generated during the plan's creation. Created via
+            the [Create interest plan](ref:post-v1-interest-plan-1) endpoint.
+          example: b935acaf-886c-4817-8f7c-c2cc3ce4d509
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        grace_period:
+          type: integer
+          description: >-
+            Grace period during which you can restore the balance without
+            incurring any interest charges. The unit is measured in days.
+          example: 10
+      required:
+        - name
+        - interest_plan_id
+        - processing_code
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: EOVD0001
+        message:
+          type: string
+          description: Error message
+          example: Error
+        details:
+          type: string
+          description: Details about the error
+          example: Error details
+    ProcessingCode:
+      type: object
+      properties:
+        interest_processing_code:
+          type: string
+          description: Processing code for interest calculation
+          example: '123456'
+      required:
+        - interest_processing_code
+    Product:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          description: >-
+            Product ID generated for an overdraft product. Once this ID is
+            created, you must link it to your account ID.
+        name:
+          type: string
+          description: Produt name
+          example: Overdraft Limit 1000
+        interest_plan_id:
+          type: string
+          format: uuid
+          description: >-
+            Interest plan ID generated during the plan's creation. Created via
+            the [Create interest plan](ref:post-v1-interest-plan-1) endpoint.
+        grace_period:
+          type: integer
+          description: >-
+            Grace period during which you can restore the balance without
+            incurring any interest charges. The unit is measured in days.
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        status:
+          type: string
+          format: enum
+          description: >
+            Overdraft product status.<br>
+
+            * `CREATED`: When you successfully created an overdraft product.
+
+            * `ACTIVE`: When you attach your overdraft product to an account or
+            a program ID. Once it's attached, the product becomes `ACTIVE`.
+          enum:
+            - CREATED
+            - ACTIVE
+        created_at_datetime:
+          type: string
+          format: date-time
+          description: |
+            Product created datetime. Format: `YYYY-MM-DDThh:mm:ss.sss`.
+    ProductAttachRequest:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          description: Overdraft product ID
+          example: 876b2425-9778-4f02-8c50-67683e9a205e
+        metadata:
+          type: object
+          minLength: 0
+          maxLength: 1024
+          additionalProperties: true
+          description: >
+            Additional details about the overdraft product. The information must
+            be in `key:value` pair format. For example, `name:<your_name>`.<br>
+
+            `minLength` = `0`
+
+            `maxLength` = `1024`
+          example:
+            key: value
+      required:
+        - product_id
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    200GetAccountAttachmentResponse:
+      description: Get attachment details successful
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AccountAttachment'
+          examples:
+            Get account attachment successful:
+              $ref: '#/components/examples/200GetAccountAttachmentExampple'
+    200GetOverdraftProductResponse:
+      description: Get product details successful
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Product'
+          examples:
+            Get overdraft product successful:
+              $ref: '#/components/examples/200201ProductCreatedSuccessfulExample'
+    201CreateOverdraftProductResponse:
+      description: Product created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Product'
+          examples:
+            Product created successfully:
+              $ref: '#/components/examples/200201ProductCreatedSuccessfulExample'
+    400AttachProductToProgramErrorResponse:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Validation error:
+              $ref: '#/components/examples/EOVD0008'
+            Unmarshal error:
+              $ref: '#/components/examples/EOVD0012'
+            Ledger API 4xx error:
+              $ref: '#/components/examples/EOVD0034'
+            Balance Watcher API 4xx error:
+              $ref: '#/components/examples/EOVD0040'
+            Invalid account_id path parameter:
+              $ref: '#/components/examples/EOVD0043'
+            Account has attached product error:
+              $ref: '#/components/examples/EOVD0050'
+            Accounts API 4xx error:
+              $ref: '#/components/examples/EOVD0069'
+    400AttachProductToAccountErrorResponse:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Validation error:
+              $ref: '#/components/examples/EOVD0008'
+            Unmarshal error:
+              $ref: '#/components/examples/EOVD0012'
+            Ledger API 4xx error:
+              $ref: '#/components/examples/EOVD0034'
+            Balance Watcher API 4xx error:
+              $ref: '#/components/examples/EOVD0040'
+            Invalid account_id path parameter:
+              $ref: '#/components/examples/EOVD0043'
+            Account has attached product error:
+              $ref: '#/components/examples/EOVD0050'
+            Accounts API 4xx error:
+              $ref: '#/components/examples/EOVD0069'
+    400CreateOverdraftProductErrorResponse:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Validation error:
+              $ref: '#/components/examples/EOVD0008'
+            Unmarshal error:
+              $ref: '#/components/examples/EOVD0012'
+            Interest plan API 4xx error:
+              $ref: '#/components/examples/EOVD0020'
+            Unicode escape sequence error:
+              $ref: '#/components/examples/EOVD0076'
+    400DetachProductFromAccount:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Validation error:
+              $ref: '#/components/examples/EOVD0008'
+            Unmarshal error:
+              $ref: '#/components/examples/EOVD0012'
+            Balance Watcher API 4xx error:
+              $ref: '#/components/examples/EOVD0040'
+            Invalid account_id path parameter:
+              $ref: '#/components/examples/EOVD0043'
+            Accounts API 4xx error:
+              $ref: '#/components/examples/EOVD0069'
+            Unicode escape sequence error:
+              $ref: '#/components/examples/EOVD0076'
+    400GetAccountAttachmentErrorResponse:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Invalid account_id path parameter:
+              $ref: '#/components/examples/EOVD0043'
+            Accounts API 4xx error:
+              $ref: '#/components/examples/EOVD0069'
+    400GetOverdraftProductErrorResponse:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Invalid product_id path parameter:
+              $ref: '#/components/examples/EOVD0073'
+            Invalid product ID format:
+              $ref: '#/components/examples/EOVD0074'
+            Metadata validation error:
+              $ref: '#/components/examples/EOVD0075'
+            Unicode escape sequence error:
+              $ref: '#/components/examples/EOVD0076'
+    403AttachProductToAccountErrorResponse:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Overdraft limit not configured:
+              $ref: '#/components/examples/EOVD0051'
+    403AttachProductToProgramErrorResponse:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Overdraft limit not configured:
+              $ref: '#/components/examples/EOVD0051'
+    404AttachProductToAccountErrorResponse:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Ledger API 404 error:
+              $ref: '#/components/examples/EOVD0035'
+            Balance Watcher API 404 error:
+              $ref: '#/components/examples/EOVD0041'
+            Product not found:
+              $ref: '#/components/examples/EOVD0047'
+            Accounts API 404 error:
+              $ref: '#/components/examples/EOVD0070'
+    404AttachProductToProgramErrorResponse:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Ledger API 404 error:
+              $ref: '#/components/examples/EOVD0035'
+            Balance Watcher API 404 error:
+              $ref: '#/components/examples/EOVD0041'
+            Product not found:
+              $ref: '#/components/examples/EOVD0047'
+            Accounts API 404 error:
+              $ref: '#/components/examples/EOVD0070'
+    404CreateOverdraftProductErrorResponse:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Interest plan not found:
+              $ref: '#/components/examples/EOVD0021'
+    404DetachProductFromAccountErrorResponse:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Balance Watcher API 404 error:
+              $ref: '#/components/examples/EOVD0041'
+            Product not found:
+              $ref: '#/components/examples/EOVD0047'
+            Accounts API 404 error:
+              $ref: '#/components/examples/EOVD0070'
+    404GetAccountAttachmentErrorResponse:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Accounts API 404 error:
+              $ref: '#/components/examples/EOVD0070'
+    404GetOverdraftProductErrorResponse:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Product not found:
+              $ref: '#/components/examples/EOVD0047'
+    409AttachProductToAccountErrorResponse:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Product already attached:
+              $ref: '#/components/examples/EOVD0045'
+    409AttachProductToProgramErrorResponse:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Product already attached:
+              $ref: '#/components/examples/EOVD0045'
+    409DetachProductFromAccountErrorResponse:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Invalid attachment status error:
+              $ref: '#/components/examples/EOVD0072'
+    422CreateOverdraftProductErrorResponse:
+      description: Unprocessable entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Payments API 4xx error:
+              $ref: '#/components/examples/EOVD0027'
+    500AttachProductToAccountErrorResponse:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Internal error:
+              $ref: '#/components/examples/EOVD0007'
+            Send event error:
+              $ref: '#/components/examples/EOVD0029'
+            Ledger API request error:
+              $ref: '#/components/examples/EOVD0030'
+            Ledger API request timeout:
+              $ref: '#/components/examples/EOVD0031'
+            Ledger API unmarshal response error:
+              $ref: '#/components/examples/EOVD0032'
+            Ledger API unmapped response code error:
+              $ref: '#/components/examples/EOVD0033'
+            Ledger API 5xx error:
+              $ref: '#/components/examples/EOVD0036'
+            Balance Watcher API unmarshal response:
+              $ref: '#/components/examples/EOVD0038'
+            Balance Watcher API unmapped response code error:
+              $ref: '#/components/examples/EOVD0039'
+            Balance Watcher API 5xx error:
+              $ref: '#/components/examples/EOVD0042'
+            Error getting product attachment:
+              $ref: '#/components/examples/EOVD0044'
+            Error getting product:
+              $ref: '#/components/examples/EOVD0048'
+            Error saving product attachment:
+              $ref: '#/components/examples/EOVD0052'
+            Accounts API request error:
+              $ref: '#/components/examples/EOVD0064'
+            Accounts API request timeout:
+              $ref: '#/components/examples/EOVD0065'
+            Accounts API unmarshal response error:
+              $ref: '#/components/examples/EOVD0066'
+            Accounts API unmapped response code error:
+              $ref: '#/components/examples/EOVD0067'
+            Accounts API 5xx error:
+              $ref: '#/components/examples/EOVD0068'
+    500AttachProductToProgramErrorResponse:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Internal error:
+              $ref: '#/components/examples/EOVD0007'
+            Send event error:
+              $ref: '#/components/examples/EOVD0029'
+            Ledger API request error:
+              $ref: '#/components/examples/EOVD0030'
+            Ledger API request timeout:
+              $ref: '#/components/examples/EOVD0031'
+            Ledger API unmarshal response error:
+              $ref: '#/components/examples/EOVD0032'
+            Ledger API unmapped response code error:
+              $ref: '#/components/examples/EOVD0033'
+            Ledger API 5xx error:
+              $ref: '#/components/examples/EOVD0036'
+            Balance Watcher API unmarshal response:
+              $ref: '#/components/examples/EOVD0038'
+            Balance Watcher API unmapped response code error:
+              $ref: '#/components/examples/EOVD0039'
+            Balance Watcher API 5xx error:
+              $ref: '#/components/examples/EOVD0042'
+            Error getting product attachment:
+              $ref: '#/components/examples/EOVD0044'
+            Error getting product:
+              $ref: '#/components/examples/EOVD0048'
+            Error saving product attachment:
+              $ref: '#/components/examples/EOVD0052'
+            Accounts API request error:
+              $ref: '#/components/examples/EOVD0064'
+            Accounts API request timeout:
+              $ref: '#/components/examples/EOVD0065'
+            Accounts API unmarshal response error:
+              $ref: '#/components/examples/EOVD0066'
+            Accounts API unmapped response code error:
+              $ref: '#/components/examples/EOVD0067'
+            Accounts API 5xx error:
+              $ref: '#/components/examples/EOVD0068'
+    500CreateOverdraftProductErrorResponse:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Internal error:
+              $ref: '#/components/examples/EOVD0007'
+            Interest plan API request error:
+              $ref: '#/components/examples/EOVD0015'
+            Interest plan API request timeout:
+              $ref: '#/components/examples/EOVD0016'
+            Interest plan API unmarshal response error:
+              $ref: '#/components/examples/EOVD0017'
+            Interest plan API unmapped response code error:
+              $ref: '#/components/examples/EOVD0018'
+            Interest plan API 5xx error:
+              $ref: '#/components/examples/EOVD0019'
+            Payments API request error:
+              $ref: '#/components/examples/EOVD0022'
+            Payments API request timeout:
+              $ref: '#/components/examples/EOVD0023'
+            Payments API unmarshal response error:
+              $ref: '#/components/examples/EOVD0024'
+            Payments API 5xx error:
+              $ref: '#/components/examples/EOVD0025'
+            Payments API unmapped response code error:
+              $ref: '#/components/examples/EOVD0026'
+            Save product error:
+              $ref: '#/components/examples/EOVD0028'
+            Send event error:
+              $ref: '#/components/examples/EOVD0029'
+    500DetachProductFromAccountErrorResponse:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Balance Watcher API unmarshal response error:
+              $ref: '#/components/examples/EOVD0038'
+            Balance Watcher API unmapped response code error:
+              $ref: '#/components/examples/EOVD0039'
+            Balance Watcher API 5xx error:
+              $ref: '#/components/examples/EOVD0042'
+            Error getting product attachment:
+              $ref: '#/components/examples/EOVD0044'
+            Error getting product:
+              $ref: '#/components/examples/EOVD0048'
+            Error updating product attachment:
+              $ref: '#/components/examples/EOVD0063'
+            Accounts API request error:
+              $ref: '#/components/examples/EOVD0064'
+            Accounts API request timeout:
+              $ref: '#/components/examples/EOVD0065'
+            Accounts API unmarshal response error:
+              $ref: '#/components/examples/EOVD0066'
+            Accounts API unmapped response code error:
+              $ref: '#/components/examples/EOVD0067'
+            Accounts API 5xx error:
+              $ref: '#/components/examples/EOVD0068'
+    500GetAccountAttachmentErrorResponse:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Error getting product attachment:
+              $ref: '#/components/examples/EOVD0044'
+            Accounts API request error:
+              $ref: '#/components/examples/EOVD0064'
+            Accounts API request timeout:
+              $ref: '#/components/examples/EOVD0065'
+            Accounts API unmarshal response error:
+              $ref: '#/components/examples/EOVD0066'
+            Accounts API unmapped response code error:
+              $ref: '#/components/examples/EOVD0067'
+            Accounts API 5xx error:
+              $ref: '#/components/examples/EOVD0068'
+    500GetOverdraftProductErrorResponse:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Failed to get product:
+              $ref: '#/components/examples/EOVD0048'
+  examples:
+    200GetAccountAttachmentExampple:
+      summary: Get account attachment successful
+      value:
+        account_id: 123
+        attach_datetime: '2024-01-23T13:26:25Z'
+        status: CREATED
+        overdraft:
+          product_id: 2c336e9d-d04f-4fd0-8f6e-25808f48d70c
+          name: Overdraft limit 1000
+          interest_plan_id: b935acaf-886c-4817-8f7c-c2cc3ce4d509
+          grace_period: 10
+          processing_code:
+            interest_processing_code: '123456'
+          status: CREATED
+          created_at_datetime: '2024-01-23T13:26:25'
+        metadata:
+          key: value
+    200201ProductCreatedSuccessfulExample:
+      summary: Product created successful
+      value:
+        product_id: 2c336e9d-d04f-4fd0-8f6e-25808f48d70c
+        name: Overdraft limit 1000
+        interest_plan_id: b935acaf-886c-4817-8f7c-c2cc3ce4d509
+        grace_period: 10
+        processing_code:
+          interest_processing_code: '123456'
+        status: CREATED
+        created_at_datetime: '2024-01-23T13:26:25'
+    EOVD0008:
+      summary: Validation error
+      value:
+        code: EOVD0008
+        message: Validation error
+    EOVD0012:
+      summary: Unmarshal error
+      value:
+        code: EOVD0012
+        message: Unmarshal error
+    EOVD0020:
+      summary: Interest plan API 4xx error
+      value:
+        code: EOVD0020
+        message: Interest Plan API - Request returned error 4xx
+    EOVD0034:
+      summary: Ledger API 4xx error
+      value:
+        code: EOVD0034
+        message: Ledger API - Request returned error 4xx
+    EOVD0040:
+      summary: Balance Watcher API 4xx error
+      value:
+        code: EOVD0040
+        message: Balance Watcher API - Request returned error 4xx
+    EOVD0043:
+      summary: Invalid account_id path parameter
+      value:
+        code: EOVD0043
+        message: Invalid accountId path param
+    EOVD0050:
+      summary: Account has attached product error
+      value:
+        code: EOVD0050
+        message: The provided account already has an attached product
+    EOVD0069:
+      summary: Accounts API 4xx error
+      value:
+        code: EOVD0069
+        message: Accounts API - Request returned error 4xx
+    EOVD0073:
+      summary: Invalid product_id path parameter
+      value:
+        code: EOVD0073
+        message: Invalid product_id path param
+    EOVD0074:
+      summary: Invalid product_id format
+      value:
+        code: EOVD0074
+        message: Product ID format is invalid. Expected a valid UUID
+    EOVD0075:
+      summary: Metadata validation error
+      value:
+        code: EOVD0075
+        message: >-
+          Metadata validation failed. Keys must be strings, and values must be
+          ASCII strings.
+    EOVD0076:
+      summary: Unicode escape sequence error
+      value:
+        code: EOVD0076
+        message: >-
+          Request contains Unicode escape sequences, which are not allowed.
+          Remove all Unicode escape sequences from the request.
+    EOVD0051:
+      summary: Overdraft limit not configured
+      value:
+        code: EOVD0051
+        message: Overdraft limit not configured
+    EOVD0021:
+      summary: Interest plan not found
+      value:
+        code: EOVD0021
+        message: Interest plan API - Interest plan not found
+    EOVD0035:
+      summary: Ledger API 404 error
+      value:
+        code: EOVD0035
+        message: Ledger API - Request returned error 404
+    EOVD0041:
+      summary: Balance Watcher API 404 error
+      value:
+        code: EOVD0041
+        message: Balance Watcher API - Request returned error 404
+    EOVD0047:
+      summary: Product not found
+      value:
+        code: EOVD0047
+        message: Product not found
+    EOVD0070:
+      summary: Accounts API 404 error
+      value:
+        code: EOVD0070
+        message: Accounts API - Request returned error 404
+    EOVD0045:
+      summary: Product already attached
+      value:
+        code: EOVD0045
+        message: The provided product ID is already attached
+    EOVD0072:
+      summary: Invalid attachment status
+      value:
+        code: EOVD0072
+        message: Attachment is not in active status
+    EOVD0027:
+      summary: Payments API 4xx error
+      value:
+        code: EOVD0027
+        message: Payments API - Request returned error 4xx
+    EOVD0007:
+      summary: Internal error
+      value:
+        code: EOVD0007
+        message: Internal error
+    EOVD0015:
+      summary: Interest plan API request error
+      value:
+        code: EOVD0015
+        message: Interest plan API - Request error
+    EOVD0016:
+      summary: Interest plan API request timeout
+      value:
+        code: EOVD0016
+        message: Interest plan API - Request timeout
+    EOVD0017:
+      summary: Interest plan API unmarshal response
+      value:
+        code: EOVD0017
+        message: Interest plan API - Failed to unmarshal response body
+    EOVD0018:
+      summary: Interest plan API unmapped response code
+      value:
+        code: EOVD0018
+        message: Interest plan API - Returned an unmapped response code
+    EOVD0019:
+      summary: Interest plan API 5xx error
+      value:
+        code: EOVD0019
+        message: Interest plan API - Request returned error 5xx
+    EOVD0022:
+      summary: Payments API request error
+      value:
+        code: EOVD0022
+        message: Payments API - Request error
+    EOVD0023:
+      summary: Payments API request timeout
+      value:
+        code: EOVD0023
+        message: Payments API - Request timeout
+    EOVD0024:
+      summary: Payments API unmarshal response
+      value:
+        code: EOVD0024
+        message: Payments API - Failed to unmarshal response body
+    EOVD0025:
+      summary: Payments API 5xx error
+      value:
+        code: EOVD0025
+        message: Payments API - Request returned error 5xx
+    EOVD0026:
+      summary: Payments API unmapped response code
+      value:
+        code: EOVD0026
+        message: Payments API - Returned an unmapped response code
+    EOVD0028:
+      summary: Save product error
+      value:
+        code: EOVD0028
+        message: Failed to save product
+    EOVD0029:
+      summary: Send event error
+      value:
+        code: EOVD0029
+        message: Error on sending event to topic
+    EOVD0030:
+      summary: Ledger API request error
+      value:
+        code: EOVD0030
+        message: Ledger API request error
+    EOVD0031:
+      summary: Ledger API request timeout
+      value:
+        code: EOVD0031
+        message: Ledger API  - Request timeout
+    EOVD0032:
+      summary: Ledger API unmarshal response
+      value:
+        code: EOVD0032
+        message: Ledger API - Failed to unmarshal response body
+    EOVD0033:
+      summary: Ledger API unmapped response code
+      value:
+        code: EOVD0033
+        message: Ledger API - Returned an unmapped response code
+    EOVD0036:
+      summary: Ledger API 5xx error
+      value:
+        code: EOVD0036
+        message: Ledger API - Request returned error 5xx
+    EOVD0038:
+      summary: Balance Watcher API unmarshal response
+      value:
+        code: EOVD0038
+        message: Balance Watcher API - Failed to unmarshal response body
+    EOVD0039:
+      summary: Balance Watcher API unmapped response code
+      value:
+        code: EOVD0039
+        message: Balance Watcher API - Returned an unmapped response code
+    EOVD0042:
+      summary: Balance Watcher API 5xx error
+      value:
+        code: EOVD0042
+        message: Balance Watcher API - Request returned error 5xx
+    EOVD0044:
+      summary: Get product attachment error
+      value:
+        code: EOVD0044
+        message: Failed to get product attachment
+    EOVD0048:
+      summary: Get product error
+      value:
+        code: EOVD0048
+        message: Failed on get product
+    EOVD0052:
+      summary: Save product attachment error
+      value:
+        code: EOVD0052
+        message: Failed to save product attachment
+    EOVD0063:
+      summary: Update product attachment error
+      value:
+        code: EOVD0063
+        message: Failed to update the product attachment
+    EOVD0064:
+      summary: Accounts API request error
+      value:
+        code: EOVD0064
+        message: Accounts API - Request error
+    EOVD0065:
+      summary: Accounts API request timeout
+      value:
+        code: EOVD0065
+        message: Accounts API - Request timeout
+    EOVD0066:
+      summary: Accounts API unmarshal response
+      value:
+        code: EOVD0066
+        message: Accounts API - Failed to unmarshal response body
+    EOVD0067:
+      summary: Accounts API unmapped response code
+      value:
+        code: EOVD0067
+        message: Accounts API - Returned an unmapped response code
+    EOVD0068:
+      summary: Accounts API 5xx error
+      value:
+        code: EOVD0068
+        message: Accounts API - Request returned error 5xx
+paths:
+  /v1/overdraft:
+    post:
+      tags:
+        - Product
+      summary: Create overdraft product
+      description: >
+        Create a new overdraft product.<br>
+
+        The overdraft API enables a bank to set an overdraft limit for an
+        account when the balance is insufficient. For details, refer to [How
+        overdraft works](doc:how-overdraft-works).<br>
+
+        This endpoint generates an [Overdraft product
+        created](https://developers.pismo.io/events/docs/overdraft-product-creation-1)
+        event.
+      operationId: post-overdraft-product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/201CreateOverdraftProductResponse'
+        '400':
+          $ref: '#/components/responses/400CreateOverdraftProductErrorResponse'
+        '404':
+          $ref: '#/components/responses/404CreateOverdraftProductErrorResponse'
+        '422':
+          $ref: '#/components/responses/422CreateOverdraftProductErrorResponse'
+        '500':
+          $ref: '#/components/responses/500CreateOverdraftProductErrorResponse'
+  /v1/overdraft/{productId}:
+    get:
+      tags:
+        - Product
+      summary: Get overdraft product
+      description: Get details of a specific overdraft product.
+      operationId: get-overdraft-product
+      parameters:
+        - $ref: '#/components/parameters/productIdPath'
+      responses:
+        '200':
+          $ref: '#/components/responses/200GetOverdraftProductResponse'
+        '400':
+          $ref: '#/components/responses/400GetOverdraftProductErrorResponse'
+        '404':
+          $ref: '#/components/responses/404GetOverdraftProductErrorResponse'
+        '500':
+          $ref: '#/components/responses/500GetOverdraftProductErrorResponse'
+  /v1/overdraft/accounts/{accountId}/attach:
+    post:
+      tags:
+        - Account
+      summary: Attach product to account
+      description: >
+        Attach an overdraft product to a bank account.<br>
+
+        This endpoint generates an [Overdraft account
+        attached](https://developers.pismo.io/events/docs/overdraft-product-account-attach-1)
+        event.
+      operationId: post-attach-product-to-account
+      parameters:
+        - $ref: '#/components/parameters/accountIdPath'
+        - $ref: '#/components/parameters/authorizationTokenHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductAttachRequest'
+      responses:
+        '204':
+          description: Product attached successfully
+        '400':
+          $ref: '#/components/responses/400AttachProductToAccountErrorResponse'
+        '403':
+          $ref: '#/components/responses/403AttachProductToAccountErrorResponse'
+        '404':
+          $ref: '#/components/responses/404AttachProductToAccountErrorResponse'
+        '409':
+          $ref: '#/components/responses/409AttachProductToAccountErrorResponse'
+        '500':
+          $ref: '#/components/responses/500AttachProductToAccountErrorResponse'
+  /v1/overdraft/accounts/{accountId}/detach:
+    post:
+      tags:
+        - Account
+      summary: Detach product from account
+      description: >
+        Detach an overdraft product from a bank account.<br>
+
+        This endpoint generates an [Overdraft account
+        detached](https://developers.pismo.io/events/docs/overdraft-product-account-detach-1)
+        event.
+      operationId: post-detach-product-from-account
+      parameters:
+        - $ref: '#/components/parameters/accountIdPath'
+        - $ref: '#/components/parameters/authorizationTokenHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductAttachRequest'
+      responses:
+        '204':
+          description: Product detached successfully
+        '400':
+          $ref: '#/components/responses/400DetachProductFromAccount'
+        '404':
+          $ref: '#/components/responses/404DetachProductFromAccountErrorResponse'
+        '409':
+          $ref: '#/components/responses/409DetachProductFromAccountErrorResponse'
+        '500':
+          $ref: '#/components/responses/500DetachProductFromAccountErrorResponse'
+  /v1/overdraft/attachments/accounts/{accountId}:
+    get:
+      tags:
+        - Account
+      summary: Get account attachment
+      description: Get the details of an overdraft product attached to an account.
+      operationId: get-overdraft-account-attachment
+      parameters:
+        - $ref: '#/components/parameters/accountIdPath'
+        - $ref: '#/components/parameters/authorizationTokenHeader'
+        - $ref: '#/components/parameters/xAccountIdHeader'
+      responses:
+        '200':
+          $ref: '#/components/responses/200GetAccountAttachmentResponse'
+        '400':
+          $ref: '#/components/responses/400GetAccountAttachmentErrorResponse'
+        '404':
+          $ref: '#/components/responses/404GetAccountAttachmentErrorResponse'
+        '500':
+          $ref: '#/components/responses/500GetAccountAttachmentErrorResponse'
+  /v1/overdraft/programs/{programId}/attach:
+    post:
+      tags:
+        - Program
+      summary: Attach product to program
+      description: >
+        Attach an overdraft product to a program.<br>
+
+        This endpoint generates an [Overdraft program
+        attached](https://developers.pismo.io/events/docs/overdraft-product-program-attach-1)
+        event.
+      operationId: post-attach-product-to-program
+      parameters:
+        - $ref: '#/components/parameters/programIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductAttachRequest'
+      responses:
+        '204':
+          description: Product attached successfully
+        '400':
+          $ref: '#/components/responses/400AttachProductToProgramErrorResponse'
+        '403':
+          $ref: '#/components/responses/403AttachProductToProgramErrorResponse'
+        '404':
+          $ref: '#/components/responses/404AttachProductToProgramErrorResponse'
+        '409':
+          $ref: '#/components/responses/409AttachProductToProgramErrorResponse'
+        '500':
+          $ref: '#/components/responses/500AttachProductToProgramErrorResponse'

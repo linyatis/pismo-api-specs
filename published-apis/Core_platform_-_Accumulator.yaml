@@ -1,0 +1,597 @@
+openapi: 3.1.0
+info:
+  title: Core platform - Accumulator
+  version: 1.0.0
+  description: API to accumulate transaction amounts for fee collection.
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/accumulator
+    description: Sandbox API server for testing
+security:
+  - BearerAuth: []
+tags:
+  - name: Configuration
+    description: Accumulator configuration endpoints
+  - name: Accumulators
+    description: Account accumulator endpoints
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account access token. Tokens can expire quickly, which can result in an
+        "401 Unauthorized" error.
+      bearerFormat: JWT
+  parameters:
+    AccountIdQuery:
+      in: query
+      name: accountId
+      required: false
+      description: Pismo account ID
+      schema:
+        type: string
+        example: '1000944'
+    AccountIdPath:
+      in: path
+      name: accountId
+      required: true
+      description: Pismo account ID
+      schema:
+        type: string
+        example: '100094'
+    AccumulatorConfigID:
+      in: path
+      name: accumulatorConfigId
+      required: true
+      description: Accumulator ID
+      schema:
+        type: string
+        example: x88900-0009xx
+    CidHeader:
+      in: header
+      name: x-cid
+      description: >
+        The Correlation IDentifier field is used to link related API requests
+        and events.  The CID can help the Pismo engineering team track
+        everything related to a call. If not passed, a random one is generated.
+        You can find the CID in the reponse header.
+      schema:
+        type: string
+        example: c737895c-8159-4c0c-a92a-a4f8600bff37
+    ProgramId:
+      in: query
+      name: programId
+      required: false
+      description: Pismo program ID
+      schema:
+        type: string
+        example: '2265'
+    TenantHeader:
+      in: header
+      name: x-tenant
+      description: Organization/tenant ID
+      schema:
+        type: string
+        example: TN-beaecb37-d149-4674-a485-af0d11e40d85
+  schemas:
+    AcctID:
+      description: Pismo account ID
+      type: number
+      format: int64
+      example: 8675309
+    AccumulatedAmount:
+      type: number
+      description: Current accumulator amount
+      format: float
+      example: 1490.9
+    AccumulatedQuantity:
+      type: number
+      description: Current accumulator quantity
+      format: int64
+      example: 190
+    Accumulator:
+      type: object
+      properties:
+        identifier:
+          $ref: '#/components/schemas/Identifier'
+        accumulated_amount:
+          $ref: '#/components/schemas/AccumulatedAmount'
+        accumulated_quantity:
+          $ref: '#/components/schemas/AccumulatedQuantity'
+    AccumulatorConfig:
+      allOf:
+        - type: object
+          properties:
+            id:
+              type: string
+              example: 3e6b3f44-1d1a-413c-8243-644618f53037
+        - $ref: '#/components/schemas/NewAccumulatorConfig'
+    AccumulatorsConfigResponse:
+      allOf:
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                oneOf:
+                  - $ref: '#/components/schemas/AccumulatorConfig'
+    AccumulatorsResponse:
+      allOf:
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                oneOf:
+                  - $ref: '#/components/schemas/Accumulator'
+    Conditions:
+      type: object
+      properties:
+        processing_code:
+          $ref: '#/components/schemas/ListCondition'
+    ErrorModel:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Code the error internal
+          example: EACM9999
+        message:
+          type: string
+          description: Message that describes the error.
+          example: An Internal Server Error found, please contact the administrator
+    Identifier:
+      type: string
+      description: >
+        Client-assigned accumulator configuration identifier for client tracking
+        purposes. This identifier is used to <a
+        href="https://developers.pismo.io/pismo-docs/reference/postmodel"
+        target="_blank">create an accumulator fee model</a>.
+      example: total_cashout_config
+    IncreaseType:
+      type: string
+      description: >
+        Type of increase the accumulator will use for accumulating.
+
+        `principal_amount` - The transaction amount without fees is accumulated.
+
+        `contract_amount` - The transaction amount including fees is
+        accumulated.
+      enum:
+        - principal_amount
+        - contract_amount
+      example: principal_amount
+    Level:
+      type: string
+      description: Configuration level - org/tenant or account
+      enum:
+        - tenant
+        - account
+      example: account
+    ListCondition:
+      type: object
+      description: >
+        Add processing codes representing transaction types to either include or
+        exclude - enter one or the other, but not both. If processing codes are
+        "include"d, then only those transactionss of those type(s) are
+        accumulated. If processing codes are "excluded"d, then only non-excluded
+        types are accumulated.
+      properties:
+        include:
+          type: array
+          description: Include these transaction types for accumulation
+          items:
+            type: string
+            minLength: 2
+            maxLength: 6
+            pattern: ^[a-zA-Z0-9]+$
+          example:
+            - '00'
+            - '01'
+        exclude:
+          type: array
+          description: Exclude these transaction types for accumulation
+          items:
+            type: string
+            minLength: 2
+            maxLength: 6
+            pattern: ^[a-zA-Z0-9]+$
+          example:
+            - '99'
+            - '90'
+    MonthDay:
+      type: number
+      description: Month day to reset. Can only be used when `window` is monthly.
+      minimum: 1
+      maximum: 28
+      format: int32
+      example: 1
+    NewAccumulatorConfig:
+      type: object
+      required:
+        - level
+        - identifier
+        - conditions
+        - increase_type
+      properties:
+        level:
+          $ref: '#/components/schemas/Level'
+        account_id:
+          $ref: '#/components/schemas/AcctID'
+        identifier:
+          $ref: '#/components/schemas/Identifier'
+        conditions:
+          $ref: '#/components/schemas/Conditions'
+        increase_type:
+          $ref: '#/components/schemas/IncreaseType'
+        reset_strategy:
+          $ref: '#/components/schemas/ResetStrategy'
+    PatchAccumulatorConfig:
+      type: object
+      properties:
+        conditions:
+          $ref: '#/components/schemas/Conditions'
+        increase_type:
+          $ref: '#/components/schemas/IncreaseType'
+        reset_strategy:
+          $ref: '#/components/schemas/ResetStrategy'
+    ResetStrategy:
+      type: object
+      description: Configure when accumulator totals are reset to zero.
+      properties:
+        time_window:
+          $ref: '#/components/schemas/TimeWindow'
+    TimeWindow:
+      type: object
+      required:
+        - window
+      properties:
+        timezone:
+          $ref: '#/components/schemas/Timezone'
+        window:
+          $ref: '#/components/schemas/Window'
+        month_day:
+          $ref: '#/components/schemas/MonthDay'
+    Timezone:
+      type: string
+      description: >
+        The <a
+        href='https://en.wikipedia.org/wiki/List_of_tz_database_time_zones'
+        target='_blank'>IANA Time Zone database</a>, such as
+        "America/New_York". 
+
+        This attribute will be used to evaluate the desired time zone for the
+        time reset window.
+
+        If `time_zone` is not passed, the default is current UTC time zone.
+      example: America/Sao_Paulo
+      default: UTC
+    Window:
+      type: string
+      description: Window duration for the accumulator reset.
+      example: daily
+      enum:
+        - daily
+        - weekly
+        - monthly
+        - lifetime
+        - once
+  examples:
+    accumulatorConfigValidationError:
+      value:
+        code: WACM0001
+        message: validation error
+        details:
+          - location: payload.increase_type
+            message: increase_type invalid
+    accumulatorConfigNotFoundError:
+      value:
+        code: EACM0003
+        message: Configuration not found
+    createAccumulatorConfigAccountLevel:
+      value:
+        level: account
+        account_id: 1000099
+        identifier: total_cashin
+        conditions:
+          processing_code:
+            exclude:
+              - '99'
+              - '90'
+        increase_type: principal_amount
+        reset_strategy:
+          time_window:
+            timezone: America/Sao_paulo
+            window: daily
+            month_day: 1
+    createAccumulatorConfigTenantLevel:
+      value:
+        level: tenant
+        identifier: total_cashin
+        conditions:
+          processing_code:
+            include:
+              - '00'
+              - '01'
+        increase_type: principal_amount
+        reset_strategy:
+          time_window:
+            timezone: America/Sao_paulo
+            window: daily
+            month_day: 1
+    duplicatedIdentifierError:
+      value:
+        code: WACM0002
+        message: identifier gmf123 already exists
+    invalidIncreaseTypeError:
+      value:
+        code: WACM0001
+        message: Error validating input
+        details:
+          - location: payload.increase_type
+            message: >-
+              increase_type must be one of [`contract_amount`,
+              `principal_amount``]
+    invalidLevelError:
+      value:
+        code: WACM0001
+        message: error validating input
+        details:
+          - location: payload.level
+            message: level must be one of [tenant program account]
+    invalidMonthDayError:
+      value:
+        code: WACM0001
+        message: error validating input
+        details:
+          - location: payload.reset_strategy.time_window.month_day
+            message: month_day must be greater than 0
+    invalidTimezoneError:
+      value:
+        code: WACM0001
+        message: error validating input
+        details:
+          - location: payload.reset_strategy.time_window.timezone
+            message: timezone must follow iana time zone name
+    invalidTypeError:
+      value:
+        code: WACM0001
+        message: error validating input
+        details:
+          - location: payload.increase_type
+            message: expected type string but got number
+    invalidWindowError:
+      value:
+        code: WACM0001
+        message: error validating input
+        details:
+          - location: payload.reset_strategy.time_window.window
+            message: window must follow iso8601 format
+    MissingXTenantHeaderError:
+      value:
+        code: WACM0001
+        message: error validating input
+        details:
+          - location: headers.x-tenant
+            message: x-tenant is a required header
+paths:
+  /v1/accumulator-configs:
+    post:
+      summary: Create accumulator configuration
+      description: >
+        Creates a new accumulator configuration, which keeps running totals for
+        specified transaction types. Fees are applied to these totals based on
+        an associated fee model.
+
+
+        After you create an accumulator configuration, you need to:   
+
+
+        1. <a href='https://developers.pismo.io/pismo-docs/reference/postmodel'
+        target="_blank">Create a fee model</a> referencing the accumulator
+        configuration. 
+
+        2. Attach the fee model to a <a
+        href='https://developers.pismo.io/pismo-docs/reference/attachmentbyprogram'
+        target="_blank">program<a> or <a
+        href='https://developers.pismo.io/pismo-docs/reference/attachmentbyaccount'
+        target="_blank">account<a>.
+      operationId: post-v1-accumulator-config
+      tags:
+        - Configuration
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CidHeader'
+      requestBody:
+        required: true
+        description: Payload to create a new accumulator configuration.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewAccumulatorConfig'
+            examples:
+              createAccumulatorConfigTenantLevel:
+                $ref: '#/components/examples/createAccumulatorConfigTenantLevel'
+              createAccumulatorConfigAccountLevel:
+                $ref: '#/components/examples/createAccumulatorConfigAccountLevel'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccumulatorConfig'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                invalidTypeError:
+                  $ref: '#/components/examples/invalidTypeError'
+                invalidLevelError:
+                  $ref: '#/components/examples/invalidLevelError'
+                invalidIncreaseTypeError:
+                  $ref: '#/components/examples/invalidIncreaseTypeError'
+                invalidWindowError:
+                  $ref: '#/components/examples/invalidWindowError'
+                invalidTimezoneError:
+                  $ref: '#/components/examples/invalidTimezoneError'
+                invalidMonthDayError:
+                  $ref: '#/components/examples/invalidMonthDayError'
+                MissingXTenantHeaderError:
+                  $ref: '#/components/examples/MissingXTenantHeaderError'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                duplicatedIdentifierError:
+                  $ref: '#/components/examples/duplicatedIdentifierError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+    get:
+      summary: List accumulator configurations
+      description: Get config accumulators
+      operationId: get-config-accumulators
+      tags:
+        - Configuration
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CidHeader'
+        - $ref: '#/components/parameters/ProgramId'
+        - $ref: '#/components/parameters/AccountIdQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccumulatorsConfigResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+  /v1/accumulator-configs/{accumulatorConfigId}:
+    get:
+      summary: Get accumulator configuration
+      description: >
+        Gets the accumulator configuration
+
+
+        You can get accumulator configuration IDs with the [List accumulator
+        configuration](ref:get-config-accumulators) endpoint.
+      operationId: get-v1-accumulator-config
+      tags:
+        - Configuration
+      parameters:
+        - $ref: '#/components/parameters/AccumulatorConfigID'
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CidHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccumulatorConfig'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                accumulatorConfigNotFoundError:
+                  $ref: '#/components/examples/accumulatorConfigNotFoundError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+    patch:
+      summary: Update accumulator configuration
+      description: Update accumulator configuration
+      operationId: patch-v1-accumulator-config
+      tags:
+        - Configuration
+      parameters:
+        - $ref: '#/components/parameters/AccumulatorConfigID'
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CidHeader'
+      requestBody:
+        required: true
+        description: Response to updated accumulator configuration creation.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchAccumulatorConfig'
+      responses:
+        '204':
+          description: Not content success.
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                accumulatorConfigValidationError:
+                  $ref: '#/components/examples/accumulatorConfigValidationError'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                accumulatorConfigNotFoundError:
+                  $ref: '#/components/examples/accumulatorConfigNotFoundError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+  /v1/accounts/{accountId}/accumulators:
+    get:
+      summary: List account accumulators
+      description: |
+        List account accumulators. 
+
+        *NOTE*: This endpoint requires an account-specific access token.
+      operationId: search-account-accumulators
+      tags:
+        - Accumulators
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CidHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccumulatorsResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'

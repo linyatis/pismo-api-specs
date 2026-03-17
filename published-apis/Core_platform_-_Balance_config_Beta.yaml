@@ -1,0 +1,953 @@
+openapi: 3.1.0
+info:
+  title: Core platform - Balance configurations
+  version: 1.0.0
+  description: >-
+    API responsible for indicating how the Authorizer will impact the Ledger
+    according to predefined rules set up by the client
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://api-sandbox.pismolabs.io/balances-config
+    description: Sandbox API server for testing.
+tags:
+  - name: Balance configurations
+    description: Endpoints to manage account balance configurations.
+components:
+  parameters:
+    AccountIdQuery:
+      in: query
+      name: accountId
+      description: Account ID
+      schema:
+        type: integer
+        example: 1234
+    AmountQuery:
+      in: query
+      name: amount
+      description: Transaction amount
+      schema:
+        type: number
+        example: 100
+    ConfigIdPath:
+      in: path
+      name: configId
+      description: Balance configuration ID
+      required: true
+      schema:
+        type: string
+        example: 66954f26-aaef-49c2-b195-47a8f8410df1
+    InstallmentAmountQuery:
+      in: query
+      name: installment_amount
+      description: Installment amount
+      schema:
+        type: number
+        example: 50
+    NumberOfInstallmentsQuery:
+      in: query
+      name: number_of_installments
+      description: Number of installments
+      schema:
+        type: integer
+        example: 2
+    ReferenceDateTimeQuery:
+      in: query
+      name: reference_datetime
+      description: >-
+        Reference date in UTC that you want to query the configuration that was
+        active.
+      schema:
+        type: string
+        example: 25/06/2024 12:00:00
+    OrgIdHeader:
+      in: header
+      name: x-tenant
+      description: Organization ID
+      required: true
+      schema:
+        type: string
+        example: 20167751b-efd4-494c-9e4f-4b939560ff05
+    ProcessingCodeQuery:
+      in: query
+      name: processing_code
+      required: true
+      description: Internal processing code for the transaction
+      schema:
+        type: string
+        example: '00'
+    ProgramIdQuery:
+      in: query
+      name: programId
+      description: Program ID
+      schema:
+        type: integer
+        example: 1234
+    StringProgramIdQuery:
+      in: query
+      name: program_id
+      required: true
+      description: Program ID to evaluate
+      schema:
+        type: string
+        example: '999'
+    XAccountIdHeader:
+      in: header
+      name: x-account-id
+      description: Account
+      required: true
+      schema:
+        type: integer
+        example: 88997788
+    XCidHeader:
+      in: header
+      name: x-cid
+      description: >-
+        The Correlation Identifier UUID field links related API requests and
+        events. The `x-cid` can help the Pismo engineering team track everything
+        related to a call. If not passed, this field is automatically generated.
+      schema:
+        type: string
+        example: '12345'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account access token. Tokens can expire quickly, which can result in an
+        "Unauthorized" error.
+      bearerFormat: JWT
+  schemas:
+    AccountId:
+      type: integer
+      description: Account ID. **REQUIRED** if `level` is `account`.
+      example: 999
+    AccountType:
+      type: string
+      description: |
+        Account type that impacts limit or different account.
+        Account types:
+        "00" = Non-specified account
+        "10" = Savings account
+        "20" = Checking account
+        "30" = Credit card account
+      enum:
+        - '00'
+        - '10'
+        - '20'
+        - '30'
+      example: '00'
+    Amount:
+      type: string
+      description: >
+        Amount used to credit or debit the account balances or limits. * 
+        `principal_amount`: Original amount, excluding any interest or fees. * 
+        `contract_amount`: Final amount, including any interest or fees. * 
+        `installment_amount`: Amount of each portion of an installment plan.
+      enum:
+        - principal_amount
+        - contract_amount
+        - installment_amount
+      example: contract_amount
+    AmountConsider:
+      type: string
+      description: >
+        Amount considered to validate whether the account has sufficient limit
+        or balance. *  `principal_amount`: Original amount, excluding any
+        interest or fees. *  `contract_amount`: Final amount, including any
+        interest or fees. *  `installment_amount`: Amount of each portion of an
+        installment plan.
+      enum:
+        - principal_amount
+        - contract_amount
+        - installment_amount
+      example: principal_amount
+    AmountToCheckBalance:
+      type: string
+      description: >-
+        Amount to check for available balance: `amount` or `installment_amount`.
+        `amount` is the principal amount. This field is **REQUIRED** if `type`
+        is `custom`.
+      enum:
+        - amount
+        - installment_amount
+      example: amount
+    BalancesConfig:
+      type: object
+      properties:
+        level:
+          $ref: '#/components/schemas/Level'
+        program_id:
+          $ref: '#/components/schemas/ProgramId'
+        account_id:
+          $ref: '#/components/schemas/AccountId'
+        config_id:
+          $ref: '#/components/schemas/ConfigId'
+        global_config:
+          $ref: '#/components/schemas/GlobalConfig'
+        configs:
+          type: array
+          description: Array of balance configurations
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Config'
+        global_configs:
+          $ref: '#/components/schemas/GlobalConfig'
+    PUTBalancesConfigRequest:
+      type: object
+      properties:
+        global_config:
+          $ref: '#/components/schemas/GlobalConfig'
+        configs:
+          type: array
+          description: Array of balance configurations
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Config'
+    ConditionResult:
+      type: object
+      description: Expected result described at evaluated conditions.
+      required:
+        - amount
+        - impact
+      properties:
+        amount:
+          $ref: '#/components/schemas/Amount'
+        impact:
+          $ref: '#/components/schemas/Impact'
+        consider:
+          $ref: '#/components/schemas/Consider'
+        amount_consider:
+          $ref: '#/components/schemas/AmountConsider'
+        reset_limit:
+          $ref: '#/components/schemas/ResetLimit'
+        impact_account:
+          $ref: '#/components/schemas/ImpactAccount'
+        counterpart_account:
+          $ref: '#/components/schemas/CounterpartAccount'
+        confirmation:
+          $ref: '#/components/schemas/Confirmation'
+        opposite_impact:
+          $ref: '#/components/schemas/MainOppositeImpact'
+    Config:
+      type: object
+      description: Balance configuration
+      properties:
+        name:
+          $ref: '#/components/schemas/Name'
+        is_active:
+          $ref: '#/components/schemas/IsActive'
+        filters:
+          type: object
+          description: Determine the criteria for a scenario.
+          required:
+            - processing_codes
+          properties:
+            processing_codes:
+              $ref: '#/components/schemas/ProcessingCodes'
+            min_installments:
+              $ref: '#/components/schemas/MinInstallments'
+            max_installments:
+              $ref: '#/components/schemas/MaxInstallments'
+            mcc:
+              $ref: '#/components/schemas/MCC'
+            account_type:
+              $ref: '#/components/schemas/AccountType'
+            currency_code:
+              $ref: '#/components/schemas/CurrencyCode'
+        scenarios:
+          type: array
+          description: >-
+            Balance configuration scenarios. Scenarios determine how the
+            evaluated transactions impact balances and limits.
+          items:
+            type: object
+            description: Balance condition configuration.
+            properties:
+              condition:
+                type: object
+                description: Evaluated condition.
+                required:
+                  - order
+                  - type
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+                  type:
+                    $ref: '#/components/schemas/Type'
+                  amount_to_check_balance:
+                    $ref: '#/components/schemas/AmountToCheckBalance'
+              result:
+                $ref: '#/components/schemas/ConditionResult'
+    ConfigId:
+      type: string
+      description: Balance configuration ID
+      example: 041ee495-268a-4267-b53a-5b9532a53e45
+    Confirmation:
+      type: object
+      description: >-
+        Confirmation indicates which balances must be impacted upon confirmation
+        in dual message scenarios where authorization impacts one balance but
+        confirmation should impact a different balance.
+      properties:
+        impact:
+          $ref: '#/components/schemas/Impact'
+        opposite_impact:
+          $ref: '#/components/schemas/MainOppositeImpact'
+    GlobalConfig:
+      type: object
+      description: >-
+        Global configuration settings that always apply regardless of the
+        filter.
+      properties:
+        impact_parent_accounts:
+          $ref: '#/components/schemas/ImpactParentAccounts'
+    Consider:
+      type: array
+      description: |
+        Limits or balances summed for authorization.
+
+        If `type` = `custom`:
+          * The sum is validated against `amount_to_check_balance`.
+          * If this field is not passed, what's in `impact` is summed instead and used for validation.
+          
+        If `type` = `default`:
+          * This object is ignored and no validation is done.
+          * Since no validation is done, `impact` is not used instead if this object is not passed.
+      items:
+        type: string
+        description: >
+          Limits or balances considered.
+
+          * `AvailableCreditLimit`: Balance or limit available to the customer,
+          including savings and overdraft limit. Applicable to debit or credit
+          accounts. Value for `AvailableCreditLimit` is the sum of
+          `available_credit_limit`, `available_savings_account_limit`, and
+          `total_overdraft_limit`.
+
+          * `OverLimit`: Balance or limit available to the customer, including
+          over limit. Applicable to credit accounts. Must always be used with
+          `AvailableCreditLimit`. Value for `AvailableCreditLimit` is the sum of
+          `available_credit_limit`, `available_savings_account_limit`,
+          `total_overdraft_limit`, and product of `percentage_over_limit` and
+          `max_credit_limit`.
+
+          * `AvailableSavingsAccountLimit`: Available limit of the savings
+          account. Applicable to debit accounts. Value for
+          `AvailableSavingsAccountLimit` is `available_savings_account_limit`.
+
+          * `AvailableWithdrawalCredit`: Amount available for withdrawal in the
+          credit account. Applicable to credit accounts. Value for
+          `AvailableWithdrawalCredit` is `available_withdrawal_credit`.
+
+          * `AvailableTotalInstallmentCredit`: Amount available for installments
+          in the credit account. Applicable to credit accounts. Value for
+          `AvailableTotalInstallmentCredit` is
+          `available_total_installment_credit`.
+        enum:
+          - AvailableCreditLimit
+          - OverLimit
+          - AvailableSavingsAccountLimit
+          - AvailableWithdrawalCredit
+          - AvailableTotalInstallmentCredit
+      example:
+        - OverLimit
+        - AvailableCreditLimit
+    CounterpartAccount:
+      type: object
+      description: >-
+        This counter account must be related to the principal account. This
+        account is impacted in the same amount with an opposite transaction
+        operation from the operation for the `impact_account`. For example, if
+        `impact_account` is debited $100, `counterpart_account` is credited
+        $100. Only available for account-level configurations. For more
+        information, refer to [Related accounts](doc:related-accounts).
+      properties:
+        account_id:
+          $ref: '#/components/schemas/AccountId'
+        processing_code:
+          type: string
+          description: Counterpart account processing code.
+          example: '007700'
+    CreateBalancesConfig:
+      type: object
+      properties:
+        level:
+          $ref: '#/components/schemas/Level'
+        program_id:
+          $ref: '#/components/schemas/ProgramId'
+        account_id:
+          $ref: '#/components/schemas/AccountId'
+        configs:
+          type: array
+          description: Array of balance configurations
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Config'
+    CurrencyCode:
+      type: string
+      description: >-
+        Alphanumeric ISO 4217 standard currency code that impacts different
+        limits or accounts.
+      example: USD
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Message that describes the error.
+          example: An Internal Server Error found, please contact the administrator
+        code:
+          type: string
+          description: Code that identifies the error type.
+          example: EBLC9999
+    ErrorDetails:
+      type: object
+      properties:
+        location:
+          description: Location describes the attribute when the error is present.
+          type: string
+          example: payload.attribute
+        message:
+          type: string
+          description: Message that describes the error detail.
+          example: attribute is null
+    ErrorWithDetails:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Message that describes the error.
+          example: An Internal Server Error found, please contact the administrator
+        code:
+          type: string
+          description: Code that identifies the error type.
+          example: EBLC9999
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetails'
+    Impact:
+      type: array
+      description: >-
+        Limits or balances credited or debited. Can be none when the condition
+        doesn't impact any balances or limits.
+      items:
+        type: string
+        description: >
+          Limits or balances impacted.
+
+          * `AvailableCreditLimit`: Balance or limit available to the customer.
+          Applicable to debit or credit accounts.
+
+          * `AvailableTotalInstallmentCredit`: Limit available for installments
+          in the account. Applicable to debit or credit accounts.
+
+          * `AvailableWithdrawalCredit`: Available withdrawal limit specifically
+          for the credit card. Applicable to credit accounts.
+
+          * `AvailableSavingsAccountLimit`: Savings balance available in the
+          account. Applicable to debit accounts.
+
+          * `AdditionalFunds`: Additional funds represent funds that can be used
+          as supplementary when needed and are available to credit limit, held
+          funds, or other funds. Applicable to debit accounts.
+
+          * `HeldFunds`: Funds held or blocked on the account. Applicable to
+          debit accounts.
+        enum:
+          - AvailableCreditLimit
+          - AvailableTotalInstallmentCredit
+          - AvailableWithdrawalCredit
+          - AvailableSavingsAccountLimit
+          - AdditionalFunds
+          - HeldFunds
+      example:
+        - AvailableCreditLimit
+    ImpactAccount:
+      type: object
+      description: >-
+        Impacted account with credit or debit applied. `impact_account` must be
+        related to the principal account. Only available for account-level
+        configurations. For more information, refer to [Related
+        accounts](doc:related-accounts).
+      properties:
+        account_id:
+          $ref: '#/components/schemas/AccountId'
+        customer_id:
+          type: integer
+          description: Impacted customer ID.
+          example: 5678
+    Name:
+      type: string
+      description: Configuration name.
+      example: Config-multiple-accounts
+    IsActive:
+      type: boolean
+      description: Indicates active configuration.
+      example: true
+    Level:
+      type: string
+      description: >
+        Level to apply the balance configuration. (Note: `tenant` indicates an
+        organization.) If `level` is `tenant`, the organization ID is parsed
+        from the access token.
+
+        You can implement the following operations for all levels:
+
+        * Impact different balances.
+
+        * Define the amount to impact balance.
+
+        * Validate different balances or limits.
+
+        * Define the amount to validate.
+
+        * Define when the limit will be reset.
+
+
+        On the account level, two additional features are available:
+
+        * Impact a related account.
+
+        * Define a counterpart account.
+      enum:
+        - tenant
+        - program
+        - account
+      example: program
+    MainOppositeImpact:
+      description: >-
+        This field contains a list of limits that should be oppositely impacted
+        in response to the `operation_type`. For instance, if a credit operation
+        affects `AvailableCreditLimit`, the limits specified in this list will
+        be debited to counterbalance the credit impact.
+      type: array
+      items:
+        type: string
+        enum:
+          - AvailableCreditLimit
+          - AvailableSavingsAccountLimit
+          - AvailableWithdrawalCredit
+          - AvailableTotalInstallmentCredit
+          - HeldFunds
+          - AdditionalFunds
+      example:
+        - HeldFunds
+    ImpactParentAccounts:
+      type: boolean
+      description: Indicates that the ledger should impact parent accounts also.
+      example: true
+    MaxInstallments:
+      type: integer
+      description: Max installments to validate.
+      example: 12
+    MCC:
+      type: array
+      description: Merchant category codes to validate.
+      items:
+        type: string
+      example:
+        - '1234'
+        - '2626'
+    MinInstallments:
+      type: integer
+      description: Min installments to validate.
+      example: 1
+    Order:
+      type: integer
+      description: Condition priority order. The lower the number, the higher the priority.
+      example: 1
+    PostPlatformConditionResult:
+      type: object
+      description: Expected result described at evaluated conditions.
+      required:
+        - amount
+        - impact
+      properties:
+        amount:
+          $ref: '#/components/schemas/Amount'
+        impact:
+          $ref: '#/components/schemas/Impact'
+        consider:
+          $ref: '#/components/schemas/Consider'
+        amount_consider:
+          $ref: '#/components/schemas/AmountConsider'
+        reset_limit:
+          $ref: '#/components/schemas/ResetLimit'
+        confirmation:
+          $ref: '#/components/schemas/Confirmation'
+        opposite_impact:
+          $ref: '#/components/schemas/MainOppositeImpact'
+    PostPlatformConfig:
+      type: object
+      description: Balance configuration
+      properties:
+        name:
+          $ref: '#/components/schemas/Name'
+        is_active:
+          $ref: '#/components/schemas/IsActive'
+        filters:
+          type: object
+          description: Determine the criteria for a scenario.
+          required:
+            - processing_codes
+          properties:
+            processing_codes:
+              $ref: '#/components/schemas/ProcessingCodes'
+            min_installments:
+              $ref: '#/components/schemas/MinInstallments'
+            max_installments:
+              $ref: '#/components/schemas/MaxInstallments'
+            mcc:
+              $ref: '#/components/schemas/MCC'
+            account_type:
+              $ref: '#/components/schemas/AccountType'
+            currency_code:
+              $ref: '#/components/schemas/CurrencyCode'
+        scenarios:
+          type: array
+          description: >-
+            Balance configuration scenarios. Scenarios determine how the
+            evaluated transactions impact balances and limits. You use the
+            fields together to set the `condition`. You set the priority to use
+            the validation to check the amount.
+          items:
+            type: object
+            description: Balance condition configuration.
+            properties:
+              condition:
+                type: object
+                description: Evaluated condition.
+                required:
+                  - order
+                  - type
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+                  type:
+                    $ref: '#/components/schemas/Type'
+                  amount_to_check_balance:
+                    $ref: '#/components/schemas/AmountToCheckBalance'
+              result:
+                $ref: '#/components/schemas/PostPlatformConditionResult'
+    ProcessingCodes:
+      type: array
+      description: >-
+        A processing code defines how the Pismo platform handles a certain
+        financial operation type. For more information, refer to [Processing
+        codes and transaction
+        types](doc:processing-codes-and-transaction-types).
+      items:
+        type: string
+        description: Array of processing codes validated
+      example:
+        - '01'
+        - '03'
+    ProgramId:
+      type: integer
+      description: Program ID. **REQUIRED** if `level` is `program`.
+      example: 999
+    ResetLimit:
+      type: string
+      description: >
+        Indicates when the limit resets. * `never`: Limit referenced in the
+        authorization is never reset. * `payment`: Limit resets when the client
+        pays the credit card bill. * `last_installment`: Limit resets after last
+        customer installment payment.
+      enum:
+        - never
+        - payment
+        - last_installment
+      example: never
+    ScenarioResponse:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/Name'
+        config_id:
+          $ref: '#/components/schemas/ConfigId'
+        impact:
+          $ref: '#/components/schemas/Impact'
+        consider:
+          $ref: '#/components/schemas/Consider'
+        amount:
+          $ref: '#/components/schemas/Amount'
+        amount_consider:
+          $ref: '#/components/schemas/AmountConsider'
+        reset_limit:
+          $ref: '#/components/schemas/ResetLimit'
+        impact_account:
+          $ref: '#/components/schemas/ImpactAccount'
+        counterpart_account:
+          $ref: '#/components/schemas/CounterpartAccount'
+        confirmation:
+          $ref: '#/components/schemas/Confirmation'
+        opposite_impact:
+          $ref: '#/components/schemas/MainOppositeImpact'
+    Type:
+      type: string
+      description: >-
+        Condition type: `default` or `custom`. `custom` allows for available
+        balance or limit validation, `default` does not. If `default` is used,
+        the `consider` field is not used to validate. The validation stops when
+        `default` is used.
+      required:
+        - default
+      enum:
+        - default
+        - custom
+      example: custom
+  examples:
+    scenarioEmpty:
+      description: Empty result example.
+      value: {}
+    scenarioResponse:
+      description: Authorization result example.
+      value:
+        config_id: 041ee495-268a-4267-b53a-5b9532a53e45
+        impact:
+          - AvailableCreditLimit
+        consider:
+          - AvailableCreditLimit
+          - OverLimit
+        amount: contract_amount
+        amount_consider: principal_amount
+        reset_limit: never
+        impact_account:
+          account_id: 1234
+          customer_id: 5678
+        counterpart_account:
+          account_id: 9876
+          processing_code: '007700'
+        confirmation:
+          impact:
+            - AvailableCreditLimit
+          opposite_impact:
+            - AdditionalFunds
+        opposite_impact:
+          - AdditionalFunds
+security:
+  - BearerAuth: []
+paths:
+  /v1/balances-config:
+    post:
+      operationId: post-v1-balances-config
+      summary: Create balance configuration
+      description: >
+        Create a balance configuration that determines how authorizations on the
+        Pismo platform impact account balances and limits. 
+
+        To create a balance configuration, define its applicability level,
+        filters, conditions, and results. 
+
+        For more information, refer to the [Balance configurations
+        overview](doc:balances-configurations-overview) guide.
+      tags:
+        - Balance configurations
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        description: Body description to create a balance configuration.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBalancesConfig'
+      parameters:
+        - $ref: '#/components/parameters/OrgIdHeader'
+        - $ref: '#/components/parameters/XCidHeader'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  config_id:
+                    $ref: '#/components/schemas/ConfigId'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWithDetails'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                internalServerError:
+                  summary: Internal server error
+                  value:
+                    code: EBLC9999
+                    message: >-
+                      An Internal Server Error found, please contact the
+                      administrator
+    get:
+      operationId: get-v1-balances-config
+      summary: List balance configurations
+      description: >
+        List balance configurations available for the organization. You can also
+        filter the results by program or account.
+      tags:
+        - Balance configurations
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AccountIdQuery'
+        - $ref: '#/components/parameters/ProgramIdQuery'
+        - $ref: '#/components/parameters/OrgIdHeader'
+        - $ref: '#/components/parameters/XCidHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/BalancesConfig'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWithDetails'
+              examples:
+                invalidProgramId:
+                  summary: Invalid ProgramID
+                  value:
+                    code: WBLC0020
+                    message: Error parsing program ID to integer number.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                internalServerError:
+                  summary: Internal server error
+                  value:
+                    code: EBLC9999
+                    message: >-
+                      An Internal Server Error found, please contact the
+                      administrator
+  /v1/balances-config/{configId}:
+    get:
+      operationId: get-v1-balances-config-by-id
+      summary: Get balance configuration
+      description: |
+        Get a balance configuration by its ID.
+      tags:
+        - Balance configurations
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ConfigIdPath'
+        - $ref: '#/components/parameters/OrgIdHeader'
+        - $ref: '#/components/parameters/XCidHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalancesConfig'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidAccountId:
+                  summary: Invalid account ID
+                  value:
+                    code: WBLC0020
+                    message: Error parsing account ID to integer number.
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                noAccountLimitsFound:
+                  summary: Balance configuration not found
+                  value:
+                    code: WBLC0022
+                    message: Balance configuration not found.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                internalServerError:
+                  summary: Internal server error
+                  value:
+                    code: EBLC9999
+                    message: Internal server error.
+    put:
+      operationId: put-v1-balances-config
+      summary: Replace balance configuration
+      description: |
+        Replace an exiting balance configuration.
+      tags:
+        - Balance configurations
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ConfigIdPath'
+        - $ref: '#/components/parameters/OrgIdHeader'
+        - $ref: '#/components/parameters/XCidHeader'
+      requestBody:
+        required: true
+        description: Body description to update a balance configuration.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PUTBalancesConfigRequest'
+      responses:
+        '204':
+          description: No content
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                noAccountLimitsFound:
+                  summary: Config not found
+                  value:
+                    code: WBLC0022
+                    message: No config found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                internalServerError:
+                  summary: Internal server error
+                  value:
+                    code: EBLC9999
+                    message: Internal server error

@@ -1,0 +1,236 @@
+openapi: 3.1.0
+info:
+  title: Platform authentication
+  version: 2.0.0
+  description: API to handle authentication and user management.<br/><br/>
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/passport
+    description: Sandbox API server for testing
+  - url: https://sandbox.pismolabs.io/passport
+    description: Sandbox API for oauth2
+components:
+  schemas:
+    SimpleError:
+      title: SimpleError
+      type: object
+      properties:
+        message:
+          type: string
+          description: Message describing the error
+        examples: {}
+      required:
+        - message
+tags:
+  - name: Authentication
+    description: Endpoints for obtaining an access token
+paths:
+  /v1/oauth2/token:
+    post:
+      summary: Get OpenID access token
+      operationId: post-passport-v1-oauth2-token
+      description: >-
+        Get an access token for OpenID authentication <br><br>NOTE&#58; Many of
+        the endpoints in the Pismo API require you to pass a JWT that you
+        generated which includes a Pismo account ID (`uid` or `account_id`) or
+        an account ID from an external system used in place of the Pismo account
+        ID (`external_account_id`). Further calls to Pismo endpoints will
+        require this token in the Authorization header. <br><br> For more
+        information, refer to [Endpoints that require an account-specific
+        token](ref:endpoints-that-require-an-account-specific-token) and
+        [Endpoints that require an external ID-specific
+        token](ref:endpoints-that-require-an-external-id-token).
+      tags:
+        - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: >-
+                    JWT signed by the client to obtain an OpenID access token
+                    from Pismo. For more information, refer to [Generating a
+                    JWT](doc:authentication-with-openid#generate-your-jwt).
+              required:
+                - token
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Pismo-signed JWT used to make authenticated requests
+                  refresh_token:
+                    type: string
+                    description: JWT used to refresh an expired Pismo access token
+                  expires_in:
+                    type: string
+                    description: Expiration time (in seconds) for the Pismo access token
+                    example: '3600'
+              examples:
+                Logged-in server:
+                  value:
+                    expires_in: '3600'
+          headers: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              examples:
+                Bad credentials:
+                  value:
+                    message: Invalid credentials
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              examples:
+                Internal error:
+                  value:
+                    message: Error authenticating server
+  /v2/s2s/access-token:
+    post:
+      summary: Get basic authentication access token
+      operationId: post-passport-v2-s2s-access-token
+      description: >-
+        Generate an access token for use with basic authentication. <br/><br/>
+        For more information, refer to [Endpoints that require an
+        account-specific
+        token](ref:endpoints-that-require-an-account-specific-token) and
+        [Endpoints that require an external ID-specific
+        token](ref:endpoints-that-require-an-external-id-token).
+      tags:
+        - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                server_key:
+                  type: string
+                  description: Server credential ID
+                  example: 5d8252ea2e6729223f30d477d79a5c3cb45f8e03
+                server_secret:
+                  type: string
+                  description: Server credential secret
+                  example: 3$vKc)FCCfT;b%;_kPfaeq-zDG3vA=e&
+                account_id:
+                  type: number
+                  description: >-
+                    Account ID for [endpoints that require an account
+                    token](ref:endpoints-that-require-an-account-specific-token)
+                  example: 123
+              required:
+                - server_key
+                - server_secret
+            examples:
+              Server credentials:
+                value:
+                  server_key: 5d8252ea2e6729223f30d477d79a5c3cb45f8e03
+                  account_id: 123
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenant:
+                    type: string
+                    description: Tenant ID
+                    example: TN-ab8b08af-8a20-44e3-a7ad-8329b3e42fa4
+                  server_key:
+                    type: string
+                    description: Server credential ID
+                    example: 5d8252ea2e6729223f30d477d79a5c3cb45f8e03
+                  program_ids:
+                    type: array
+                    description: >-
+                      Array of program IDs for which the server is allowed to
+                      make authenticated requests
+                    items:
+                      type: integer
+                    example:
+                      - 101
+                      - 102
+                      - 103
+                  account_id:
+                    type: number
+                    description: Account ID
+                    example: 123
+                  external_account_id:
+                    type: string
+                    description: >-
+                      Account ID for [endpoints that require an external account
+                      token](ref:endpoints-that-require-an-external-id-token).
+                      Used in place of the Pismo account ID.
+                    example: 5512990-642
+                  roles:
+                    type: array
+                    description: >-
+                      Permissions roles associated with the generated access
+                      token
+                    items:
+                      type: string
+                    example:
+                      - onboarding-server
+                      - account-server
+                  token:
+                    type: string
+                    description: Pismo access token used to make authenticated requests
+                  refresh:
+                    type: string
+                    description: JWT used to refresh an expired Pismo access token
+              examples:
+                Logged-in server:
+                  value:
+                    server_key: 5d8252ea2e6729223f30d477d79a5c3cb45f8e03
+                    tenant: TN-ab8b08af-8a20-44e3-a7ad-8329b3e42fa4
+                    account_id: 123
+                    external_account_id: 5512990-642
+                    program_ids:
+                      - 1
+                      - 2
+                      - 3
+                    roles:
+                      - onboarding-server
+                      - account-server
+                      - crm-server
+          headers: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              examples:
+                Bad credentials:
+                  value:
+                    message: Invalid credentials
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              examples:
+                Internal error:
+                  value:
+                    message: Error authenticating server

@@ -1,0 +1,3846 @@
+openapi: 3.1.0
+info:
+  title: Seller management - Merchants
+  version: 1.0.0
+  description: API for merchant operations
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/merchants
+    description: Sandbox API server for testing
+tags:
+  - name: Merchant
+    description: Endpoints for merchant operations
+  - name: Merchant creditor
+    description: Endpoints for creditor operations
+  - name: Merchant transaction
+    description: Endpoints for transactions
+  - name: Merchant advancement
+    description: Endpoints for advancement operations
+  - name: Merchant business category
+    description: Endpoints for business category
+  - name: Merchant acceptance
+    description: Endpoints for acceptances
+  - name: Merchant marketplace
+    description: Endpoints for marketplace operations
+  - name: Merchant location
+    description: Endpoints for merhant locations
+  - name: Merchant transaction operation
+    description: Endpoints for merchant transaction operations
+components:
+  parameters:
+    ContentTypeHeader:
+      name: Content-Type
+      in: header
+      description: Content type
+      schema:
+        type: string
+        example: application/json
+    ExternalCodeQuery:
+      name: externalCode
+      in: query
+      description: >-
+        External code for business category. The category is the type of
+        business.
+      required: true
+      schema:
+        type: string
+        maxLength: 128
+        example: 123-abc
+    ExternalCodePath:
+      name: externalCode
+      in: path
+      description: >-
+        External code for business category. The category is the type of
+        business.
+      required: true
+      schema:
+        type: string
+        maxLength: 128
+        example: 123-abc
+    AuthorizationTokenHeader:
+      name: Authorization
+      in: header
+      description: >-
+        Authorization token. This is a regular access token, which does not need
+        to include an account ID.
+      schema:
+        type: string
+        example: Bearer 1JI12J39182H39182JDIOAWJ%=
+    XMarketplaceIDheader:
+      name: x-marketplace-id
+      in: header
+      description: Marketplace ID
+      schema:
+        type: integer
+        format: int64
+        example: 123456
+    MarketplaceIDquery:
+      name: marketplaceId
+      in: query
+      description: Marketplace ID
+      required: false
+      schema:
+        type: integer
+        format: int64
+        example: 1
+    MarketplaceQuery:
+      name: marketplace
+      in: query
+      description: Marketplace ID
+      required: false
+      schema:
+        type: integer
+        format: int64
+        example: 1
+    DocumentNumberQuery:
+      name: documentNumber
+      in: query
+      description: Merchant document number
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        example: '73399909000114'
+    MerchantIDpath:
+      name: merchantId
+      in: path
+      description: Merchant ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+        example: 1
+    MerchantStatusQuery:
+      name: status
+      in: query
+      description: >-
+        Merchant status. This is a string, not an enum, so any string value is
+        allowed, but the most commonly used values are: 'ACTIVE', 'ANALYSING',
+        'APPROVED', 'CANCELLED', 'PENDING', 'REJECTED'
+      schema:
+        type: string
+        example: ACTIVE
+    MerchantNameQuery:
+      name: name
+      in: query
+      description: Merchant name
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        example: Acme Store
+    AcceptanceIDpath:
+      name: acceptanceId
+      in: path
+      description: Acceptance ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+        example: 121234
+    PageNumberQuery:
+      name: page
+      in: query
+      description: Page number. Default is 1.
+      schema:
+        type: integer
+        format: int32
+        example: 1
+    CreditorNameQuery:
+      name: name
+      in: query
+      description: Creditor name
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    PageQuery:
+      name: page
+      in: query
+      description: Current page number
+      schema:
+        type: integer
+        format: int64
+        default: 1
+        example: 1
+    PerPageQuery:
+      name: perPage
+      in: query
+      description: Items per page. Default is 10.
+      schema:
+        type: integer
+        format: int32
+        example: 10
+    CreditorIDpath:
+      name: creditorId
+      in: path
+      description: Creditor ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+        example: 1
+    MerchantTransactionIDpath:
+      name: merchantTransactionId
+      in: path
+      description: Merchant Transaction ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+        example: 1
+    StartPaymentDateQuery:
+      name: startPaymentDate
+      in: query
+      description: >-
+        Scheduled payment start date. Find scheduled payments between this date
+        and `endPaymentDate`. Format = yyyy-mm-dd.
+      schema:
+        type: string
+        format: date
+        example: '2020-01-01'
+    EndPaymentDateQuery:
+      name: endPaymentDate
+      in: query
+      description: >-
+        Scheduled payment end date. Format = yyyy-mm-dd. Find scheduled payments
+        between `startPaymentDate` and this date.
+      schema:
+        type: string
+        format: date
+        example: '2020-01-02'
+    TransactionIDpath:
+      name: transactionId
+      in: path
+      description: Transaction ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+        example: 123
+    OriginTransactionIDquery:
+      name: originTransactionId
+      in: query
+      description: >-
+        Merchant's original transaction ID. If it's a sale, then it's null; if
+        it's a refund, then it refers to the transaction ID of a sale.
+      schema:
+        type: integer
+        format: int64
+        example: 1
+    AuthorizationIDquery:
+      name: authorizationId
+      in: query
+      description: >
+        Authorization ID. Automatically generated unique identifier used in any
+        flow where a transaction is created, whether sale, resale or
+        cancellation.
+      schema:
+        type: integer
+        format: int64
+        example: 112345
+    SaleAuthorizationIDquery:
+      name: saleAuthorizationId
+      in: query
+      description: >
+        Authorization ID of sale. This refers to the authorization ID of a
+        transaction to which the current transaction is tied.
+
+        For example, when you cancel a transaction, `saleAuthorizationId` is the
+        `authorizationId` of the transaction that you are cancelling.
+
+
+        Example of a sale: authorizationId: 101011
+
+
+        Cancelling this sale: authorizationId: 101012, saleAuthorizationId :
+        101011
+      schema:
+        type: integer
+        format: int64
+        example: 112345
+    OrderIDquery:
+      name: orderId
+      in: query
+      description: Marketplace authorization (external or internal) ID
+      schema:
+        type: integer
+        format: int64
+        example: 1
+    TransactionStatusQuery:
+      name: status
+      in: query
+      description: Transaction status
+      schema:
+        type: string
+        example: SCHEDULED
+        enum:
+          - PENDING
+          - SCHEDULED
+          - BLOCKED
+          - SETTLED
+          - PAID
+          - ADVANCED
+          - CANCELED
+          - RETURNED
+    AdvancementRequestStatusQuery:
+      name: status
+      in: query
+      description: Advancement request status
+      schema:
+        type: string
+        example: PENDING
+        enum:
+          - PENDING
+          - PROCESSED
+          - ERROR
+    OrgOperationIDquery:
+      name: orgOperationId
+      in: query
+      description: >-
+        Processing code. See <a
+        href="https://developers.pismo.io/pismo-docs/docs/processing-codes-and-transaction-types"
+        target="_blank">Processing codes and transaction types</a>.
+      schema:
+        type: integer
+        format: int64
+        example: 1
+    StartEventDateQuery:
+      name: startEventDate
+      in: query
+      description: >-
+        Date authorization is generated (and associated event emitted). Format
+        is `yyyy-mm-dd`.
+      schema:
+        type: string
+        format: date
+        example: '2020-01-01'
+    EndEventDateQuery:
+      name: endEventDate
+      in: query
+      description: End date of transaction event. Format is `yyyy-mm-dd`.
+      schema:
+        type: string
+        format: date
+        example: '2020-01-02'
+    StartReceiptDateQuery:
+      name: startReceiptDate
+      in: query
+      description: Start date of merchant transaction settlement. Format is `yyyy-mm-dd`.
+      schema:
+        type: string
+        format: date
+        example: '2020-01-01'
+    EndReceiptDateQuery:
+      name: endReceiptDate
+      in: query
+      description: End date of merchant transaction settlement. Format is `yyyy-mm-dd`.
+      schema:
+        type: string
+        format: date
+        example: '2020-01-02T00:00:00.000Z'
+    OperationQuery:
+      name: operation
+      deprecated: true
+      in: query
+      description: Transaction operation description
+      schema:
+        type: integer
+        format: int64
+        example: 1
+    GrossValueQuery:
+      name: grossValue
+      in: query
+      description: >
+        Gross amount of the transaction. `startEventDate` and `endEventDate`
+        must be on the same date.
+
+        For example: grossValue: 100, startEventDate: 2023-03-01, endEventDate:
+        2023-03-01,
+      schema:
+        type: number
+        format: float
+        example: 12.01
+    NetValueQuery:
+      name: netValue
+      in: query
+      description: >
+        Net amount of the transaction. `startEventDate` and `endEventDate` must
+        be on the same date.
+
+        For example: netValue: 101, startEventDate: 2023-04-01, endEventDate:
+        2023-04-01
+      schema:
+        type: number
+        format: float
+        example: 10.01
+    SortByQuery:
+      name: sortBy
+      in: query
+      description: Sort field
+      schema:
+        type: string
+        example: paymentDate
+    TransactionMetadataQuery:
+      name: meta
+      in: query
+      description: >-
+        Metadata. The accepted parameters are `MarketplaceAuthorization` and
+        `MarketplaceTransaction`.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        example: MarketplaceTransaction:wquiqw-jwjh-huahu-ashga
+    RequestDateQuery:
+      name: date
+      in: query
+      description: Request date. Format is `yyyy-mm-dd`.
+      schema:
+        type: string
+        format: date
+        example: '2021-07-31'
+    AdvancementRequestIDquery:
+      name: advancementRequestId
+      in: path
+      description: Advancement request ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+        example: 995
+    MerchantTransactionTypeQuery:
+      name: transactionType
+      in: query
+      description: |
+        Transaction type. Currently, SALES is the only value allowed.
+      schema:
+        type: string
+        example: SALES
+        enum:
+          - SALES
+    PaymentDateQuery:
+      name: paymentDate
+      in: query
+      description: Payment date. Format = yyyy-mm-dd.
+      schema:
+        type: string
+        format: date
+        example: '2018-03-29'
+    ExternalIDQuery:
+      name: externalId
+      in: query
+      description: ID used by client to reference a merchant in their domain.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 50
+        example: '5321'
+  schemas:
+    OrgID:
+      type: string
+      description: Organization/tenant ID
+      example: TN-f878e4a1-2879-48ba-be16-821e73ac98db
+    BusinessCategoryID:
+      description: Business category ID
+      type: string
+      example: 4df987e3-8179-11ed-8209-06c7b022d1ee
+    ExternalCode:
+      description: >
+        Code for merchant category. The category is the type of business. You
+        can use the endpoint <a
+        href="https://developers.pismo.io/pismo-docs/reference/get_v1-businesscategories">Retrieves
+        business categories corresponding to query parameters</a> to get a list
+        of business categories and their external codes.
+      type: string
+      minLength: 1
+      maxLength: 128
+    BusinessCategoryName:
+      description: Business category name
+      type: string
+      minLength: 1
+      maxLength: 128
+    BusinessCategoryDescription:
+      description: Business category description
+      type: string
+      minLength: 1
+      maxLength: 128
+    BusinessCategory:
+      type: object
+      description: Type of business
+      properties:
+        org_id:
+          $ref: '#/components/schemas/OrgID'
+        business_category_id:
+          $ref: '#/components/schemas/BusinessCategoryID'
+        external_code:
+          $ref: '#/components/schemas/ExternalCode'
+        category:
+          $ref: '#/components/schemas/BusinessCategoryName'
+        description:
+          $ref: '#/components/schemas/BusinessCategoryDescription'
+    HasNext:
+      description: Indicates whether there are more pages after the current one.
+      type: boolean
+      example: false
+    PerPage:
+      description: Number of items per page
+      type: integer
+      format: int64
+      example: 20
+    CurrentPage:
+      type: integer
+      format: int64
+      description: Current page number
+      default: 1
+      example: 1
+    Pages:
+      description: Number of pages
+      type: integer
+      format: int64
+      example: 10
+    TotalItems:
+      description: Total number of items
+      type: integer
+      format: int64
+      example: 74
+    GETBusinessCategoryResponse:
+      properties:
+        has_next:
+          $ref: '#/components/schemas/HasNext'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        items:
+          description: Items
+          type: array
+          items:
+            $ref: '#/components/schemas/BusinessCategory'
+      example:
+        has_next: true
+        per_page: 10
+        current_page: 1
+        items:
+          - org_id: 08102A0B-D4F8-42A2-8B0E-2052D05577D7
+            business_category_id: 4df987e3-8179-11ed-8209-06c7b022d1ee
+            external_code: '123'
+            category: Management, consulting, and public relations services
+            description: Management, consulting, and public relations services
+    MerchantID:
+      description: Merchant ID
+      type: integer
+      format: int64
+      example: 1
+    MerchantDocumentNumber:
+      description: >
+        Merchant document number. This is the government document code, such as
+        a government-issued tax ID.
+      type: string
+      minLength: 1
+      maxLength: 14
+      example: '40533164000107'
+    MerchantName:
+      description: Merchant name
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: Acme Store
+    MerchantBrandName:
+      description: >
+        Merchant brand name. Note that this is different from a merchant's legal
+        registered name. For example, <i>Great Company</i> as opposed to
+        <i>Great Company, LLC</i> (legal entity name).
+      type: string
+      minLength: 1
+      maxLength: 128
+      example: Acme Corporation
+    MerchantCategory:
+      deprecated: true
+      description: Code name for merchant category. The category is the type of business.
+      example: abc-123
+      type: string
+      minLength: 1
+      maxLength: 128
+    ContactName:
+      description: Name of contact
+      type: string
+      minLength: 1
+      maxLength: 128
+      example: John Doe
+    EmailAddress:
+      description: Email address
+      type: string
+      example: test@acmecorp.com
+    PostalCode:
+      description: >-
+        Postal code. This is called a zip code in the United States, but you can
+        use other types of postal codes.
+      type: string
+      minLength: 1
+      maxLength: 9
+      example: '12345'
+    AddressNumber:
+      description: Numerical identifier for the specific location within a street or avenue
+      type: integer
+      format: int64
+      example: 45
+    AddressLine:
+      description: Name of the street, avenue, or primary thoroughfare of the address
+      type: string
+      minLength: 1
+      maxLength: 80
+      example: Maple Street
+    ComplementaryAddress:
+      description: >-
+        Additional address details that help pinpoint the exact location, such
+        as building, apartment, or floor
+      type: string
+      minLength: 1
+      maxLength: 50
+      example: Suite 100
+    Neighborhood:
+      description: >-
+        Name of the neighborhood or administrative region where the address is
+        located
+      type: string
+      minLength: 1
+      maxLength: 50
+      example: Canary Wharf
+    State:
+      description: >-
+        Abbreviation or full name of the state, province, or administrative
+        division
+      type: string
+      minLength: 1
+      maxLength: 2
+      example: CA
+    City:
+      description: Name of the city or municipality
+      type: string
+      minLength: 1
+      maxLength: 60
+      example: San Diego
+    CityCode:
+      description: >-
+        Official seven-digit numeric code of the city according to the IBGE
+        (Brazilian Institute of Geography and Statistics) code table. Used only
+        for cities in Brazil; this code is unique per city.
+      type: string
+      minLength: 1
+      maxLength: 50
+      example: '3550308'
+    Country:
+      description: >-
+        Full name of the country according to international standards or local
+        registry
+      type: string
+      minLength: 1
+      maxLength: 30
+      example: United States
+    AreaCode:
+      description: >
+        Area code. The US, Canada, and certain other countries divide their
+        telephone service into regions, which are identified by numbers called
+        area codes.
+
+        In the US, for example, area codes are 3-digit numbers.
+      type: string
+      example: '555'
+    Phone:
+      description: Phone number. Parentheses and dashes are optional.
+      maxLength: 25
+      type: string
+      example: '1231234'
+    AdditionalPhone:
+      description: Number for an additional phone. Parentheses and dashes are optional.
+      type: string
+      example: '2342345'
+    MarketplaceCategoryID:
+      deprecated: true
+      description: Marketplace category ID. The category is the type of business.
+      type: number
+      example: 123
+    MerchantStatus:
+      description: >-
+        Merchant status. This is a string, not an enum, so any string value is
+        allowed, but the most commonly used values are: 'ACTIVE', 'ANALYSING',
+        'APPROVED', 'CANCELLED', 'PENDING', 'REJECTED'
+      type: string
+      minLength: 1
+      maxLength: 128
+      example: APPROVED
+    MerchantProgramID:
+      description: Program ID for merchant account
+      type: integer
+      format: int64
+      example: 123
+    ExternalID:
+      description: Internal ID used by client to reference a merchant in their domain.
+      type: string
+      example: '5321'
+    GETMerchantBaseResponse:
+      properties:
+        id:
+          $ref: '#/components/schemas/MerchantID'
+        document_number:
+          $ref: '#/components/schemas/MerchantDocumentNumber'
+        municipal_registration:
+          $ref: '#/components/schemas/MunicipalRegistration'
+        contact:
+          $ref: '#/components/schemas/ContactName'
+        email:
+          $ref: '#/components/schemas/EmailAddress'
+        zip_code:
+          $ref: '#/components/schemas/PostalCode'
+        address:
+          $ref: '#/components/schemas/AddressLine'
+        complementary_address:
+          $ref: '#/components/schemas/ComplementaryAddress'
+        neighborhood:
+          $ref: '#/components/schemas/Neighborhood'
+        state:
+          $ref: '#/components/schemas/State'
+        city:
+          $ref: '#/components/schemas/City'
+        city_code:
+          $ref: '#/components/schemas/CityCode'
+        country:
+          $ref: '#/components/schemas/Country'
+        number:
+          $ref: '#/components/schemas/AddressNumber'
+        area_code:
+          $ref: '#/components/schemas/AreaCode'
+        phone:
+          $ref: '#/components/schemas/Phone'
+        additional_area_code:
+          $ref: '#/components/schemas/AdditionalAreaCode'
+        additional_phone:
+          $ref: '#/components/schemas/AdditionalPhone'
+        marketplace_category:
+          $ref: '#/components/schemas/MarketplaceCategoryID'
+        status:
+          $ref: '#/components/schemas/MerchantStatus'
+        program_id:
+          $ref: '#/components/schemas/MerchantProgramID'
+        external_id:
+          $ref: '#/components/schemas/ExternalID'
+        business_category:
+          type: object
+          description: Type of business
+          properties:
+            external_code:
+              $ref: '#/components/schemas/ExternalCode'
+            category:
+              $ref: '#/components/schemas/BusinessCategoryName'
+            description:
+              $ref: '#/components/schemas/BusinessCategoryDescription'
+    GETMerchantResponse:
+      allOf:
+        - $ref: '#/components/schemas/GETMerchantBaseResponse'
+        - properties:
+            name:
+              $ref: '#/components/schemas/MerchantName'
+            brand_name:
+              $ref: '#/components/schemas/MerchantBrandName'
+            creditor:
+              $ref: '#/components/schemas/MerchantCreditorResponse'
+      example:
+        id: 9278
+        document_number: '40533164000107'
+        name: Pismo Store
+        brand_name: Pismo Store
+        municipal_registration: 737.326.648.860
+        contact: John Doe
+        email: store@pismo.com
+        zip_code: '12345'
+        address: Maple Street
+        complementary_address: Suite 100
+        state: CA
+        city: San Diego
+        country: United States
+        number: 223
+        area_code: '555'
+        phone: '1231234'
+        additional_area_code: '555'
+        additional_phone: '1231234'
+        marketplace_category: 1
+        status: ANALYSING
+        program_id: 123
+        external_id: '3254'
+        city_code: '3550308'
+        creditor:
+          id: 7611
+          name: Acme Corporation
+          crediting_method: ACCOUNT
+          account:
+            id: 2
+          advancement_fee: '3.00'
+          discount_rate: '0.025'
+          maximum_advancement_percentage: '0.80'
+        business_category:
+          category: Management, consulting, and public relations services
+          description: Management, consulting, and public relations services
+          external_code: '123'
+    FindMerchantsResponse:
+      allOf:
+        - $ref: '#/components/schemas/GETMerchantBaseResponse'
+        - properties:
+            creditor_id:
+              $ref: '#/components/schemas/CreditorID'
+            name:
+              $ref: '#/components/schemas/MerchantBrandName'
+            merchant_name:
+              $ref: '#/components/schemas/MerchantName'
+      example:
+        id: 9278
+        document_number: '40533164000107'
+        name: Pismo Store
+        merchant_name: Pismo Store
+        municipal_registration: 737.326.648.860
+        category: abc-123
+        contact: John Doe
+        email: store@pismo.com
+        zip_code: '12345'
+        address: Maple Street
+        complementary_address: Suite 100
+        neighborhood: Canary Wharf
+        state: CA
+        city: San Diego
+        country: United States
+        number: 223
+        area_code: '555'
+        phone: '1231234'
+        additional_area_code: '555'
+        additional_phone: '1231234'
+        marketplace_category: 1
+        status: ANALYSING
+        program_id: 123
+        external_id: '3254'
+        creditor_id: 123
+        city_code: 3550308
+        business_category:
+          category: Management, consulting, and public relations services
+          description: Management, consulting, and public relations services
+          external_code: '123'
+    MunicipalRegistration:
+      description: |
+        Merchant's municipal registration number
+      type: string
+      minLength: 1
+      maxLength: 128
+      example: 737.326.648.860
+    TransactionType:
+      description: >
+        Transaction type. Examples of transaction types include cash-in and
+        cash-out.
+
+        See <a
+        href="https://developers.pismo.io/pismo-docs/docs/transactions-overview#transaction-types">Transaction
+        types</a> for the list of transaction types
+
+        on the Pismo platform.
+      type: string
+      example: SALES
+    AuthorizationID:
+      description: Authorization ID
+      type: string
+      example: '13387693'
+    ParentAuthorizationID:
+      description: Parent authorization ID
+      type: string
+      example: '13387682'
+    SaleAuthorizationID:
+      description: ID of parent sale authorization
+      type: string
+      example: '13387693'
+    POSTMerchantRequest:
+      required:
+        - document_number
+        - name
+        - email
+      properties:
+        document_number:
+          $ref: '#/components/schemas/MerchantDocumentNumber'
+        name:
+          $ref: '#/components/schemas/MerchantName'
+        email:
+          $ref: '#/components/schemas/EmailAddress'
+        brand_name:
+          $ref: '#/components/schemas/MerchantBrandName'
+        municipal_registration:
+          $ref: '#/components/schemas/MunicipalRegistration'
+        contact:
+          $ref: '#/components/schemas/ContactName'
+        zip_code:
+          $ref: '#/components/schemas/PostalCode'
+        number:
+          $ref: '#/components/schemas/AddressNumber'
+        address:
+          $ref: '#/components/schemas/AddressLine'
+        complementary_address:
+          $ref: '#/components/schemas/ComplementaryAddress'
+        neighborhood:
+          $ref: '#/components/schemas/Neighborhood'
+        state:
+          $ref: '#/components/schemas/State'
+        city:
+          $ref: '#/components/schemas/City'
+        country:
+          $ref: '#/components/schemas/Country'
+        area_code:
+          $ref: '#/components/schemas/AreaCode'
+        phone:
+          $ref: '#/components/schemas/Phone'
+        additional_area_code:
+          $ref: '#/components/schemas/AdditionalAreaCode'
+        additional_phone:
+          $ref: '#/components/schemas/AdditionalPhone'
+        program_id:
+          $ref: '#/components/schemas/MerchantProgramID'
+        external_code:
+          $ref: '#/components/schemas/ExternalCode'
+        external_id:
+          $ref: '#/components/schemas/ExternalID'
+        creditor:
+          $ref: '#/components/schemas/POSTMerchantCreditorRequest'
+        city_code:
+          $ref: '#/components/schemas/CityCode'
+    POSTMerchantResponse:
+      properties:
+        id:
+          $ref: '#/components/schemas/MerchantID'
+        document_number:
+          $ref: '#/components/schemas/MerchantDocumentNumber'
+        name:
+          $ref: '#/components/schemas/MerchantName'
+        brand_name:
+          $ref: '#/components/schemas/MerchantBrandName'
+        municipal_registration:
+          $ref: '#/components/schemas/MunicipalRegistration'
+        category:
+          $ref: '#/components/schemas/MerchantCategory'
+        contact:
+          $ref: '#/components/schemas/ContactName'
+        email:
+          $ref: '#/components/schemas/EmailAddress'
+        zip_code:
+          $ref: '#/components/schemas/PostalCode'
+        address:
+          $ref: '#/components/schemas/AddressLine'
+        complementary_address:
+          $ref: '#/components/schemas/ComplementaryAddress'
+        neighborhood:
+          $ref: '#/components/schemas/Neighborhood'
+        state:
+          $ref: '#/components/schemas/State'
+        city:
+          $ref: '#/components/schemas/City'
+        country:
+          $ref: '#/components/schemas/Country'
+        number:
+          $ref: '#/components/schemas/AddressNumber'
+        area_code:
+          $ref: '#/components/schemas/AreaCode'
+        phone:
+          $ref: '#/components/schemas/Phone'
+        additional_area_code:
+          $ref: '#/components/schemas/AdditionalAreaCode'
+        additional_phone:
+          $ref: '#/components/schemas/AdditionalPhone'
+        program_id:
+          $ref: '#/components/schemas/MerchantProgramID'
+        external_code:
+          $ref: '#/components/schemas/ExternalCode'
+        external_id:
+          $ref: '#/components/schemas/ExternalID'
+        creditor:
+          $ref: '#/components/schemas/MerchantCreditorResponse'
+      example:
+        id: 9278
+        document_number: '40533164000107'
+        name: Acme Corporation
+        brand_name: Acme
+        municipal_registration: 737.326.648.860
+        category: '123'
+        contact: John Doe
+        email: test@acmecorp.com
+        zip_code: '12345'
+        address: Maple Street
+        complementary_address: Suite 100
+        neighborhood: Canary Wharf
+        state: CA
+        city: San Diego
+        country: United States
+        number: 223
+        area_code: '555'
+        phone: '1231234'
+        additional_area_code: '11'
+        additional_phone: '2342345'
+        program_id: 123
+        external_code: abc-123
+        external_id: '5324'
+        city_code: '3550308'
+        creditor:
+          id: 7611
+          name: Acme Corporation
+          crediting_method: ACCOUNT
+          account:
+            id: 2
+          advancement_fee: '3.00'
+          discount_rate: '0.025'
+          maximum_advancement_percentage: '0.80'
+    PUTMerchantRequest:
+      required:
+        - name
+        - email
+      properties:
+        document_number:
+          $ref: '#/components/schemas/MerchantDocumentNumber'
+        name:
+          $ref: '#/components/schemas/MerchantName'
+        brand_name:
+          $ref: '#/components/schemas/MerchantBrandName'
+        municipal_registration:
+          $ref: '#/components/schemas/MunicipalRegistration'
+        contact:
+          $ref: '#/components/schemas/ContactName'
+        email:
+          $ref: '#/components/schemas/EmailAddress'
+        zip_code:
+          $ref: '#/components/schemas/PostalCode'
+        address:
+          $ref: '#/components/schemas/AddressLine'
+        complementary_address:
+          $ref: '#/components/schemas/ComplementaryAddress'
+        neighborhood:
+          $ref: '#/components/schemas/Neighborhood'
+        state:
+          $ref: '#/components/schemas/State'
+        city:
+          $ref: '#/components/schemas/City'
+        country:
+          $ref: '#/components/schemas/Country'
+        number:
+          $ref: '#/components/schemas/AddressNumber'
+        area_code:
+          $ref: '#/components/schemas/AreaCode'
+        phone:
+          $ref: '#/components/schemas/Phone'
+        additional_area_code:
+          $ref: '#/components/schemas/AdditionalAreaCode'
+        additional_phone:
+          $ref: '#/components/schemas/AdditionalPhone'
+        external_code:
+          $ref: '#/components/schemas/ExternalCode'
+        creditor:
+          $ref: '#/components/schemas/PUTMerchantCreditorRequest'
+        city_code:
+          $ref: '#/components/schemas/CityCode'
+        external_id:
+          $ref: '#/components/schemas/ExternalID'
+    MarketplaceID:
+      description: Marketplace ID
+      type: integer
+      format: int64
+      example: 1
+    OrgOperationID:
+      description: >-
+        Processing code. See <a
+        href="https://developers.pismo.io/pismo-docs/docs/processing-codes-and-transaction-types"
+        target="_blank">Processing codes and transaction types</a>.
+      type: integer
+      format: int64
+      example: 1
+    MinInstallments:
+      description: Minimum number of installments
+      type: integer
+      format: int64
+      example: 1
+      default: 1
+    MaxInstallments:
+      description: >-
+        Maximum number of installments. The default is the same value as
+        `min_installments`.
+      type: integer
+      format: int64
+      example: 1
+    MinAmount:
+      description: Minimum transaction amount
+      type: number
+      format: double
+      example: 0.01
+      default: 0.01
+    InterestRate:
+      description: Interest rate
+      type: number
+      format: double
+      example: 0.5
+      default: 0
+    POSTAcceptanceRequest:
+      required:
+        - merchant_id
+        - program_id
+        - org_operation_id
+        - credit_limit_impact_id
+      properties:
+        merchant_id:
+          $ref: '#/components/schemas/MerchantID'
+        program_id:
+          $ref: '#/components/schemas/MerchantProgramID'
+        org_operation_id:
+          $ref: '#/components/schemas/OrgOperationID'
+        min_installments:
+          $ref: '#/components/schemas/MinInstallments'
+        max_installments:
+          $ref: '#/components/schemas/MaxInstallments'
+        min_amount:
+          $ref: '#/components/schemas/MinAmount'
+        interest_rate:
+          $ref: '#/components/schemas/InterestRate'
+    AcceptanceID:
+      description: Acceptance ID
+      type: integer
+      format: int64
+      example: 1
+    POSTAcceptanceResponse:
+      properties:
+        acceptance_id:
+          $ref: '#/components/schemas/AcceptanceID'
+      example:
+        acceptance_id: 1
+    CreditorID:
+      description: Creditor ID
+      type: integer
+      format: int64
+      example: 1
+    CreditorName:
+      description: Creditor name
+      type: string
+      minLength: 1
+      maxLength: 128
+      example: Acme Corporation
+    CreditingMethod:
+      description: |
+        Crediting method. Must be set to `ACCOUNT`.
+      type: string
+      example: ACCOUNT
+      enum:
+        - ACCOUNT
+    CreditorDiscountRate:
+      description: |
+        Advancement discount rate for creditor.
+      type: string
+      default: '0.025'
+      example: '0.03'
+    CreditorDiscountRateMerchant:
+      description: >
+        Advancement discount rate for creditor. If the client doesn't provide a
+        value for this field, the server tries to retrieve the value from the
+        <b>Percentage rate over the anticipated gross amount</b> parameter for
+        the provided `program_id` in the Pismo console.
+
+        If the `program_id` of the merchant is not found or the parameter is
+        disabled, the server uses the default value of `0.025`.
+      type: string
+      default: '0.025'
+      example: '0.03'
+    MaximumAdvancementPercentage:
+      description: |
+        Maximum advancement percentage for creditor.
+      type: string
+      default: '1'
+      example: '0.80'
+    MaximumAdvancementPercentageMerchant:
+      description: >
+        Maximum advancement percentage for creditor. If the client didn't
+        provide a value for this field, the server tries to retrieve the value
+        from the <b>Max percentage that can be anticipated</b> parameter for the
+        provided `program_id` in the Pismo console.
+          If the `program_id` of the merchant is not found or the parameter is disabled, the server uses the default value of `1`.
+      type: string
+      default: '1'
+      example: '0.80'
+    CreditorResponse:
+      description: >
+        Response from merchant creditor. This is the entity from which the
+        merchant receives money when a transaction is settled.
+
+        It can be an external bank account or a Pismo account.
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/CreditorID'
+        name:
+          $ref: '#/components/schemas/CreditorName'
+        crediting_method:
+          $ref: '#/components/schemas/CreditingMethod'
+        account:
+          description: Pismo platform account
+          type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/PismoAccountID'
+        advancement_fee:
+          $ref: '#/components/schemas/AdvancementFeeInRequest'
+        discount_rate:
+          $ref: '#/components/schemas/CreditorDiscountRate'
+        maximum_advancement_percentage:
+          $ref: '#/components/schemas/MaximumAdvancementPercentage'
+      example:
+        id: 7611
+        name: Acme Corporation
+        crediting_method: ACCOUNT
+        account:
+          id: 2
+        advancement_fee: '3.00'
+        discount_rate: '0.025'
+        maximum_advancement_percentage: '0.80'
+    MerchantCreditorResponse:
+      description: |
+        Get response from merchant creditor.
+      properties:
+        id:
+          $ref: '#/components/schemas/CreditorID'
+        name:
+          $ref: '#/components/schemas/CreditorName'
+        crediting_method:
+          $ref: '#/components/schemas/CreditingMethod'
+        account:
+          description: Pismo platform account
+          type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/PismoAccountID'
+        advancement_fee:
+          $ref: '#/components/schemas/AdvancementFeeInRequest'
+        discount_rate:
+          $ref: '#/components/schemas/CreditorDiscountRate'
+        maximum_advancement_percentage:
+          $ref: '#/components/schemas/MaximumAdvancementPercentage'
+      example:
+        id: 7611
+        name: Acme Corporation
+        crediting_method: ACCOUNT
+        account:
+          id: 2
+        advancement_fee: '3.00'
+        discount_rate: '0.025'
+        maximum_advancement_percentage: '0.80'
+    GETCreditorsResponse:
+      type: object
+      properties:
+        total_items:
+          $ref: '#/components/schemas/TotalItems'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        pages:
+          $ref: '#/components/schemas/Pages'
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditorResponse'
+      example:
+        total_items: 2330
+        per_page: 10
+        pages: 233
+        current_page: 1
+        items:
+          - id: 7611
+            name: Acme Corporation
+            crediting_method: ACCOUNT
+            advancement_fee: '3.00'
+            discount_rate: '0.025'
+            maximum_advancement_percentage: '0.80'
+    AdvancementFeeInRequest:
+      description: |
+        Advancement fee for creditor.
+      type: string
+      default: '10'
+      example: '30.00'
+    AdvancementFeeInRequestMerchant:
+      description: >
+        Advancement fee for creditor. If you don't specify a value for this
+        field, the server tries to retrieve the value from the <b>Fixed fee
+        applied to the
+
+        advancement transaction</b> parameter for the provided `program_id` in
+        the Pismo console. If the `program_id` is not provided or the parameter
+        is disabled,
+
+        the server uses the default value of `10`.
+      type: string
+      default: '10'
+      example: '30.00'
+    POSTCreditorRequest:
+      required:
+        - name
+      properties:
+        name:
+          $ref: '#/components/schemas/CreditorName'
+        crediting_method:
+          $ref: '#/components/schemas/CreditingMethod'
+        advancement_fee:
+          $ref: '#/components/schemas/AdvancementFeeInRequest'
+        discount_rate:
+          $ref: '#/components/schemas/CreditorDiscountRate'
+        maximum_advancement_percentage:
+          $ref: '#/components/schemas/MaximumAdvancementPercentage'
+    PUTMerchantCreditorRequest:
+      description: >
+        This is the entity from which the merchant receives money when a
+        transaction is settled.
+
+        It should be a Pismo account.
+      required:
+        - name
+      properties:
+        id:
+          $ref: '#/components/schemas/CreditorID'
+    POSTMerchantCreditorRequest:
+      description: >
+        This is the entity from which the merchant receives money when a
+        transaction is settled.
+
+        It should be a Pismo account.
+
+
+        You can either provide an `id` to create a merchant with an already
+        existing creditor, or fill in the creditor fields to create a new
+        creditor for the created merchant.
+      required:
+        - name
+      properties:
+        name:
+          $ref: '#/components/schemas/CreditorName'
+        id:
+          $ref: '#/components/schemas/CreditorID'
+        crediting_method:
+          $ref: '#/components/schemas/CreditingMethod'
+        advancement_fee:
+          $ref: '#/components/schemas/AdvancementFeeInRequestMerchant'
+        discount_rate:
+          $ref: '#/components/schemas/CreditorDiscountRateMerchant'
+        maximum_advancement_percentage:
+          $ref: '#/components/schemas/MaximumAdvancementPercentageMerchant'
+    MatchedSettlement:
+      description: >
+        Indicates whether this is a matched settlement. A matched settlement
+        means the full amount is paid in one single payment, whereas `false`
+        indicates the
+
+        settlement is paid in several batches. The default value is `false`.
+      type: boolean
+      default: false
+      example: false
+    MatchedMDR:
+      description: >
+        Indicates whether or not this is a matched merchant discount rate (MDR).
+        If `false`, the fixed transaction fee and the MDR amount is applied only
+        to the
+
+        first installment. The default value is `false`.
+      type: boolean
+      default: false
+      example: false
+    FirstInstallmentInterval:
+      description: >
+        First installment interval. This is the amount of days between the
+        purchase and the due date of the first installment.
+
+        For example, if the merchant made the sale on 2023-03-10 and
+        `first_installment_interval` is 10, then `scheduled_payment_date` is
+        2023-03-20.
+      type: integer
+      format: int64
+      example: 30
+    FollowingInstallmentsInterval:
+      description: >-
+        Interval for following installments. The first installment interval
+        could be shorter than the interval between subsequent installments.
+      type: integer
+      format: int64
+      example: 1
+    ProcessingCode:
+      description: >-
+        Processing code. See <a
+        href="https://developers.pismo.io/pismo-docs/docs/processing-codes-and-transaction-types"
+        target="_blank">Processing codes and transaction types</a>.
+      type: integer
+      format: int64
+      example: 11827
+    ProcessingCodeString:
+      description: >-
+        Processing code. For more information, refer to <a
+        href="https://developers.pismo.io/pismo-docs/docs/processing-codes-and-transaction-types"
+        target="_blank">Processing codes</a>.
+      type: string
+      example: 00AB01
+    PismoAccountID:
+      description: Pismo account ID
+      type: integer
+      format: int64
+      example: 8675309
+    EventDateHour:
+      description: 'The event date and time. UTC date/time - format: yyyy-MM-ddThh:mm:ssZ'
+      type: string
+      format: datetime
+      example: '2020-04-20T18:14:56Z'
+    AuthorizedPrincipalAmount:
+      description: authorized principal amount
+      type: number
+      minimum: 0
+      example: 10000
+    InstallmentAmount:
+      description: Installment amount
+      type: number
+      example: 10000
+    WorkDaysInterval:
+      description: Indicates whether to consider only business days.
+      type: boolean
+      example: true
+    AnyOtherKey:
+      type: string
+      example: any other value
+    ItemDescription:
+      description: Item description
+      type: string
+      example: Widget number one
+    CurrencyCode:
+      description: >
+        Represents the currency with an ISO-4217 alphabetic or numeric (3
+        characters) string. For example, you represent Brazilian real with
+        either BRL or 986.
+
+        If you don't provide this code, the system uses the currency from the
+        merchant program.
+      type: string
+      example: '986'
+    CurrencyCodeResponse:
+      description: |
+        ISO-4217 alphabetic (3 characters) currency code.
+      type: string
+      example: BRL
+    TransactionAuthorization:
+      description: Marketplace authorization
+      type: object
+      required:
+        - event_date_hour
+        - principal_amount
+        - number_of_installments
+        - installment_amount
+      properties:
+        id:
+          $ref: '#/components/schemas/AuthorizationID'
+        event_date_hour:
+          $ref: '#/components/schemas/EventDateHour'
+        principal_amount:
+          $ref: '#/components/schemas/AuthorizedPrincipalAmount'
+        number_of_installments:
+          $ref: '#/components/schemas/NumberOfInstallments'
+        installment_amount:
+          $ref: '#/components/schemas/InstallmentAmount'
+        currency_code:
+          $ref: '#/components/schemas/CurrencyCode'
+    TransactionAcceptance:
+      description: Merchant acceptance. Records the conditions agreed to by the merchant.
+      type: object
+      required:
+        - mdr
+        - transaction_fee
+        - matched_mdr
+        - matched_settlement
+        - first_installment_interval
+        - following_installments_interval
+      properties:
+        mdr:
+          $ref: '#/components/schemas/MDRnumber'
+        transaction_fee:
+          $ref: '#/components/schemas/TransactionFee'
+        matched_mdr:
+          $ref: '#/components/schemas/MatchedMDR'
+        matched_settlement:
+          $ref: '#/components/schemas/MatchedSettlement'
+        first_installment_interval:
+          $ref: '#/components/schemas/FirstInstallmentInterval'
+        following_installments_interval:
+          $ref: '#/components/schemas/FollowingInstallmentsInterval'
+        creditor_id:
+          $ref: '#/components/schemas/CreditorID'
+        work_days_interval:
+          $ref: '#/components/schemas/WorkDaysInterval'
+        status:
+          $ref: '#/components/schemas/MerchantTransactionStatusCreation'
+    TransactionOrgOperation:
+      description: Org operation
+      type: object
+      required:
+        - org_operation_id
+      properties:
+        org_operation_id:
+          $ref: '#/components/schemas/OrgOperationID'
+    TransactionAdditionalInfo:
+      description: Additionnal information
+      type: object
+      required:
+        - account_id
+      properties:
+        account_id:
+          $ref: '#/components/schemas/PismoAccountID'
+        any_other_key:
+          $ref: '#/components/schemas/AnyOtherKey'
+    TransactionScheduledItems:
+      description: Scheduled items
+      type: array
+      items:
+        properties:
+          code:
+            $ref: '#/components/schemas/ItemCode'
+          description:
+            $ref: '#/components/schemas/ItemDescription'
+    MerchantItems:
+      description: Items merchant is selling
+      type: array
+      items:
+        properties:
+          code:
+            $ref: '#/components/schemas/ItemCode'
+          description:
+            $ref: '#/components/schemas/ItemDescription'
+    TransactionMetadata:
+      description: >-
+        Metadata. The accepted parameters are `MarketplaceAuthorization` and
+        `MarketplaceTransaction`.
+      type: array
+      items:
+        type: object
+        description: Array of objects containing metadata
+        properties:
+          name:
+            type: string
+            example: any value
+          value:
+            type: string
+            example: any value
+      example:
+        - name: MarketplaceAuthorization
+          value: ashga-jwjh-huahu-wquiqw
+        - name: MarketplaceTransaction
+          value: wquiqw-jwjh-huahu-ashga
+    Transaction:
+      description: Merchant transaction
+      type: object
+      properties:
+        marketplace_id:
+          $ref: '#/components/schemas/MarketplaceID'
+        authorization:
+          $ref: '#/components/schemas/TransactionAuthorization'
+        acceptance:
+          $ref: '#/components/schemas/TransactionAcceptance'
+        operation:
+          $ref: '#/components/schemas/TransactionOrgOperation'
+        additional_info:
+          $ref: '#/components/schemas/TransactionAdditionalInfo'
+        scheduled_items:
+          $ref: '#/components/schemas/TransactionScheduledItems'
+        items:
+          $ref: '#/components/schemas/MerchantItems'
+        meta:
+          $ref: '#/components/schemas/TransactionMetadata'
+    AuthorizedAmount:
+      description: Authorized amount (must be a multiple of 100)
+      type: number
+      example: 10000
+    MDRpenalty:
+      description: >-
+        Indicates whether there should be a merchant discount rate (MDR)
+        penalty. If true, the fixed transaction fee and the MDR amount are not
+        reversed.
+      type: boolean
+      example: false
+    ReversalTransaction:
+      description: Reversal transaction for merchant
+      type: object
+      required:
+        - amount
+        - processing_code
+        - event_date_hour
+      properties:
+        authorization:
+          description: Marketplace authorization
+          type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/MarketplaceAuthorizationID'
+        amount:
+          $ref: '#/components/schemas/AuthorizedAmount'
+        mdr_penalty:
+          $ref: '#/components/schemas/MDRpenalty'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        event_date_hour:
+          $ref: '#/components/schemas/EventDateHour'
+        meta:
+          $ref: '#/components/schemas/TransactionMetadata'
+    MerchantTransactionID:
+      description: Merchant transaction ID
+      type: integer
+      format: int64
+      example: 1
+    TransactionAmount:
+      description: Transaction amount
+      type: number
+      example: 10000
+    MDRamount:
+      description: Merchant discount rate (MDR) amount
+      type: number
+      format: double
+      example: 5.5
+    MDRwithoutFee:
+      description: Merchant discount rate (MDR) minus transaction fee
+      type: number
+      example: 1
+    MDRtax:
+      description: Merchant discount rate (MDR) tax amount
+      type: number
+      format: double
+    TransactionFee:
+      description: Fixed transaction fee
+      type: number
+      format: double
+      example: 1
+    InstallmentNumber:
+      description: Installment number of transaction
+      type: integer
+      format: int64
+      example: 2
+    ScheduledPaymentDate:
+      description: Scheduled payment date. Format = yyyy-mm-dd.
+      type: string
+      format: date
+      example: '2020-04-20'
+    ScheduledPaymentDateAdjusted:
+      description: >
+        Scheduled payment date adjusted. Format = yyyy-mm-dd. This is usually
+        used when the originally scheduled payment date is on a holiday or
+        weekend.
+
+        In this case, the `scheduled_payment_date_adjusted` is the next
+        available date that is not on a holiday or weekend.
+      type: string
+      example: '2020-04-20'
+    AccountingDate:
+      description: >-
+        Accounting date. An optional date a client can use for accounting
+        purposes. Format = yyyy-mm-dd.
+      type: string
+      format: date
+      example: '2020-04-20'
+    Blocked:
+      description: True if transaction is blocked.
+      type: boolean
+      default: false
+      example: true
+    TransactionResponse:
+      description: Merchant transaction response
+      type: array
+      items:
+        type: object
+        properties:
+          merchant_transaction_id:
+            $ref: '#/components/schemas/MerchantTransactionID'
+          org_id:
+            $ref: '#/components/schemas/OrgID'
+          authorization_id:
+            $ref: '#/components/schemas/AuthorizationID'
+          org_operation_id:
+            $ref: '#/components/schemas/OrgOperationID'
+          merchant_id:
+            $ref: '#/components/schemas/MerchantID'
+          creditor_id:
+            $ref: '#/components/schemas/CreditorID'
+          transaction_amount:
+            $ref: '#/components/schemas/TransactionAmount'
+          mdr_amount:
+            $ref: '#/components/schemas/MDRamount'
+          mdr_without_fee:
+            $ref: '#/components/schemas/MDRwithoutFee'
+          mdr_tax:
+            $ref: '#/components/schemas/MDRtax'
+          transaction_fee:
+            $ref: '#/components/schemas/TransactionFee'
+          installment:
+            $ref: '#/components/schemas/InstallmentNumber'
+          number_of_installments:
+            $ref: '#/components/schemas/NumberOfInstallments'
+          event_date_hour:
+            $ref: '#/components/schemas/EventDateHour'
+          scheduled_payment_date:
+            $ref: '#/components/schemas/ScheduledPaymentDate'
+          scheduled_payment_date_adjusted:
+            $ref: '#/components/schemas/ScheduledPaymentDateAdjusted'
+          accounting_date:
+            $ref: '#/components/schemas/AccountingDate'
+          transaction_status:
+            $ref: '#/components/schemas/MerchantTransactionStatus'
+          type:
+            $ref: '#/components/schemas/TransactionType'
+          blocked:
+            $ref: '#/components/schemas/Blocked'
+          processing_code:
+            $ref: '#/components/schemas/ProcessingCodeString'
+          currency_code:
+            $ref: '#/components/schemas/CurrencyCodeResponse'
+      example:
+        - merchant_transaction_id: 1
+          org_id: TN-b05174-4e80-11ea-b77f-2e728ce881
+          authorization_id: '13387693'
+          org_operation_id: 1
+          merchant_id: 1
+          creditor_id: 1
+          transaction_amount: 10000
+          mdr_amount: 1
+          mdr_without_fee: 1
+          mdr_tax: 1
+          transaction_fee: 1
+          installment: 1
+          number_of_installments: 1
+          event_date_hour: '2020-04-20T18:14:56Z'
+          scheduled_payment_date: '2020-04-20'
+          scheduled_payment_date_adjusted: '2020-04-20'
+          accounting_date: '2020-04-20'
+          transaction_status: PENDING
+          type: SALE
+          blocked: false
+          processing_code: 00AB01
+          currency_code: BRL
+    ReversalTransactionResponse:
+      description: Merchant transaction response for a reversal
+      type: array
+      items:
+        type: object
+        properties:
+          merchant_transaction_id:
+            $ref: '#/components/schemas/MerchantTransactionID'
+          org_id:
+            $ref: '#/components/schemas/OrgID'
+          authorization_id:
+            $ref: '#/components/schemas/AuthorizationID'
+          org_operation_id:
+            $ref: '#/components/schemas/OrgOperationID'
+          merchant_id:
+            $ref: '#/components/schemas/MerchantID'
+          creditor_id:
+            $ref: '#/components/schemas/CreditorID'
+          transaction_amount:
+            $ref: '#/components/schemas/TransactionAmount'
+          mdr_amount:
+            $ref: '#/components/schemas/MDRamount'
+          mdr_without_fee:
+            $ref: '#/components/schemas/MDRwithoutFee'
+          transaction_fee:
+            $ref: '#/components/schemas/TransactionFee'
+          installment:
+            $ref: '#/components/schemas/InstallmentNumber'
+          number_of_installments:
+            $ref: '#/components/schemas/NumberOfInstallments'
+          event_date_hour:
+            $ref: '#/components/schemas/EventDateHour'
+          scheduled_payment_date:
+            $ref: '#/components/schemas/ScheduledPaymentDate'
+          scheduled_payment_date_adjusted:
+            $ref: '#/components/schemas/ScheduledPaymentDateAdjusted'
+          accounting_date:
+            $ref: '#/components/schemas/AccountingDate'
+          transaction_status:
+            $ref: '#/components/schemas/MerchantTransactionStatus'
+          type:
+            $ref: '#/components/schemas/TransactionType'
+          blocked:
+            $ref: '#/components/schemas/Blocked'
+          processing_code:
+            $ref: '#/components/schemas/ProcessingCodeString'
+          currency_code:
+            $ref: '#/components/schemas/CurrencyCodeResponse'
+      example:
+        - merchant_transaction_id: 1
+          org_id: TN-b05174-4e80-11ea-b77f-2e728ce881
+          authorization_id: '13387693'
+          org_operation_id: 1
+          merchant_id: 1
+          creditor_id: 1
+          transaction_amount: 10000
+          mdr_amount: 1
+          mdr_without_fee: 1
+          transaction_fee: 1
+          installment: 1
+          number_of_installments: 1
+          event_date_hour: '2020-04-20T18:14:56Z'
+          scheduled_payment_date: '2020-04-20'
+          scheduled_payment_date_adjusted: '2020-04-20'
+          accounting_date: '2020-04-20'
+          transaction_status: PENDING
+          type: SALE
+          processing_code: 00AB01
+          currency_code: BRL
+    NumberOfInstallments:
+      description: Number of installments
+      type: integer
+      format: int64
+      example: 3
+    OriginTransactionID:
+      description: >-
+        ID of parent merchant transaction. If sale, this is null. If refund,
+        this is the transaction ID of the sale.
+      type: integer
+      format: int64
+      example: 1
+    MerchantTransactionType:
+      description: |
+        Transaction type. Currently, SALES is the only value allowed.
+      type: string
+      example: SALES
+      enum:
+        - SALES
+    MarketplaceAuthorizationID:
+      description: Marketplace authorization ID (external or internal)
+      type: integer
+      format: int64
+      example: 1
+    OperationName:
+      description: Operation name
+      type: string
+      example: Credit card without quotas
+    OperationType:
+      description: Operation type ID
+      type: integer
+      format: int64
+      example: 89
+    MerchantTransactionSettlementDate:
+      description: Date of merchant transaction settlement. Format = yyyy-mm-dd.
+      type: string
+      format: date
+      example: '2020-07-16T00:00:00.000Z'
+    TransactionsResponse:
+      properties:
+        total_items:
+          $ref: '#/components/schemas/TotalItems'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        pages:
+          $ref: '#/components/schemas/Pages'
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        tax:
+          $ref: '#/components/schemas/RelatedFees'
+        items:
+          description: Transactions for merchant
+          type: array
+          items:
+            description: List of merchant transactions
+            type: object
+            properties:
+              id:
+                $ref: '#/components/schemas/MerchantTransactionID'
+              origin_transaction_id:
+                $ref: '#/components/schemas/OriginTransactionID'
+              authorization_id:
+                $ref: '#/components/schemas/AuthorizationID'
+              sale_authorization_id:
+                $ref: '#/components/schemas/SaleAuthorizationID'
+              order_id:
+                $ref: '#/components/schemas/MarketplaceAuthorizationID'
+              type:
+                $ref: '#/components/schemas/MerchantTransactionType'
+              number_of_installments:
+                $ref: '#/components/schemas/NumberOfInstallments'
+              installment:
+                $ref: '#/components/schemas/InstallmentNumber'
+              gross_value:
+                $ref: '#/components/schemas/Gross'
+              net_value:
+                $ref: '#/components/schemas/Net'
+              discount:
+                $ref: '#/components/schemas/Discount'
+              advanced_amount:
+                $ref: '#/components/schemas/AdvancementAmount'
+              operation_type:
+                $ref: '#/components/schemas/OperationType'
+              operation:
+                $ref: '#/components/schemas/OperationName'
+              event_date:
+                $ref: '#/components/schemas/TransactionEventDate'
+              payment_date:
+                $ref: '#/components/schemas/ScheduledPaymentDate'
+              receipt_date:
+                $ref: '#/components/schemas/MerchantTransactionSettlementDate'
+              received_value:
+                $ref: '#/components/schemas/TransactionAmountSettled'
+              status:
+                $ref: '#/components/schemas/MerchantTransactionStatus'
+              meta:
+                $ref: '#/components/schemas/TransactionMetadata'
+      example:
+        total_items: 74
+        per_page: 10
+        pages: 8
+        current_page: 1
+        items:
+          - id: 2
+            origin_transaction_id: 1
+            authorization_id: '13387693'
+            sale_authorization_id: '13387693'
+            order_id: 1
+            type: SALES
+            number_of_installments: 3
+            installment: 2
+            gross_value: 3600.02
+            net_value: 3582.02
+            discount: -18
+            advanced_amount: 0.1
+            operation_type: 89
+            operation: Credit card without quotas
+            event_date: '2020-07-14T00:41:29Z'
+            payment_date: '2020-07-16'
+            receipt_date: '2020-07-16'
+            received_value: 0.1
+            status: SCHEDULED
+            meta:
+              - name: MarketplaceAuthorization
+                value: ashga-jwjh-huahu-wquiqw
+              - name: MarketplaceTransaction
+                value: wquiqw-jwjh-huahu-ashga
+        tax:
+          mdr:
+            - description: Merchant Discount Rate
+              operation_type: 1
+              mdr: 0.03
+              days_to_payment: 30
+    TransactionAmountSettled:
+      description: Transaction amount settled
+      type: number
+      format: float
+      example: 0.1
+    RelatedFees:
+      description: The related fees available to operation
+      type: object
+      properties:
+        mdr:
+          $ref: '#/components/schemas/MDRobject'
+    GETTransactionsV3Response:
+      properties:
+        total_items:
+          $ref: '#/components/schemas/TotalItems'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        pages:
+          $ref: '#/components/schemas/Pages'
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        tax:
+          $ref: '#/components/schemas/RelatedFees'
+        items:
+          description: Merchants transactions
+          type: array
+          items:
+            description: Merchant transaction
+            type: object
+            properties:
+              id:
+                $ref: '#/components/schemas/MerchantTransactionID'
+              type:
+                description: Transaction type
+                type: string
+                example: SALES
+              number_of_installments:
+                $ref: '#/components/schemas/NumberOfInstallments'
+              installment:
+                $ref: '#/components/schemas/InstallmentNumber'
+              gross_value:
+                $ref: '#/components/schemas/Gross'
+              net_value:
+                $ref: '#/components/schemas/Net'
+              discount:
+                $ref: '#/components/schemas/Discount'
+              operation_type:
+                $ref: '#/components/schemas/OperationType'
+              operation:
+                $ref: '#/components/schemas/OperationName'
+              event_date:
+                $ref: '#/components/schemas/TransactionEventDate'
+              payment_date:
+                $ref: '#/components/schemas/ScheduledPaymentDate'
+              receipt_date:
+                $ref: '#/components/schemas/MerchantTransactionSettlementDate'
+              received_value:
+                $ref: '#/components/schemas/TransactionAmountSettled'
+              status:
+                $ref: '#/components/schemas/MerchantTransactionStatus'
+              meta:
+                $ref: '#/components/schemas/TransactionMetadata'
+      example:
+        total_items: 74
+        per_page: 10
+        pages: 8
+        current_page: 1
+        tax:
+          mdr:
+            - description: Merchant Discount Rate
+              operation_type: 1
+              mdr: 0.03
+              days_to_payment: 30
+        items:
+          - id: 2
+            type: SALES
+            number_of_installments: 3
+            installment: 2
+            gross_value: 3600.02
+            net_value: 3582.02
+            discount: -18
+            operation_type: 89
+            operation: Credit card without quotas
+            event_date: '2020-07-14T00:41:29Z'
+            payment_date: '2020-07-16'
+            receipt_date: '2020-07-16'
+            received_value: 0.1
+            status: SCHEDULED
+            meta:
+              - name: MarketplaceAuthorization
+                value: ashga-jwjh-huahu-wquiqw
+              - name: MarketplaceTransaction
+                value: wquiqw-jwjh-huahu-ashga
+    MerchantTransactionStatusCreation:
+      description: Merchant transaction status
+      type: string
+      enum:
+        - PENDING
+        - SCHEDULED
+        - SETTLED
+        - CANCELED
+        - WAITING_SPLIT
+    MerchantTransactionStatus:
+      description: Merchant transaction status
+      type: string
+      enum:
+        - PENDING
+        - SCHEDULED
+        - BLOCKED
+        - SETTLED
+        - PAID
+        - ADVANCED
+        - CANCELED
+        - RETURNED
+        - WAITING_SPLIT
+        - SPLITTED
+    MerchantWorkflowStatus:
+      description: Merchant workflow status transitions
+      type: array
+      items:
+        type: string
+      example:
+        - ACTIVE
+        - ANALYSING
+        - APPROVED
+        - CANCELLED
+        - PENDING
+        - REJECTED
+    AdvancementInterestMethod:
+      description: Advancement interest mode
+      type: string
+      example: SIMPLE
+      enum:
+        - SIMPLE
+        - COMPOUND
+        - SIMPLIFIED
+    AdvancementSchedulePaymentDateUpdateMode:
+      description: Mode for updating advancement schedule payment date
+      type: string
+      example: KEEP_FUTURE_DATES
+      enum:
+        - KEEP_FUTURE_DATES
+        - UPDATE_TO_NOW
+    AdvancementStatus:
+      description: Advancement status
+      type: string
+      example: PENDING
+      enum:
+        - PENDING
+        - PROCESSED
+        - ERROR
+    AdvancementGroupTransactions:
+      description: Advancement group transactions
+      type: string
+      example: TOTAL
+      enum:
+        - TOTAL
+        - NETWORK
+    AdvancementInitialTransactionStatus:
+      description: Initial transaction status for advancement
+      type: string
+      example: SCHEDULED
+      enum:
+        - SCHEDULED
+        - SETTLED
+    MaximumAdvancementAmount:
+      type: number
+      description: Maximum advancement amount
+      format: float
+      example: 989.99
+    AdvancementDiscountAmount:
+      type: number
+      description: AdvancementDiscountAmount
+      format: float
+      example: 1.09
+    AdvancementAmount:
+      type: number
+      description: Advancement amount
+      format: float
+      example: 988.9
+    GETAdvancementResponse:
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              payment_date:
+                $ref: '#/components/schemas/ScheduledPaymentDate'
+              gross_value:
+                $ref: '#/components/schemas/Gross'
+              discount:
+                $ref: '#/components/schemas/Discount'
+              net_value:
+                $ref: '#/components/schemas/Net'
+              max_advancement_amount:
+                $ref: '#/components/schemas/MaximumAdvancementAmount'
+              advancement_discount_amount:
+                $ref: '#/components/schemas/AdvancementDiscountAmount'
+              advancement_amount:
+                $ref: '#/components/schemas/AdvancementAmount'
+        totals:
+          type: object
+          properties:
+            gross_value:
+              $ref: '#/components/schemas/Gross'
+            discount:
+              $ref: '#/components/schemas/Discount'
+            net_value:
+              $ref: '#/components/schemas/Net'
+            max_advancement_amount:
+              $ref: '#/components/schemas/MaximumAdvancementAmount'
+            advancement_discount_amount:
+              $ref: '#/components/schemas/AdvancementDiscountAmount'
+            advancement_amount:
+              $ref: '#/components/schemas/AdvancementAmount'
+      example:
+        items:
+          - payment_date: '2021-07-31'
+            gross_value: 10000
+            discount: -10.01
+            net_value: 989.99
+            max_advancement_amount: 989.99
+            advancement_discount_amount: 1.09
+            advancement_amount: 988.9
+        totals:
+          gross_value: 1000
+          discount: -10.01
+          net_value: 989.99
+          max_advancement_amount: 989.99
+          advancement_discount_amount: 1.09
+          advancement_amount: 988.9
+    BeginDate:
+      description: Begin date (DD/MM/YYYY)
+      type: string
+      example: 31/07/2021
+    EndDate:
+      description: End date (DD/MM/YYYY)
+      type: string
+      example: 02/05/2023
+    RequestDate:
+      description: Request date (DD/MM/YYYY)
+      type: string
+      example: 07/07/2021
+    Notify:
+      description: URL that receives notification
+      deprecated: true
+      type: string
+      example: pismo.io/notify
+    RealTimeSettlement:
+      description: Indicates whether transaction is settled in real time.
+      type: boolean
+      example: false
+    POSTAdvancementRequest:
+      required:
+        - begin_date
+        - amount
+      properties:
+        begin_date:
+          $ref: '#/components/schemas/BeginDate'
+        amount:
+          $ref: '#/components/schemas/AdvancementAmount'
+        request_date:
+          $ref: '#/components/schemas/RequestDate'
+        end_date:
+          $ref: '#/components/schemas/EndDate'
+        notify:
+          $ref: '#/components/schemas/Notify'
+        real_time_settlement:
+          $ref: '#/components/schemas/RealTimeSettlement'
+    AdvancementRequestID:
+      description: Advancement request ID
+      type: integer
+      format: int64
+      example: 995
+    AdvancementDateOfRequest:
+      description: >-
+        The date and time the advancement is requested. Note that the date and
+        time are displayed in UTC format `yyyy-MM-ddThh:mm:ssZ`.
+      type: string
+      format: datetime
+    AdvancementAmountRequested:
+      description: Amount requested
+      type: string
+      example: '346.99'
+    AdvancementFeedbackMessage:
+      description: Feedback message for advancement request
+      type: string
+      example: Advancement request successfully completed in 10 seconds.
+    AdvancementGrossAmount:
+      description: Gross amount advanced
+      type: number
+      example: 637.53
+    AdvancementNetAmount:
+      description: Net amount advanced
+      type: number
+      example: 596.1
+    AdvancementRequestResponse:
+      properties:
+        advancement_request_id:
+          $ref: '#/components/schemas/AdvancementRequestID'
+        date_of_request:
+          $ref: '#/components/schemas/AdvancementDateOfRequest'
+        amount_requested:
+          $ref: '#/components/schemas/AdvancementAmountRequested'
+        begin_date:
+          $ref: '#/components/schemas/BeginDate'
+        end_date:
+          $ref: '#/components/schemas/EndDate'
+        advancement_fee:
+          $ref: '#/components/schemas/AdvancementFeeInRequest'
+        discount_rate:
+          $ref: '#/components/schemas/CreditorDiscountRate'
+        maximum_advancement_percentage:
+          $ref: '#/components/schemas/MaximumAdvancementPercentage'
+        interest_method:
+          $ref: '#/components/schemas/AdvancementInterestMethod'
+        schedule_payment_date_update_mode:
+          $ref: '#/components/schemas/AdvancementSchedulePaymentDateUpdateMode'
+        status:
+          $ref: '#/components/schemas/AdvancementStatus'
+        message:
+          $ref: '#/components/schemas/AdvancementFeedbackMessage'
+        notify:
+          $ref: '#/components/schemas/Notify'
+        advanced_gross_amount:
+          $ref: '#/components/schemas/AdvancementGrossAmount'
+        advanced_discount_amount:
+          $ref: '#/components/schemas/AdvancementDiscountAmount'
+        advanced_net_amount:
+          $ref: '#/components/schemas/AdvancementNetAmount'
+      example:
+        advancement_request_id: 995
+        date_of_request: '2019-05-14T15:58:10Z'
+        amount_requested: '346.99'
+        begin_date: '2019-05-30'
+        end_date: '2019-06-30'
+        advancement_fee: '10.0'
+        discount_rate: '0.02'
+        maximum_advancement_percentage: '1.0'
+        interest_method: SIMPLE
+        schedule_payment_date_update_mode: KEEP_FUTURE_DATES
+        status: PENDING
+        message: Advancement request successfully completed in 10 seconds.
+        advanced_gross_amount: 637.53
+        advanced_discount_amount: -41.43
+        advanced_net_amount: 596.1
+    GETAdvancementRequestResponse:
+      allOf:
+        - $ref: '#/components/schemas/AdvancementRequestResponse'
+        - type: object
+          properties:
+            group_transactions:
+              $ref: '#/components/schemas/AdvancementGroupTransactions'
+            initial_transaction_status:
+              $ref: '#/components/schemas/AdvancementInitialTransactionStatus'
+      example:
+        advancement_request_id: 995
+        date_of_request: '2019-05-14T15:58:10Z'
+        amount_requested: '346.99'
+        begin_date: '2019-05-30'
+        end_date: '2019-06-30'
+        advancement_fee: 10
+        discount_rate: 0.02
+        maximum_advancement_percentage: 1
+        interest_method: SIMPLE
+        schedule_payment_date_update_mode: KEEP_FUTURE_DATES
+        status: PENDING
+        message: Advancement request successfully completed in 10 seconds.
+        advanced_gross_amount: 637.53
+        advanced_discount_amount: -41.43
+        advanced_net_amount: 596.1
+        group_transactions: TOTAL
+        initial_transaction_status: SCHEDULED
+    GETAdvancementRequestsResponse:
+      properties:
+        total_items:
+          $ref: '#/components/schemas/TotalItems'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        pages:
+          $ref: '#/components/schemas/Pages'
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GETAdvancementRequestResponse'
+      example:
+        total_items: 2
+        per_page: 1
+        pages: 2
+        current_page: 1
+        items:
+          - advancement_request_id: 995
+            date_of_request: '2019-05-14T15:58:10Z'
+            amount_requested: '346.99'
+            begin_date: '2019-05-30'
+            end_date: '2019-06-30'
+            advancement_fee: '10.0'
+            discount_rate: '0.02'
+            maximum_advancement_percentage: '1.0'
+            interest_method: SIMPLE
+            schedule_payment_date_update_mode: KEEP_FUTURE_DATES
+            status: PENDING
+            message: Advancement request successfully completed in 10 seconds.
+            advanced_gross_amount: 637.53
+            advanced_discount_amount: -41.43
+            advanced_net_amount: 596.1
+            group_transactions: TOTAL
+            initial_transaction_status: SCHEDULED
+    DaysToPayment:
+      description: Number of days before the first payment
+      type: integer
+      format: int64
+      example: 30
+    MDRnumber:
+      description: Merchant discount rate (MDR)
+      type: number
+      format: float
+      example: 0.03
+    OperationTypeDescription:
+      description: Operation type description
+      type: string
+      example: In one lump sum
+    MDRobject:
+      description: Array of fees
+      type: array
+      items:
+        type: object
+        properties:
+          description:
+            $ref: '#/components/schemas/OperationTypeDescription'
+          mdr:
+            $ref: '#/components/schemas/MDRnumber'
+          days_to_payment:
+            $ref: '#/components/schemas/DaysToPayment'
+    GETTransactionTaxResponse:
+      properties:
+        mdr:
+          $ref: '#/components/schemas/MDRobject'
+      example:
+        mdr:
+          - description: Merchant Discount Rate
+            operationType: 1
+            mdr: 0.03
+            days_to_payment: 30
+    Gross:
+      description: Gross amount
+      type: number
+      format: float
+      example: 1000.5
+    Discount:
+      description: Discount amount
+      type: number
+      format: float
+      example: 0.5
+    Net:
+      description: Net amount
+      type: number
+      format: float
+      example: 1000
+    TotalAmountBlockedOrUnblocked:
+      properties:
+        gross:
+          $ref: '#/components/schemas/Gross'
+        discount:
+          $ref: '#/components/schemas/Discount'
+        net:
+          $ref: '#/components/schemas/Net'
+    GETTransactionsTotalsResponse:
+      properties:
+        pending:
+          allOf:
+            - $ref: '#/components/schemas/TotalAmountBlockedOrUnblocked'
+            - type: object
+              properties:
+                unblocked:
+                  $ref: '#/components/schemas/TotalAmountBlockedOrUnblocked'
+                blocked:
+                  $ref: '#/components/schemas/TotalAmountBlockedOrUnblocked'
+        scheduled:
+          allOf:
+            - $ref: '#/components/schemas/TotalAmountBlockedOrUnblocked'
+            - type: object
+              properties:
+                unblocked:
+                  $ref: '#/components/schemas/TotalAmountBlockedOrUnblocked'
+                blocked:
+                  $ref: '#/components/schemas/TotalAmountBlockedOrUnblocked'
+        settled:
+          allOf:
+            - $ref: '#/components/schemas/TotalAmountBlockedOrUnblocked'
+            - type: object
+              properties:
+                unblocked:
+                  $ref: '#/components/schemas/TotalAmountBlockedOrUnblocked'
+                blocked:
+                  $ref: '#/components/schemas/TotalAmountBlockedOrUnblocked'
+        all:
+          allOf:
+            - $ref: '#/components/schemas/TotalAmountBlockedOrUnblocked'
+            - type: object
+              properties:
+                unblocked:
+                  $ref: '#/components/schemas/TotalAmountBlockedOrUnblocked'
+                blocked:
+                  $ref: '#/components/schemas/TotalAmountBlockedOrUnblocked'
+      example:
+        pending:
+          gross: 1000.5
+          discount: 0.5
+          net: 1000
+          unblocked:
+            gross: 1000.5
+            discount: 0.5
+            net: 1000
+          blocked:
+            gross: 1000.5
+            discount: 0.5
+            net: 1000
+        scheduled:
+          gross: 1000.5
+          discount: 0.5
+          net: 1000
+          unblocked:
+            gross: 1000.5
+            discount: 0.5
+            net: 1000
+          blocked:
+            gross: 1000.5
+            discount: 0.5
+            net: 1000
+        settled:
+          gross: 1000.5
+          discount: 0.5
+          net: 1000
+          unblocked:
+            gross: 1000.5
+            discount: 0.5
+            net: 1000
+          blocked:
+            gross: 1000.5
+            discount: 0.5
+            net: 1000
+        all:
+          gross: 1000.5
+          discount: 0.5
+          net: 1000
+          unblocked:
+            gross: 1000.5
+            discount: 0.5
+            net: 1000
+          blocked:
+            gross: 1000.5
+            discount: 0.5
+            net: 1000
+    TransactionTotalAmountV2:
+      type: object
+      properties:
+        gross_amount:
+          description: Gross amount
+          type: string
+          format: float
+        discount_amount:
+          description: Discount amount
+          type: string
+          format: float
+        net_amount:
+          description: Net amount (Gross amount - Discount amount)
+          type: string
+          format: float
+    GETTransactionsTotalsV2Response:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/TransactionTotalAmountV2'
+              - type: object
+                properties:
+                  status:
+                    description: >
+                      Transactions status. Returned only if the `groupBy` filter
+                      is `status` or `dateAndStatus`
+                    type: string
+                  scheduled_payment_date:
+                    description: >
+                      Transactions scheduled payment date. Returned only if the
+                      `groupBy` filter is `date` or `dateAndStatus`. Format =
+                      yyyy-mm-dd.
+                    type: string
+                    format: date
+        totals:
+          $ref: '#/components/schemas/TransactionTotalAmountV2'
+      example:
+        items:
+          - gross_amount: '200.0'
+            net_amount: '200.0'
+            discount_amount: '0.0'
+            status: PENDING
+            scheduled_payment_date: '2024-03-20'
+          - gross_amount: '50.0'
+            net_amount: '35.5'
+            discount_amount: '14.5'
+            status: SCHEDULED
+            scheduld_payment_date: '2024-03-20'
+        totals:
+          gross_amount: '250.0'
+          discount_amount: '14.5'
+          net_amount: '235.5'
+    GrossValueTotal:
+      type: number
+      format: float
+      example: 9000.01
+    NetValueTotal:
+      type: number
+      format: float
+      example: 8910.01
+    DiscountTotal:
+      type: number
+      format: float
+      example: -90
+    GETTransactionTypesResponse:
+      type: array
+      items:
+        type: object
+        properties:
+          type:
+            $ref: '#/components/schemas/MerchantTransactionType'
+          gross_value_total:
+            $ref: '#/components/schemas/GrossValueTotal'
+          net_value_total:
+            $ref: '#/components/schemas/NetValueTotal'
+          discount_total:
+            $ref: '#/components/schemas/DiscountTotal'
+      example:
+        - type: SALES
+          gross_value_total: 9000.01
+          net_value_total: 8910.01
+          discount_total: -90
+    AdditionalAreaCode:
+      description: Additional area code (for `additional_phone`)
+      type: string
+      example: '11'
+    ItemID:
+      description: Item ID
+      type: integer
+      example: 10452
+    ItemCode:
+      description: Item Code
+      type: string
+      example: '40316017'
+    ItemPrice:
+      description: Item Price
+      type: number
+      example: 49.5
+    TransactionAuthorizationID:
+      description: Transaction authorization ID
+      type: integer
+      format: int64
+      example: 992009
+    FirstFourDigitsOfCard:
+      description: First four digits of credit card
+      type: integer
+      format: int64
+      example: 1234
+    LastFourDigitsOfCard:
+      description: Last four digits of credit card
+      type: integer
+      format: int64
+      example: 6789
+    Card:
+      type: object
+      properties:
+        first_four_digits:
+          $ref: '#/components/schemas/FirstFourDigitsOfCard'
+        last_four_digits:
+          $ref: '#/components/schemas/LastFourDigitsOfCard'
+    TransactionTotalAmount:
+      description: Transaction total amount
+      type: number
+      format: int64
+      example: 21480
+    TransactionAuthorizationDate:
+      description: >-
+        The date and time that a transaction is authorized. UTC date/time -
+        format: yyyy-MM-ddThh:mm:ssZ
+      type: string
+      format: datetime
+      example: '2020-06-23T22:29:49Z'
+    CustomerEmailAddress:
+      description: Customer email
+      type: string
+      format: email
+      example: johndoe@gmail.com
+    CustomerName:
+      description: Customer name
+      type: string
+      example: MARIA JOSE
+    ItemAmount:
+      description: Number of items
+      type: integer
+      format: int64
+      example: 5
+    Merchant:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/MerchantName'
+        email:
+          $ref: '#/components/schemas/EmailAddress'
+    AuthorizationCode:
+      description: Authorization ID
+      type: number
+      example: 992009
+    GETMerchantTransactionDetailsResponse:
+      properties:
+        transaction_auth_id:
+          $ref: '#/components/schemas/TransactionAuthorizationID'
+        card:
+          $ref: '#/components/schemas/Card'
+        total:
+          $ref: '#/components/schemas/TransactionTotalAmount'
+        date:
+          $ref: '#/components/schemas/TransactionAuthorizationDate'
+        email:
+          $ref: '#/components/schemas/CustomerEmailAddress'
+        name:
+          $ref: '#/components/schemas/CustomerName'
+        installments:
+          $ref: '#/components/schemas/NumberOfInstallments'
+        authorization_code:
+          $ref: '#/components/schemas/AuthorizationCode'
+        account_id:
+          $ref: '#/components/schemas/PismoAccountID'
+        merchant:
+          $ref: '#/components/schemas/Merchant'
+        items:
+          type: array
+          items:
+            properties:
+              id:
+                $ref: '#/components/schemas/ItemID'
+              code:
+                $ref: '#/components/schemas/ItemCode'
+              price:
+                $ref: '#/components/schemas/ItemPrice'
+              description:
+                $ref: '#/components/schemas/ItemDescription'
+              amount:
+                $ref: '#/components/schemas/ItemAmount'
+      example:
+        transaction_auth_id: 992009
+        card:
+          first_four_digits: 1234
+          last_four_digits: 6789
+        total: 21480
+        date: '2020-06-23T22:29:49Z'
+        email: johndoe@gmail.com
+        name: MARIA JOSE
+        installments: 1
+        authorization_code: 992009
+        account_id: 340018
+        items:
+          - id: 10452
+            code: '31601014'
+            price: 9.99
+            description: Acupuntura
+            amount: 1
+        merchant:
+          name: Acme Store
+          email: store@acme.com
+    AdvancementAmountDouble:
+      description: Advanced amount
+      type: number
+      format: double
+    AdvancementDiscount:
+      description: Advancement discount
+      type: number
+      format: double
+    TransactionTotalDouble:
+      description: Transaction total (gross) amount
+      type: number
+      format: double
+    TransactionStatus:
+      description: Transaction status
+      type: string
+      example: SCHEDULED
+      enum:
+        - PENDING
+        - SCHEDULED
+        - BLOCKED
+        - SETTLED
+        - PAID
+        - ADVANCED
+        - CANCELED
+        - RETURNED
+    TransactionEventDate:
+      description: >-
+        The transaction event date and time (sale or refund). UTC date/time -
+        format: yyyy-MM-ddThh:mm:ssZ
+      type: string
+      format: datetime
+      example: '2020-07-14T00:41:29Z'
+    GETMerchantTransactionResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/MerchantTransactionID'
+        authorization_id:
+          $ref: '#/components/schemas/AuthorizationID'
+        parent_authorization_id:
+          $ref: '#/components/schemas/ParentAuthorizationID'
+        type:
+          $ref: '#/components/schemas/TransactionType'
+        status:
+          $ref: '#/components/schemas/TransactionStatus'
+        merchant_id:
+          $ref: '#/components/schemas/MerchantID'
+        org_operation_id:
+          $ref: '#/components/schemas/OrgOperationID'
+        creditor_id:
+          $ref: '#/components/schemas/CreditorID'
+        installment:
+          $ref: '#/components/schemas/InstallmentNumber'
+        number_of_installments:
+          $ref: '#/components/schemas/NumberOfInstallments'
+        amount:
+          $ref: '#/components/schemas/TransactionTotalDouble'
+        mdr_amount:
+          $ref: '#/components/schemas/MDRamount'
+        mdr_tax:
+          $ref: '#/components/schemas/MDRtax'
+        transaction_fee:
+          $ref: '#/components/schemas/TransactionFee'
+        mdr_without_fee:
+          $ref: '#/components/schemas/MDRwithoutFee'
+        advancement_discount:
+          $ref: '#/components/schemas/AdvancementDiscount'
+        advanced_amount:
+          $ref: '#/components/schemas/AdvancementAmountDouble'
+        event_date:
+          $ref: '#/components/schemas/TransactionEventDate'
+        scheduled_payment_date:
+          $ref: '#/components/schemas/ScheduledPaymentDate'
+        origin_transaction_id:
+          $ref: '#/components/schemas/OriginTransactionID'
+        marketplace_id:
+          $ref: '#/components/schemas/MarketplaceID'
+      example:
+        id: 123456
+        authorization_id: '992023'
+        parent_authorization_id: '992022'
+        type: SALE
+        status: PENDING
+        merchant_id: 13
+        org_operation_id: 51
+        creditor_id: 80
+        installment: 1
+        number_of_installments: 3
+        amount: 155.5
+        mdr_amount: 5.5
+        mdr_tax: 0
+        transaction_fee: 0.6
+        mdr_without_fee: 4.9
+        advancement_discount: 0
+        advanced_amount: 0
+        event_date: '2023-08-26T12:58:32Z'
+        scheduled_payment_date: '2023-09-10'
+        origin_transaction_id: 123455
+        marketplace_id: 21
+    DiscountValueTotal:
+      type: number
+      description: Total discount value
+      example: -0.33
+    GETMerchantOperationsResponse:
+      type: array
+      items:
+        properties:
+          gross_value_total:
+            $ref: '#/components/schemas/GrossValueTotal'
+          net_value_total:
+            $ref: '#/components/schemas/NetValueTotal'
+          operation:
+            $ref: '#/components/schemas/OperationName'
+          discount_value_total:
+            $ref: '#/components/schemas/DiscountValueTotal'
+      example:
+        - gross_value_total: 10
+          net_value_total: 9.67
+          operation: Interest-free installment
+          discount_value_total: -0.33
+    PATCHTransactionRequest:
+      properties:
+        status:
+          $ref: '#/components/schemas/TransactionStatus'
+    OperationNotes:
+      deprecated: true
+      description: |
+        Notes about the operation.
+
+        <b>Note</b>: This field is <b>deprecated</b> and scheduled for removal.
+      type: string
+      example: This is a status change.
+  responses:
+    400BadRequest:
+      description: Bad Request
+    401Unauthorized:
+      description: Access token is missing or invalid
+    404NotFound:
+      description: The specified resource was not found
+    408RequestTimeout:
+      description: Request timeout
+    409Conflict:
+      description: The specified resource status conflict with the current request.
+    422UnprocessableEntity:
+      description: Unprocessable Entity
+    500InternalServer:
+      description: Internal server error
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - BearerAuth: []
+paths:
+  /v1/businesscategories:
+    get:
+      summary: List business categories
+      description: Retrieves the list of business categories for merchants.
+      operationId: listBusinessCategories
+      tags:
+        - Merchant business category
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/ExternalCodeQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETBusinessCategoryResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/businesscategories/{externalCode}:
+    get:
+      summary: Get business category
+      description: >-
+        Get business category using external code. The category is the type of
+        business.
+      operationId: getBusinessCategory
+      tags:
+        - Merchant business category
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/ExternalCodePath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessCategory'
+        '400':
+          description: Bad request
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/merchants:
+    post:
+      summary: Create merchant
+      description: >
+        Create merchant. You use this endpoint to register a merchant (store) in
+        a marketplace using the information the merchant provides.
+
+
+        <b>Note:</b> Before you create merchants, you must create a Merchant
+        program, using the [Create program based on
+        template](ref:createprogrambasedontemplate) endpoint with `type` set to
+        `MERCHANT`. If a program of type `MERCHANT` is not provided, the request
+        returns an error.
+
+        By default, when a merchant is created, the Pismo platform assigns it to
+        the first existing program of type `MERCHANT` in the Org. However, you
+        have the option of specifying a program by providing its ID in the
+        `program_id` field.
+
+
+        <b>Note:</b> When a `x-marketplace-id` header is provided, the merchant
+        is automatically linked to the provided marketplace after creation.
+
+
+        For more information about merchants, refer to the <a
+        href="https://developers.pismo.io/pismo-docs/docs/seller-management-overview"
+        target="blank">Seller management overview</a> guide.<br>
+
+
+        This endpoint generates a [Merchant
+        created](https://developers.pismo.io/events/docs/merchants-merchant-created-1)
+        event.
+      operationId: createMerchant
+      tags:
+        - Merchant
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/XMarketplaceIDheader'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/POSTMerchantRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/POSTMerchantResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: List merchants
+      description: >
+        Find merchants using query parameters.
+
+
+        For more information about merchants, see the <a
+        href="https://developers.pismo.io/pismo-docs/docs/seller-management-overview"
+        target="blank">Seller management overview</a> guide.
+      operationId: listMerchants
+      tags:
+        - Merchant
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/XMarketplaceIDheader'
+        - $ref: '#/components/parameters/DocumentNumberQuery'
+        - $ref: '#/components/parameters/MerchantStatusQuery'
+        - $ref: '#/components/parameters/MerchantNameQuery'
+        - $ref: '#/components/parameters/ExternalIDQuery'
+        - $ref: '#/components/parameters/PageNumberQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FindMerchantsResponse'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/merchants/{merchantId}:
+    get:
+      summary: Get merchant
+      description: >
+        Get merchant by ID.
+
+
+        For more information about merchants, see the <a
+        href="https://developers.pismo.io/pismo-docs/docs/seller-management-overview"
+        target="blank">Seller management overview</a> guide.
+      operationId: getMerchant
+      tags:
+        - Merchant
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETMerchantResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    put:
+      summary: Update merchant
+      description: >
+        Update merchant by ID.
+
+
+        For more information about merchants, see the <a
+        href="https://developers.pismo.io/pismo-docs/docs/seller-management-overview"
+        target="blank">Seller management overview</a> guide.<br>
+
+        This endpoint generates a [Merchant
+        updated](https://developers.pismo.io/events/docs/merchants-merchant-updated-1)
+        event.
+      operationId: updateMerchant
+      tags:
+        - Merchant
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PUTMerchantRequest'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/creditors:
+    get:
+      summary: List creditors
+      description: List creditors using query parameters.
+      operationId: listCreditors
+      tags:
+        - Merchant creditor
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/CreditorNameQuery'
+        - $ref: '#/components/parameters/PageNumberQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETCreditorsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/creditors/{creditorId}:
+    get:
+      summary: Get creditor
+      description: Get creditor by ID.
+      operationId: getCreditor
+      tags:
+        - Merchant creditor
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/CreditorIDpath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditorResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    put:
+      summary: Update creditor
+      description: >
+        Update creditor using its ID.
+
+
+        This endpoint generates a [Marketplace creditor operation
+        updated](https://developers.pismo.io/events/docs/marketplace-marketplace-creditor-operation-updated-1)
+        event.
+      operationId: updateCreditor
+      tags:
+        - Merchant creditor
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/CreditorIDpath'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/POSTCreditorRequest'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/merchants/{merchantId}/transactions:
+    post:
+      summary: Create merchant transaction
+      description: >
+        Create merchant transaction using the merchant ID.<br>
+
+        This endpoint generates a [Merchant transaction
+        created](https://developers.pismo.io/events/docs/merchants-merchant-transaction-created-1)
+        event.
+      operationId: createMerchantUsingMerchantID
+      tags:
+        - Merchant transaction
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Transaction'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '422':
+          $ref: '#/components/responses/422UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/merchants/{merchantId}/workflow/statuses:
+    get:
+      summary: List status transitions
+      description: |
+        List the status transitions using the merchant ID.
+      operationId: listStatusTransitions
+      tags:
+        - Merchant
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MerchantWorkflowStatus'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/merchants/{merchantId}/workflow/status:
+    put:
+      summary: Update merchant status
+      description: >
+        Update merchant status using the merchant ID.
+
+
+        To find all available merchant status transitions, use [List status
+        transitions](ref:liststatustransitions).
+
+
+        This endpoint generates a [Merchant
+        updated](https://developers.pismo.io/events/docs/merchants-merchant-updated-1)
+        event.
+      operationId: updateMerchantStatus
+      tags:
+        - Merchant
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - status
+              properties:
+                status:
+                  $ref: '#/components/schemas/MerchantStatus'
+                notes:
+                  $ref: '#/components/schemas/OperationNotes'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v3/merchants/{merchantId}/operations:
+    get:
+      summary: List merchant transactions by operations
+      description: >
+        List merchant transactions grouped by Org operations. Returns one item
+        for each Org operation that has transactions for the specified date.
+
+        An item lists the amounts (gross, net, and discount) for that operation.
+      operationId: listMerchatTransactionsByOperationsV3
+      tags:
+        - Merchant transaction
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+        - $ref: '#/components/parameters/MarketplaceQuery'
+        - $ref: '#/components/parameters/PaymentDateQuery'
+        - $ref: '#/components/parameters/MerchantTransactionTypeQuery'
+        - $ref: '#/components/parameters/AdvancementRequestStatusQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETMerchantOperationsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v2/merchants/{merchantId}/transactions:
+    get:
+      summary: List merchant transactions (V2)
+      description: >
+        List merchants transactions filtered using query parameters.
+
+
+        <b>NOTE</b>: By default, the endpoint returns only 60 days of merchant
+        transactions. If you want a longer period (up to 365 days),
+
+        you must provide the `saleAuthorizationId` parameter, and specify a
+        desired date in both `startEventDate` and `endEventDate`.
+      operationId: listMerchantTransactionsV2
+      tags:
+        - Merchant transaction
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+        - $ref: '#/components/parameters/OriginTransactionIDquery'
+        - $ref: '#/components/parameters/AuthorizationIDquery'
+        - $ref: '#/components/parameters/SaleAuthorizationIDquery'
+        - $ref: '#/components/parameters/OrderIDquery'
+        - $ref: '#/components/parameters/TransactionStatusQuery'
+        - $ref: '#/components/parameters/StartEventDateQuery'
+        - $ref: '#/components/parameters/EndEventDateQuery'
+        - $ref: '#/components/parameters/StartPaymentDateQuery'
+        - $ref: '#/components/parameters/EndPaymentDateQuery'
+        - $ref: '#/components/parameters/StartReceiptDateQuery'
+        - $ref: '#/components/parameters/EndReceiptDateQuery'
+        - $ref: '#/components/parameters/OperationQuery'
+        - $ref: '#/components/parameters/OrgOperationIDquery'
+        - $ref: '#/components/parameters/GrossValueQuery'
+        - $ref: '#/components/parameters/NetValueQuery'
+        - $ref: '#/components/parameters/PageNumberQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '408':
+          $ref: '#/components/responses/408RequestTimeout'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v3/merchants/{merchantId}/transactions:
+    get:
+      summary: List merchant transactions (V3)
+      description: List merchant transactions filtered using query parameters.
+      operationId: listMerchantTransactionsV3
+      tags:
+        - Merchant transaction
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+        - $ref: '#/components/parameters/MarketplaceIDquery'
+        - $ref: '#/components/parameters/TransactionStatusQuery'
+        - $ref: '#/components/parameters/StartPaymentDateQuery'
+        - $ref: '#/components/parameters/EndPaymentDateQuery'
+        - $ref: '#/components/parameters/StartEventDateQuery'
+        - $ref: '#/components/parameters/EndEventDateQuery'
+        - $ref: '#/components/parameters/StartReceiptDateQuery'
+        - $ref: '#/components/parameters/EndReceiptDateQuery'
+        - $ref: '#/components/parameters/OrgOperationIDquery'
+        - $ref: '#/components/parameters/SortByQuery'
+        - $ref: '#/components/parameters/TransactionMetadataQuery'
+        - $ref: '#/components/parameters/PageNumberQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETTransactionsV3Response'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '408':
+          $ref: '#/components/responses/408RequestTimeout'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v2/merchants/{merchantId}/transactions/{merchantTransactionId}:
+    get:
+      summary: Get merchant transaction
+      description: Get transaction details using merchant transaction ID
+      operationId: getMerchantTransactionV2
+      tags:
+        - Merchant transaction
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+        - $ref: '#/components/parameters/MerchantTransactionIDpath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETMerchantTransactionResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '408':
+          $ref: '#/components/responses/408RequestTimeout'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/merchants/{merchantId}/reversal-transactions:
+    post:
+      summary: Create reversal transaction
+      description: >
+        Create reversal transaction using merchant ID.
+
+        This endpoint generates a [Merchant transaction
+        settled](https://developers.pismo.io/events/docs/merchants-merchant-transaction-settled-1)
+        event.
+      operationId: createReversalTransaction
+      tags:
+        - Merchant transaction
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReversalTransaction'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReversalTransactionResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '422':
+          $ref: '#/components/responses/422UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v2/merchants/{merchantId}/advancements:
+    post:
+      summary: Create advancement request (outdated)
+      description: >
+        Create advancement request for merchant. An advancement is the same as
+        an anticipation of receivables or a prepayment of receivables. An
+        example of a
+
+        situation in which a seller might use advancements is if it has a deal
+        with a large customer who it knows is going to take some time to pay its
+        bills.
+
+        To cover its business expenses in the meantime, the seller could make a
+        deal with a bank to pay it for the goods sold at the time of sale. The
+        seller later
+
+        repays the bank when it gets paid by its customer. The bank profits
+        because the seller pays a fee for each advancement.<br>
+
+        This endpoint produces a [Merchant advancement request
+        created](https://developers.pismo.io/events/docs/merchants-advancement-request-1)
+        event.
+
+
+        (<strong>Outdated:</strong> For an updated version of the advancement
+        endpoint refer to [Advancement
+        Request](https://developers.pismo.io/pismo-docs/reference/merchants-advancements).)
+      operationId: createAdvancementRequestForMerchant
+      tags:
+        - Merchant advancement
+      parameters:
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/POSTAdvancementRequest'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdvancementRequestResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/merchants/{merchantId}/advancements:
+    get:
+      summary: List advancements for merchant (outdated)
+      description: >
+        List advancements for merchant by merchant ID. A merchant advancement is
+        sometimes called a prepayment of receivables. You arrange to have a
+        financial
+
+        institution make regular deposits into your account equal to what you
+        expect to receive in the future from credit card sales in installments
+        or post-dated
+
+        checks and bills. The financial institution deducts its fee before it
+        puts the money in your account. You pay back each deposit when you
+        receive
+
+        payment from your customers. This is a way of covering business expenses
+        in the short term. It's a cheaper alternative to a loan.
+
+
+        (<strong>Outdated:</strong> For an updated version of the future
+        merchant schedule refer to [List
+        Transactions](https://developers.pismo.io/pismo-docs/reference/merchants-transactions).)
+      operationId: listAdvancementsForMerchant
+      tags:
+        - Merchant advancement
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+        - $ref: '#/components/parameters/RequestDateQuery'
+        - $ref: '#/components/parameters/StartPaymentDateQuery'
+        - $ref: '#/components/parameters/EndPaymentDateQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETAdvancementResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/merchants/{merchantId}/advancements/requests:
+    get:
+      summary: List advancement requests
+      description: >-
+        List advancements requested by merchant. An advancement is the same as a
+        receivable or a prepayment of a receivable. An example of a situation in
+        which a seller might use advancements is if it has a deal with a large
+        customer who it knows is going to take some time to pay its bills. To
+        cover its business expenses in the meantime, the seller could make a
+        deal with a bank to pay it for the goods sold at the time of sale. The
+        seller later repays the bank when it gets paid by its customer. The bank
+        profits because the seller pays a fee for each advancement.
+      operationId: listAdvancementRequestsForMerchant
+      tags:
+        - Merchant advancement
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+        - $ref: '#/components/parameters/AdvancementRequestStatusQuery'
+        - $ref: '#/components/parameters/PageNumberQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETAdvancementRequestsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/merchants/{merchantId}/advancements/requests/{advancementRequestId}:
+    get:
+      summary: Get advancement request (outdated)
+      description: >
+        Get an advancement request using an advancement request ID and a
+        merchant ID. An advancement is the same as a receivable or a prepayment
+        of a receivable. An example of a
+
+        situation in which a seller might use advancements is if it has a deal
+        with a large customer who it knows is going to take some time to pay its
+        bills.
+
+        To cover its business expenses in the meantime, the seller could make a
+        deal with a bank to pay it for the goods sold at the time of sale. The
+        seller later
+
+        repays the bank when it gets paid by its customer. The bank profits
+        because the seller pays a fee for each advancement.
+
+
+        (<strong>Outdated:</strong> For an updated version of the get
+        advancement request endpoint refer to [Get
+        Advancement](https://developers.pismo.io/pismo-docs/reference/merchants-advancements-data).)
+      operationId: getAdvancementRequest
+      tags:
+        - Merchant advancement
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+        - $ref: '#/components/parameters/AdvancementRequestIDquery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETAdvancementRequestResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/merchants/{merchantId}/transactions/tax:
+    get:
+      summary: List merchant taxes
+      description: List taxes for merchant by merchant ID.
+      operationId: listMerchantTaxes
+      tags:
+        - Merchant transaction
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETTransactionTaxResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/merchants/{merchantId}/transactions-totals:
+    get:
+      summary: Get transactions summary
+      description: Get a summary of a merchant's transactions.
+      operationId: getTransactionsSummary
+      tags:
+        - Merchant transaction
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+        - $ref: '#/components/parameters/StartPaymentDateQuery'
+        - $ref: '#/components/parameters/EndPaymentDateQuery'
+        - $ref: '#/components/parameters/MarketplaceQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETTransactionsTotalsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v2/merchants/{merchantId}/transactions-totals:
+    get:
+      summary: Get transactions summary [beta]
+      description: >
+        Returns the transactions totals summarized by status and/or date.
+
+        When the `groupBy` is provided with the values `date` or `dateAndStatus`
+        the date range between `startPaymentDate` and `endPaymentDate` must not
+        exceed 30 days.
+      operationId: getTransactionsSummaryV2
+      tags:
+        - Merchant transaction
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+        - name: startPaymentDate
+          in: query
+          description: >
+            Initial scheduled payment date used to filter the transactions.
+            Format yyyy-mm-dd.
+
+            Finds scheduled payments between this date and `endPaymentDate`.
+          required: true
+          schema:
+            type: string
+            format: date
+            example: '2020-01-01'
+        - name: endPaymentDate
+          in: query
+          description: >
+            Final scheduled payment date used to filter the transactions. Format
+            yyyy-mm-dd.
+
+            Finds scheduled payments between `startPaymentDate` and this date.
+          required: true
+          schema:
+            type: string
+            format: date
+            example: '2020-01-02'
+        - name: marketplaceId
+          in: query
+          description: >
+            Marketplace ID used as filter. When provided, it returns the values
+            of the transactions belonging only to the marketplace.
+
+            When not provided, it returns the values of all transactions for the
+            provided Merchant ID.
+          schema:
+            type: integer
+            format: int64
+            example: 12
+        - name: status
+          in: query
+          description: >-
+            Transaction status used as a filter. When provided, it returns the
+            values of the transactions matching this status.
+          schema:
+            type: string
+            example: SCHEDULED
+        - name: groupBy
+          in: query
+          description: >
+            Group the returned entries by this criteria. The default value is
+            `status`.
+
+            - For the `status` value, returns one item per different status in
+            the response.
+
+            - For the `date` value, returns one item per day between the
+            `startPaymentDate` and `endPaymentDate` that have transaction values
+            for the filters. The response is ordered by day in ascending order.
+
+            - For the `dateAndStatus` value, returns one item per day and
+            status. The response is ordered by day and status in ascending
+            order.
+          schema:
+            type: string
+            example: status
+            enum:
+              - status
+              - date
+              - dateAndStatus
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETTransactionsTotalsV2Response'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v3/merchants/{merchantId}/transactions-types:
+    get:
+      summary: Get transaction types
+      description: >
+        Get transactions types.
+
+
+        Examples of transaction types include cash-in and cash-out. See <a
+        href="https://developers.pismo.io/pismo-docs/docs/transactions-overview#transaction-types">Transaction
+        types</a> for the list of transaction types on the Pismo platform.
+      operationId: getReportForMerchantTransactionTypesV3
+      tags:
+        - Merchant transaction
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+        - $ref: '#/components/parameters/PaymentDateQuery'
+        - $ref: '#/components/parameters/MarketplaceQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETTransactionTypesResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/merchants/{merchantId}/transactions/{transactionId}:
+    get:
+      deprecated: true
+      summary: Get transaction details (deprecated)
+      description: Get details for specific transaction
+      operationId: getTransactionDetails
+      tags:
+        - Merchant transaction
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+        - $ref: '#/components/parameters/TransactionIDpath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETMerchantTransactionDetailsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    patch:
+      summary: Update transaction status
+      description: Update transaction status.
+      operationId: updateTransactionStatus
+      tags:
+        - Merchant transaction
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationTokenHeader'
+        - $ref: '#/components/parameters/MerchantIDpath'
+        - $ref: '#/components/parameters/TransactionIDpath'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PATCHTransactionRequest'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'

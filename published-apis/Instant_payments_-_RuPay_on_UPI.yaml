@@ -1,0 +1,1455 @@
+openapi: 3.0.1
+info:
+  title: Instant payments - RuPay on UPI
+  description: >-
+    United Payments Interface (UPI) API integrating providers with the Pismo
+    platform
+  termsOfService: http://swagger.io/terms/
+  contact:
+    name: Pismo
+    url: https://pismo.io/en/contact
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: '1.0'
+servers:
+  - url: https://sandbox.pismolabs.io/upi-gateway
+security:
+  - BearerAuth: []
+tags:
+  - name: UPI
+    description: Endpoints to manage UPI operations.
+components:
+  parameters:
+    AccountRefNumberPath:
+      in: path
+      name: account_reference_number
+      description: >
+        Account reference number. Pismo creates this automatically when creating
+        a card linked to RuPay on UPI
+
+
+        This number combines 10 BIN digits and the credit account number. If BIN
+        is 6 digits, the remaining 4 digits  are set to zero (`0`). If BIN is 8
+        digits, then the remaining 2 digits are set to zero. This is a <a
+        href="https://www.npci.org.in/what-we-do/rupay/product-overview"
+        target="_blank">NPCI</a> standard. For example, if the account reference
+        number = `1234560000987654321`, the first six digits are the BIN,
+        appended with 4 zeros and then the credit account number (`987654321`).
+
+
+        You can call [List cards](ref:post-list-cards) to get a card's account
+        reference number.
+      required: true
+      schema:
+        type: string
+    AuthHeader:
+      in: header
+      name: Authorization
+      required: true
+      description: >-
+        Authorization token. Tokens can expire quickly, which can result in a
+        **401 Unauthorized** message.
+      schema:
+        type: string
+        example: Bearer eyJhbGci...IUzUx
+    ExternalTransactionIDpath:
+      name: external_transaction_id
+      in: path
+      description: External transaction ID
+      required: true
+      schema:
+        type: string
+    UserAgentHeader:
+      in: header
+      name: user-agent
+      required: true
+      description: Client consuming API.
+      schema:
+        type: string
+  schemas:
+    accountReferenceNumber:
+      type: string
+      description: >
+
+        Account reference number. Pismo creates this automatically when creating
+        a card linked to RuPay on UPI.
+
+
+        This number combines 10 BIN digits and the credit account number. If BIN
+        is 6 digits, the remaining 4 digits  are set to zero (`0`). If BIN is 8
+        digits, then the remaining 2 digits are set to zero. This is a <a
+        href="https://www.npci.org.in/what-we-do/rupay/product-overview"
+        target="_blank">NPCI</a> standard. For example, if the account reference
+        number = `1234560000987654321`, the first six digits are the BIN,
+        appended with 4 zeros and then the credit account number (`987654321`).
+
+
+        You can call [List cards](ref:post-list-cards) to get a card's account
+        reference number.
+      example: '12345600000000001140340134'
+    accountReferenceNumber2:
+      type: string
+      description: >
+
+        Account reference number. Pismo creates this automatically when creating
+        a card linked to RuPay on UPI.
+
+
+        This number combines 10 BIN digits and the credit account number. If BIN
+        is 6 digits, the remaining 4 digits  are set to zero (`0`). If BIN is 8
+        digits, then the remaining 2 digits are set to zero. This is a <a
+        href="https://www.npci.org.in/what-we-do/rupay/product-overview"
+        target="_blank">NPCI</a> standard. For example, if the account reference
+        number = `1234560000987654321`, the first six digits are the BIN,
+        appended with 4 zeros and then the credit account number (`987654321`).
+
+
+        You can call [List cards](ref:post-list-cards) to get a card's account
+        reference number.
+
+
+        Either this or `last_4_digit` is **REQUIRED**.
+      example: '12345600000000001140340134'
+    authorizationDatetime:
+      type: string
+      format: datetime
+      description: When transfer was authorised. RFC 3339 format.
+    authorizationID:
+      type: number
+      description: Authorization ID
+      example: 2263052808
+    card_info:
+      type: object
+      description: Card information
+      properties:
+        account_reference_number:
+          $ref: '#/components/schemas/accountReferenceNumber2'
+        last_4_digit:
+          type: string
+          description: >-
+            Card last 4 PAN digits. Either this field or
+            `account_reference_number` is **REQUIRED**.
+          example: '2432'
+      example:
+        account_reference_number: '789012000087442038'
+        last_4_digit: '2432'
+    cards.BalanceRequest:
+      type: object
+      required:
+        - account_reference_number
+        - external_transaction_datetime
+        - external_transaction_id
+      properties:
+        account_reference_number:
+          $ref: '#/components/schemas/accountReferenceNumber'
+        external_transaction_datetime:
+          $ref: '#/components/schemas/externalTransactionDatetime'
+        external_transaction_id:
+          $ref: '#/components/schemas/externalTransactionID'
+    cards.BalanceResponse:
+      type: object
+      required:
+        - card
+      properties:
+        account_reference_number:
+          $ref: '#/components/schemas/accountReferenceNumber'
+        card:
+          type: object
+          description: Card balance
+          allOf:
+            - $ref: '#/components/schemas/cards.CardBalance'
+        external_transaction_datetime:
+          $ref: '#/components/schemas/externalTransactionDatetime'
+        external_transaction_id:
+          $ref: '#/components/schemas/externalTransactionID'
+    cards.CardBalance:
+      type: object
+      required:
+        - available_balance
+        - ledger_balance
+      properties:
+        available_balance:
+          type: number
+          description: Available card balance
+          example: 150000
+        ledger_balance:
+          type: number
+          description: Ledger balance
+          example: 1000
+    cards.CardData:
+      type: object
+      required:
+        - card_expiration
+        - last_six_digits
+      properties:
+        card_expiration:
+          type: string
+          description: Card expiration date, format = mmyy.
+          example: '0529'
+        last_six_digits:
+          type: string
+          description: Card's last six PAN digits.
+          example: '657114'
+    cards.PinData:
+      type: object
+      required:
+        - key_id
+        - pin_block
+      properties:
+        pin_block:
+          type: string
+          description: Pin block
+          example: 3FE661D50EF1F6F1
+        key_id:
+          type: string
+          description: Key encryption ID
+          example: 7d14ca2e-1057-11ee-8cee-060f666de710
+    cards.CardsData:
+      type: object
+      required:
+        - account_reference_number
+        - bin
+        - masked_number
+        - printed_name
+        - status
+        - type
+      properties:
+        account_reference_number:
+          $ref: '#/components/schemas/accountReferenceNumber'
+        bin:
+          type: string
+          description: Card Bank Identification Number (BIN)
+          example: '123456'
+        masked_number:
+          type: string
+          description: Card masked number
+          example: 123456XXXXXXXX78
+        printed_name:
+          type: string
+          description: Card printed name
+          example: Nan Tucket
+        status:
+          type: string
+          description: >-
+            Card status. For more information, see [Card lifecycle and
+            statuses](https://developers.pismo.io/pismo-docs/docs/card-lifecycle-and-statuses).
+          example: ACTIVE
+        type:
+          $ref: '#/components/schemas/cardType'
+    cards.ListCardsRequest:
+      type: object
+      required:
+        - external_transaction_datetime
+        - external_transaction_id
+        - phone
+      properties:
+        external_transaction_datetime:
+          $ref: '#/components/schemas/externalTransactionDatetime'
+        external_transaction_id:
+          $ref: '#/components/schemas/externalTransactionID'
+        phone:
+          $ref: '#/components/schemas/phone'
+        type:
+          $ref: '#/components/schemas/cardType'
+    cards.CardBillRequest:
+      type: object
+      required:
+        - card_info
+        - phone
+      properties:
+        card_info:
+          $ref: '#/components/schemas/card_info'
+        phone:
+          $ref: '#/components/schemas/phone'
+    cards.CardBillResponse:
+      type: object
+      required:
+        - total_due_amount
+        - minimum_due_amount
+        - due_date
+        - card_masked_number
+        - account_reference_number
+      properties:
+        total_due_amount:
+          type: number
+          description: Total amount due
+          example: 500
+        minimum_due_amount:
+          type: number
+          description: Minimum due amount
+          example: 500
+        due_date:
+          type: string
+          description: Bill due date. Format = ddmmyyyy.
+          example: '23012025'
+        card_masked_number:
+          type: string
+          description: Card masked number
+          example: 123456XXXXXXXX78
+        account_reference_number:
+          $ref: '#/components/schemas/accountReferenceNumber'
+    cards.ListCardsResponse:
+      type: object
+      required:
+        - cards
+        - external_transaction_datetime
+        - external_transaction_id
+        - owner
+        - phone
+      properties:
+        cards:
+          type: array
+          description: Account cards
+          items:
+            $ref: '#/components/schemas/cards.CardsData'
+        external_transaction_datetime:
+          $ref: '#/components/schemas/externalTransactionDatetime'
+        external_transaction_id:
+          $ref: '#/components/schemas/externalTransactionID'
+        owner:
+          type: object
+          description: Account owner data
+          allOf:
+            - $ref: '#/components/schemas/cards.Owner'
+        phone:
+          $ref: '#/components/schemas/phone'
+    cards.Owner:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Owner name
+          example: Luce Lipz
+    cards.TransferRequest:
+      type: object
+      required:
+        - amount
+        - currency
+        - account_reference_number
+        - external_transaction_datetime
+        - external_transaction_id
+        - mcc
+        - merchant_name
+        - phone
+        - transaction_type
+        - upi_reference_number
+      properties:
+        amount:
+          type: number
+          description: Transaction amount
+          example: 500
+        currency:
+          type: string
+          description: >-
+            Transaction currency. ISO 4217 3-digit currency code. For example:
+            `INR` (Indian rupee)
+          example: INR
+        account_reference_number:
+          $ref: '#/components/schemas/accountReferenceNumber'
+        external_transaction_datetime:
+          $ref: '#/components/schemas/externalTransactionDatetime'
+        external_transaction_id:
+          $ref: '#/components/schemas/externalTransactionID'
+        mcc:
+          type: string
+          description: Transaction Merchant Category Code (MCC)
+          example: '6012'
+        merchant_name:
+          type: string
+          description: Merchant name
+          example: Cafe Coffee Day
+        phone:
+          $ref: '#/components/schemas/phone'
+        transaction_type:
+          $ref: '#/components/schemas/transactionType'
+        upi_reference_number:
+          $ref: '#/components/schemas/upiReferenceNumber'
+        transaction_reference:
+          type: string
+          description: Transaction reference
+          example: Lunch
+        credit_account_number:
+          type: string
+          description: Payee account number if available
+          example: '98765004371'
+    cards.TransferResponse:
+      type: object
+      required:
+        - external_transaction_id
+        - status
+        - upi_reference_number
+      properties:
+        external_transaction_id:
+          $ref: '#/components/schemas/externalTransactionID'
+        status:
+          $ref: '#/components/schemas/transactionStatus'
+        upi_reference_number:
+          $ref: '#/components/schemas/upiReferenceNumber'
+        authorization_id:
+          $ref: '#/components/schemas/authorizationID'
+        authorization_datetime:
+          $ref: '#/components/schemas/authorizationDatetime'
+    cards.InquiryResponse:
+      type: object
+      required:
+        - external_transaction_datetime
+        - external_transaction_id
+        - status
+        - transaction_type
+        - upi_reference_number
+      properties:
+        external_transaction_datetime:
+          $ref: '#/components/schemas/externalTransactionDatetime'
+        external_transaction_id:
+          $ref: '#/components/schemas/externalTransactionID'
+        status:
+          $ref: '#/components/schemas/transactionStatus'
+        transaction_type:
+          $ref: '#/components/schemas/transactionType'
+        upi_reference_number:
+          $ref: '#/components/schemas/upiReferenceNumber'
+        reason:
+          $ref: '#/components/schemas/reason'
+        authorization_id:
+          $ref: '#/components/schemas/authorizationID'
+        authorization_datetime:
+          $ref: '#/components/schemas/authorizationDatetime'
+    cards.ValidateRequest:
+      required:
+        - account_reference_number
+        - card_data
+        - external_transaction_datetime
+        - external_transaction_id
+      type: object
+      properties:
+        account_reference_number:
+          $ref: '#/components/schemas/accountReferenceNumber'
+        card_data:
+          type: object
+          description: Card data
+          allOf:
+            - $ref: '#/components/schemas/cards.CardData'
+        external_transaction_datetime:
+          $ref: '#/components/schemas/externalTransactionDatetime'
+        external_transaction_id:
+          $ref: '#/components/schemas/externalTransactionID'
+        pin_data:
+          type: object
+          description: Pin data
+          allOf:
+            - $ref: '#/components/schemas/cards.PinData'
+    cards.ValidateResponse:
+      type: object
+      required:
+        - account_reference_number
+        - external_transaction_datetime
+        - external_transaction_id
+        - result
+      properties:
+        account_reference_number:
+          $ref: '#/components/schemas/accountReferenceNumber'
+        external_transaction_datetime:
+          $ref: '#/components/schemas/externalTransactionDatetime'
+        external_transaction_id:
+          $ref: '#/components/schemas/externalTransactionID'
+        result:
+          type: string
+          description: Validation result. If not valid, an error message is returned.
+          example: VALIDATED
+    cards.Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: EUPI0001
+        message:
+          type: string
+          description: Error message
+          example: An unexpected error happened
+    cardType:
+      type: string
+      description: >-
+        Pismo card type. For more information, see [Cards
+        management](https://developers.pismo.io/pismo-docs/docs/cards-overview-1#card-types).
+        Default is empty string, meaning all card types are returned.
+      enum:
+        - ''
+        - PLASTIC
+        - VIRTUAL
+        - TEMPORARY
+      example: PLASTIC
+    domain.DetailMessage:
+      type: object
+      properties:
+        external:
+          type: array
+          items:
+            $ref: '#/components/schemas/domain.ExternalMessage'
+        parameters:
+          type: array
+          items:
+            $ref: '#/components/schemas/domain.ParameterMessage'
+        payload:
+          type: array
+          items:
+            $ref: '#/components/schemas/domain.PayloadMessage'
+    domain.Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error type code
+          example: EPT0001
+        details:
+          type: object
+          description: Detailed error message
+          allOf:
+            - $ref: '#/components/schemas/domain.DetailMessage'
+        message:
+          type: string
+          description: Error message
+          example: User not found
+    domain.ExternalMessage:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Code
+          example: PBE315
+        message:
+          type: string
+          description: Message
+          example: Generic error
+    domain.ParameterMessage:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Field
+          example: Query parameter
+        message:
+          type: string
+          description: Message
+          example: Generic error
+    domain.PayloadMessage:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Field
+          example: Entity.field
+        message:
+          type: string
+          description: Error message
+          example: Generic error
+    externalTransactionDatetime:
+      type: string
+      description: Request datetime. ISO 8601 format.
+      example: '2020-09-15T19:39:54.013Z'
+    externalTransactionID:
+      type: string
+      description: >
+        Request transaction ID.  
+
+
+        Must be unique as regards to `transaction_type` and
+        `account_reference_number`. 
+
+
+        This field guarantees the operation is **idempotent**, meaning, it can
+        be applied multiple times, yet the outcome remains the same.
+      example: MGS584A1244F6BC4D50A3FABE6D93DF913C
+    phone:
+      type: object
+      required:
+        - country_code
+        - phone
+      properties:
+        country_code:
+          type: string
+          description: Phone number country code
+          example: '55'
+        phone:
+          type: string
+          description: Phone number
+          example: '8675309'
+        area_code:
+          type: string
+          description: Phone number area code
+          example: '47'
+      example:
+        country_code: '91'
+        phone: '9592714958'
+    reason:
+      type: object
+      description: Reason
+      allOf:
+        - $ref: '#/components/schemas/cards.Error'
+    transactionStatus:
+      type: string
+      description: Transaction status
+      enum:
+        - PROCESSING
+        - ACCEPTED
+        - ERROR
+        - CANCELLED
+      example: PROCESSING
+    transactionType:
+      type: string
+      description: |
+        Transaction type:
+         * `C` - Credit
+         * `D` - Debit
+         * `R` - Reversal
+      enum:
+        - C
+        - D
+        - R
+      example: C
+    upiReferenceNumber:
+      type: string
+      description: UPI reference number
+      minLength: 12
+      maxLength: 12
+      example: '165238546812'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >
+        Account token - token encoded with a Pismo account ID. Tokens can expire
+        quickly, which can result in a **401 Unauthorized** error.
+      bearerFormat: JWT
+  responses:
+    400BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/domain.Error'
+    404NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/domain.Error'
+    409Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/domain.Error'
+    500InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/domain.Error'
+          example:
+            code: EUPI0001
+            message: An unexpected error happened
+paths:
+  /v1/cards/list:
+    post:
+      summary: List cards
+      description: Return active account card list
+      operationId: post-list-cards
+      tags:
+        - UPI
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/UserAgentHeader'
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cards.ListCardsRequest'
+        required: true
+      responses:
+        '200':
+          description: Response Body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cards.ListCardsResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0003:
+                  summary: Bad Request
+                  value:
+                    code: EUPI0003
+                    message: Bad Request
+                EUPI0023:
+                  summary: number is a required field
+                  value:
+                    code: EUPI0023
+                    message: number is a required field
+                EUPI0002:
+                  summary: Validation error
+                  value:
+                    code: EUPI0002
+                    message: Validation error
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0004:
+                  summary: Missing required header 'x-tenant'
+                  value:
+                    code: EUPI0004
+                    message: Missing required header 'x-tenant'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0028:
+                  summary: Cards not found.
+                  value:
+                    code: EUPI0028
+                    message: Cards not found.
+                EUPI0032:
+                  summary: Not found.
+                  value:
+                    code: EUPI0032
+                    message: Not found.
+                EUPI0007:
+                  summary: Account not found.
+                  value:
+                    code: EUPI0007
+                    message: Account not found.
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0024:
+                  summary: card type invalid
+                  value:
+                    code: EUPI0024
+                    message: card type invalid
+                EUPI0014:
+                  summary: Not unique owner for the phone number
+                  value:
+                    code: EUPI0014
+                    message: Not unique owner for the phone number
+        '422':
+          description: UnprocessableEntity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0004:
+                  summary: An unexpected error has occurred
+                  value:
+                    code: EUPI0042
+                    message: An unexpected error has occurred
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0001:
+                  summary: An unexpected error happened
+                  value:
+                    code: EUPI0001
+                    message: An unexpected error happened
+  /v1/cards/validate:
+    post:
+      summary: Validate card data
+      description: |
+        Validate client card data for [Transfer funds](ref:post-funds-transfer)
+      operationId: post-validate-card-data
+      tags:
+        - UPI
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/UserAgentHeader'
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cards.ValidateRequest'
+        required: true
+      responses:
+        '200':
+          description: Response Body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cards.ValidateResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0041:
+                  summary: last_six_digits is a required field
+                  value:
+                    code: EUPI0041
+                    message: last_six_digits is a required field
+                EUPI0040:
+                  summary: cvv is a required field
+                  value:
+                    code: EUPI0040
+                    message: cvv is a required field
+                EUPI0039:
+                  summary: card_expiration is a required field
+                  value:
+                    code: EUPI0039
+                    message: card_expiration is a required field
+                EUPI0038:
+                  summary: pin is a required field
+                  value:
+                    code: EUPI0038
+                    message: pin is a required field
+                EUPI0003:
+                  summary: Bad Request
+                  value:
+                    code: EUPI0003
+                    message: Bad Request
+                EUPI0002:
+                  summary: Validation error
+                  value:
+                    code: EUPI0002
+                    message: Validation error
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0004:
+                  summary: Missing required header 'x-tenant'
+                  value:
+                    code: EUPI0004
+                    message: Missing required header 'x-tenant'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0028:
+                  summary: Cards not found.
+                  value:
+                    code: EUPI0028
+                    message: Cards not found.
+                EUPI0032:
+                  summary: Not found.
+                  value:
+                    code: EUPI0032
+                    message: Not found.
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0036:
+                  summary: pinblock sent is not equal as original card pinblock
+                  value:
+                    code: EUPI0036
+                    message: pinblock sent is not equal as original card pinblock
+                EUPI0035:
+                  summary: card_expiration sent is not equal as original card data
+                  value:
+                    code: EUPI0035
+                    message: card_expiration sent is not equal as original card data
+                EUPI0034:
+                  summary: last_six_digits sent is not equal as original card data
+                  value:
+                    code: EUPI0034
+                    message: last_six_digits sent is not equal as original card data
+                EUPI0033:
+                  summary: Card with SUSPENDED status
+                  value:
+                    code: EUPI0033
+                    message: Card with SUSPENDED status
+        '422':
+          description: UnprocessableEntity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0004:
+                  summary: An unexpected error has occurred
+                  value:
+                    code: EUPI0042
+                    message: An unexpected error has occurred
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0001:
+                  summary: An unexpected error happened
+                  value:
+                    code: EUPI0001
+                    message: An unexpected error happened
+  /v1/cards/transfer:
+    post:
+      summary: Transfer funds
+      description: >
+        United Payments Interface (UPI) funds transfer for RuPay, an Indian card
+        network.
+
+
+        Before calling this endpoint, you can call [List
+        cards](ref:post-list-cards) to get the `account_reference_number`. You
+        should also call [Validate card](ref:post-validate-card-data) to make
+        sure the card data for the transfer request is genuine.
+
+
+        This endpoint generates a [Payment methods authorization
+        created](https://developers.pismo.io/events/docs/payment-methods-authorization-1)
+        event and a [Platform authorization
+        created](https://developers.pismo.io/events/docs/platform-authorization-platform-authorization-1)
+        event.
+      operationId: post-funds-transfer
+      tags:
+        - UPI
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/UserAgentHeader'
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cards.TransferRequest'
+        required: true
+      responses:
+        '201':
+          description: Transfer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cards.TransferResponse'
+              example:
+                upi_reference_number: '165238546812'
+                external_transaction_id: MGS584A1244F6BC4D50A3FABE6D93DF913C
+                authorization_id: 2263052808
+                authorization_datetime: '2024-09-04T13:22:09.579Z'
+                status: ACCEPTED
+        '202':
+          description: >-
+            It is returned for duplicated requests, when the transfer is still
+            being processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cards.TransferResponse'
+              example:
+                upi_reference_number: '165238546812'
+                external_transaction_id: MGS584A1244F6BC4D50A3FABE6D93DF913C
+                status: PROCESSING
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0002:
+                  summary: Validation error
+                  value:
+                    code: EUPI0002
+                    message: Validation error
+                    details:
+                      payload:
+                        - field: external_transaction_id
+                          message: Field 'external_transaction_id' is required
+                EUPI0003:
+                  summary: Bad request
+                  value:
+                    code: EUPI0003
+                    message: Bad request
+                EUPI0104:
+                  summary: Invalid transaction type
+                  value:
+                    code: EUPI0104
+                    message: Invalid transaction type
+                EUPI0101:
+                  summary: >-
+                    The transaction was cancelled due authorization request
+                    validation error
+                  value:
+                    code: EUPI0101
+                    message: >-
+                      The transaction was cancelled due authorization request
+                      validation error
+                EUPI0108:
+                  summary: The transaction was cancelled due to authorization error
+                  value:
+                    code: EUPI0108
+                    message: >-
+                      The transaction was cancelled due to an authorization
+                      error
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0120:
+                  summary: Transfer amount is greater than the account available limits
+                  value:
+                    code: EUPI0120
+                    message: >-
+                      Transfer amount is greater than the account available
+                      limits
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0004:
+                  summary: Missing required header 'x-tenant'
+                  value:
+                    code: EUPI0004
+                    message: Missing required header 'x-tenant'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0110:
+                  summary: Original transaction not found on reversal operation
+                  value:
+                    code: EUPI0110
+                    message: Original transaction not found on reversal operation
+        '408':
+          description: Timeout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0020:
+                  summary: Upi - API returned a timeout error
+                  value:
+                    code: EUPI0020
+                    message: Upi - API returned a timeout error
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0100:
+                  summary: Transaction already exists with the external_transaction_id
+                  value:
+                    code: EUPI0100
+                    message: >-
+                      Transaction already exists with the
+                      external_transaction_id
+                EUPI0112:
+                  summary: Original transaction is still being processed
+                  value:
+                    code: EUPI0112
+                    message: Original transaction is still being processed
+                EUPI0113:
+                  summary: >-
+                    Original transaction is not accepted, then it can't be
+                    reverted
+                  value:
+                    code: EUPI0113
+                    message: >-
+                      Original transaction is not accepted, then it can't be
+                      reverted
+                EUPI0114:
+                  summary: >-
+                    Reversal transaction amount must be equals to the original
+                    transaction
+                  value:
+                    code: EUPI0114
+                    message: >-
+                      Reversal transaction amount must be equals to the original
+                      transaction
+                EUPI0121:
+                  summary: Invalid card status
+                  value:
+                    code: EUPI0121
+                    message: Invalid card status
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0001:
+                  summary: An unexpected error happened
+                  value:
+                    code: EUPI0001
+                    message: An unexpected error happened
+                EUPI0105:
+                  summary: The transaction will be cancelled due to internal error
+                  value:
+                    code: EUPI0105
+                    message: The transaction will be cancelled due to internal error
+                EUPI0106:
+                  summary: >-
+                    The transaction was authorized but will be canceled due to
+                    internal error
+                  value:
+                    code: EUPI0106
+                    message: >-
+                      The transaction was authorized but will be canceled due to
+                      internal error
+        '502':
+          description: Bad Gateway
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0109:
+                  summary: The transaction will be cancelled due to authorization error
+                  value:
+                    code: EUPI0109
+                    message: >-
+                      The transaction will be cancelled due to authorization
+                      error
+  /v1/transactions/inquiry/account-reference-number/{account_reference_number}/external-transaction-id/{external_transaction_id}:
+    get:
+      summary: Get funds transfer status
+      description: Get funds transfer status
+      operationId: get-transfer-funds-status
+      tags:
+        - UPI
+      parameters:
+        - $ref: '#/components/parameters/AccountRefNumberPath'
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/UserAgentHeader'
+        - $ref: '#/components/parameters/ExternalTransactionIDpath'
+      responses:
+        '200':
+          description: Response Body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cards.InquiryResponse'
+              examples:
+                ACCEPTED:
+                  summary: Transaction accepted
+                  value:
+                    external_transaction_id: MGS584A1244F6BC4D50A3FABE6D93DF913C
+                    external_transaction_datetime: '2020-09-15T19:39:54.013Z'
+                    upi_reference_number: '165238546812'
+                    transaction_type: C
+                    authorization_id: 2263052808
+                    authorization_datetime: '2024-09-04T13:22:09.579Z'
+                    status: ACCEPTED
+                CANCELLED:
+                  summary: Transaction cancelled
+                  value:
+                    external_transaction_id: MGS584A1244F6BC4D50A3FABE6D93DF913C
+                    external_transaction_datetime: '2020-09-15T19:39:54.013Z'
+                    upi_reference_number: '165238546812'
+                    transaction_type: C
+                    authorization_id: 2263052808
+                    status: CANCELLED
+                    reason:
+                      code: EUPI0120
+                      message: >-
+                        Transfer amount is greater than the account available
+                        limits
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0004:
+                  summary: Missing required header 'x-tenant'
+                  value:
+                    code: EUPI0004
+                    message: Missing required header 'x-tenant'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0103:
+                  summary: Transaction not found
+                  value:
+                    code: EUPI0103
+                    message: Transaction not found
+        '408':
+          description: Timeout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0020:
+                  summary: Upi - API returned a timeout error
+                  value:
+                    code: EUPI0020
+                    message: Upi - API returned a timeout error
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/cards/balance:
+    post:
+      summary: Get account balance
+      description: Balance inquiry
+      operationId: post-balance-enquiry
+      tags:
+        - UPI
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/UserAgentHeader'
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cards.BalanceRequest'
+        required: true
+      responses:
+        '200':
+          description: Response Body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cards.BalanceResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0003:
+                  summary: Bad Request
+                  value:
+                    code: EUPI0003
+                    message: Bad Request
+                EUPI0002:
+                  summary: Validation error
+                  value:
+                    code: EUPI0002
+                    message: Validation error
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0004:
+                  summary: Missing required header 'x-tenant'
+                  value:
+                    code: EUPI0004
+                    message: Missing required header 'x-tenant'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0028:
+                  summary: Cards not found.
+                  value:
+                    code: EUPI0028
+                    message: Cards not found.
+                EUPI0031:
+                  summary: >-
+                    An unexpected error has occurred while fetching Ledger
+                    information.
+                  value:
+                    code: EUPI0031
+                    message: >-
+                      An unexpected error has occurred while fetching Ledger
+                      information.
+                EUPI0032:
+                  summary: Not found.
+                  value:
+                    code: EUPI0032
+                    message: Not found.
+                EUPI0007:
+                  summary: Account not foundd.
+                  value:
+                    code: EUPI0007
+                    message: Account not found.
+        '422':
+          description: UnprocessableEntity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0004:
+                  summary: An unexpected error has occurred
+                  value:
+                    code: EUPI0042
+                    message: An unexpected error has occurred
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0001:
+                  summary: An unexpected error happened
+                  value:
+                    code: EUPI0001
+                    message: An unexpected error happened
+  /v1/cards/credit-card-bill:
+    post:
+      summary: Get card bill
+      description: Return card bill details
+      operationId: post-card-bill
+      tags:
+        - UPI
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/UserAgentHeader'
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cards.CardBillRequest'
+        required: true
+      responses:
+        '200':
+          description: Response Body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cards.CardBillResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0003:
+                  summary: Bad Request
+                  value:
+                    code: EUPI0003
+                    message: Bad Request
+                EUPI0023:
+                  summary: number is a required field
+                  value:
+                    code: EUPI0023
+                    message: number is a required field
+                EUPI0002:
+                  summary: Validation error
+                  value:
+                    code: EUPI0002
+                    message: Validation error
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0004:
+                  summary: Missing required header 'x-tenant'
+                  value:
+                    code: EUPI0004
+                    message: Missing required header 'x-tenant'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0028:
+                  summary: Cards not found.
+                  value:
+                    code: EUPI0028
+                    message: Cards not found.
+                EUPI0032:
+                  summary: Not found.
+                  value:
+                    code: EUPI0032
+                    message: Not found.
+                EUPI0007:
+                  summary: Account not found.
+                  value:
+                    code: EUPI0007
+                    message: Account not found.
+        '422':
+          description: UnprocessableEntity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0004:
+                  summary: An unexpected error has occurred
+                  value:
+                    code: EUPI0042
+                    message: An unexpected error has occurred
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EUPI0001:
+                  summary: An unexpected error happened
+                  value:
+                    code: EUPI0001
+                    message: An unexpected error happened

@@ -1,0 +1,227 @@
+openapi: 3.0.1
+info:
+  title: Banking - Authentication
+  version: '1.0'
+  description: >
+    This API saves client credentials and generates token requests for accessing
+    third-party banking services.
+  termsOfService: https://developers.pismo.io/terms/
+  contact:
+    name: API Support
+    email: support@pismo.com.br
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyrights Pismo
+    url: https://developers.pismo.io/licenses/
+servers:
+  - url: https://api-sandbox.pismolabs.io
+    description: Primary API server
+security:
+  - bearerAuth: []
+tags:
+  - name: Provider credentials
+    description: Banking authorization credentials
+components:
+  parameters:
+    acctTokenHeader:
+      name: account_token
+      description: >
+        Account token - access token encoded with a Pismo account ID. This is
+        the token you get from Pismo. Tokens can expire quickly, which can
+        result in a **401 Unauthorized** message.
+      in: header
+      schema:
+        type: string
+      required: true
+      example: Your account token
+    trackingIdHeader:
+      name: tracking_id
+      description: >-
+        Request tracking identifier, if you don't provide one, a random UUID is
+        generated for you.
+      in: header
+      schema:
+        type: string
+      example: 1dd-dd84-cniidk-ioumjskd-87690
+  schemas:
+    PostCreateRequest:
+      title: >-
+        Request for creating authorization credential for third-party banking
+        services
+      type: object
+      required:
+        - key
+        - provider
+        - type
+      properties:
+        key:
+          description: >
+            Authentication secret. Your third-party banking partner provides
+            this to you. 
+          example: Tc84Hi3CRyAHFBNIvbc8CuSuvHuGibjf
+          type: string
+        provider:
+          description: |
+            Third-party banking service providers.
+          type: string
+          enum:
+            - BTG
+            - CELCOIN
+            - JDPI
+          example: BTG
+        type:
+          type: string
+          description: |
+            Payment integration type.
+          enum:
+            - PIX
+            - BAAS
+          example: PIX
+        provider_data:
+          $ref: '#/components/schemas/ProviderData'
+    DomainError:
+      title: Domain errors
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: BA00000
+        details:
+          type: string
+          description: Error details
+          example: Error detail
+        message:
+          type: string
+          description: error message
+          example: Error
+    ProviderData:
+      properties:
+        client_id:
+          type: string
+          description: The client ID you used to obtain a provider access token.
+          example: Your client ID
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+paths:
+  /banking-auth/v1/credentials:
+    post:
+      summary: Create provider credential
+      description: >
+        Create or update your credentials with a third-party banking partner
+        (provider). Banking as a Service clients need to partner with a provider
+        such as Celcoin, BTG, or JD Consultores.
+
+
+        When you call this endpoint with your authentication key and secret,
+        Pismo saves and encrypts the information you provide, then uses it to
+        obtain an access token from the provider.
+
+
+        For more information, see [Banking as a Service
+        overview](doc:banking-as-a-service)
+      tags:
+        - Provider credentials
+      operationId: post-credentials
+      parameters:
+        - $ref: '#/components/parameters/acctTokenHeader'
+        - $ref: '#/components/parameters/trackingIdHeader'
+      requestBody:
+        description: Request body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreateRequest'
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DomainError'
+              examples:
+                EBAA0004:
+                  summary: Invalid payload
+                  value:
+                    code: EBAA0004
+                    message: Invalid payload
+                EBAA0005:
+                  summary: Invalid payload required fields
+                  value:
+                    code: BA00005
+                    message: 'Invalid payload. Required fields: [fields]'
+                EBAA0007:
+                  summary: Invalid payload required fields
+                  value:
+                    code: EBAA0007
+                    message: 'Unsupported Type: (TYPE) and Provider (PROVIDER)'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DomainError'
+              examples:
+                EPIX0005:
+                  summary: Error unmarshalling object
+                  value:
+                    code: EPIX0005
+                    message: Error unmarshalling object
+                EBAA0009:
+                  summary: Encrypted value error
+                  value:
+                    code: EBAA0009
+                    message: Encrypted value error. Decrypt returned different value
+                EBAA0010:
+                  summary: Cryptography Decrypt error
+                  value:
+                    code: EBAA0010
+                    message: Cryptography Decrypt error. Check logs for more details
+                EBAA0011:
+                  summary: Credential Repository Save config error
+                  value:
+                    code: EBAA0011
+                    message: >-
+                      Credential Repository Save config error. Check logs for
+                      more details
+                EBAA0012:
+                  summary: Credential Repository Get config error
+                  value:
+                    code: EBAA0012
+                    message: >-
+                      Credential Repository Get config error. Check logs for
+                      more details
+                EBAA0014:
+                  summary: BTG - API configuration not found
+                  value:
+                    code: EBAA0014
+                    message: BTG - API configuration not found
+        '502':
+          description: Bad Gateway
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DomainError'
+              examples:
+                EBAA0002:
+                  summary: Bad Gateway Error
+                  value:
+                    code: EBAA0002
+                    message: Bad Gateway Error
+        '504':
+          description: Gateway Timeout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DomainError'
+              examples:
+                EBAA0003:
+                  summary: Gateway Timeout
+                  value:
+                    code: EBAA0003
+                    message: Gateway Timeout

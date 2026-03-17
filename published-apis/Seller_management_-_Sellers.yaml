@@ -1,0 +1,1156 @@
+openapi: 3.1.0
+info:
+  title: Seller management - Sellers
+  version: 1.0.0
+  description: |
+    Endpoints to handle the settlement process in Seller management
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/sellers
+    description: Sandbox API server for testing
+tags:
+  - name: Settlement actions
+    description: Endpoints for settlement actions
+  - name: Settlement configuration
+    description: Endpoints for settlement configuration
+  - name: Settlements
+    description: Endpoints for settlements
+  - name: Marketplace
+    description: Endpoints for marketplace management
+  - name: Marketplace merchants links
+    description: Endpoints for managing marketplace relationships
+components:
+  parameters:
+    MarketplaceId:
+      in: path
+      name: marketplaceId
+      required: true
+      description: Marketplace ID
+      example: 1654
+      schema:
+        type: integer
+        format: int64
+        description: Marketplace ID
+        minimum: 1
+        maximum: 18446744073709552000
+    MerchantId:
+      in: path
+      name: merchantId
+      description: Merchant ID
+      example: 24175
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        maximum: 18446744073709552000
+    TrackingId:
+      in: query
+      name: tracking_id
+      description: Pismo-generated ID for tracking the settlement authorization
+      required: true
+      example: '9999'
+      schema:
+        type: string
+        description: Tracking ID for the settlement authorization
+    BranchId:
+      in: query
+      name: branchId
+      description: Filter by merchant branch ID
+      required: false
+      example: 212121
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    HqId:
+      in: query
+      name: hqId
+      description: Filter by merchant headquarters ID
+      example: 8675409
+      required: false
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    Page:
+      in: query
+      name: page
+      description: Current page number
+      required: false
+      example: 12
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        example: 1
+    PerPage:
+      in: query
+      name: perPage
+      description: Number of items per page
+      required: false
+      example: 100
+      schema:
+        type: integer
+        format: int32
+        description: Number of items per page
+        minimum: 1
+    Subnet:
+      in: query
+      name: subnet
+      description: >
+        Filter by merchant subnet. 
+
+        Values are `individual`, `hq` (short for `Headquarters`), or `branch`. 
+
+
+        A merchant is:
+          * `hq` if it has branch merchants.
+          * `branch` if it is another merchant's branch.
+          * `individual` if it isn't a branch nor headquarters.
+
+        These relationships can be created using [this
+        endpoint](https://developers.pismo.io/pismo-docs/reference/postmerchantbranchesv1).
+      required: false
+      example: hq
+      schema:
+        type: string
+        enum:
+          - individual
+          - hq
+          - branch
+  schemas:
+    AdditionalPhoneNumber:
+      type: string
+      description: Additional phone number. Dashes and parentheses are optional
+      minLength: 1
+      maxLength: 25
+      example: '5558739453'
+    BrandName:
+      type: string
+      description: >
+        Marketplace brand name. A secondary name for the marketplace that is
+        **not** the legal registered name
+      minLength: 1
+      maxLength: 50
+      example: Acme
+    City:
+      type: string
+      description: Name of the city or municipality
+      minLength: 1
+      maxLength: 60
+      example: San Diego
+    ComplementaryAddress:
+      type: string
+      description: >-
+        Additional address details that help pinpoint the exact location, such
+        as building, apartment, or floor
+      example: Suite 2
+      minLength: 1
+      maxLength: 50
+    Country:
+      type: string
+      description: >-
+        Full name of the country according to international standards or local
+        registry
+      minLength: 1
+      maxLength: 30
+      example: United States
+    CreateMarketplaceRequest:
+      type: object
+      description: Request payload for creating a new marketplace
+      required:
+        - brand_name
+        - document_number
+        - marketplace_name
+      properties:
+        brand_name:
+          $ref: '#/components/schemas/BrandName'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        marketplace_name:
+          $ref: '#/components/schemas/MarketplaceName'
+        registration:
+          $ref: '#/components/schemas/Registration'
+        registration2:
+          $ref: '#/components/schemas/Registration2'
+        external_id:
+          $ref: '#/components/schemas/ExternalId'
+        address:
+          type: object
+          description: Marketplace address information
+          properties:
+            number:
+              $ref: '#/components/schemas/Number'
+            street:
+              $ref: '#/components/schemas/Street'
+            complementary_address:
+              $ref: '#/components/schemas/ComplementaryAddress'
+            neighborhood:
+              $ref: '#/components/schemas/Neighborhood'
+            zip_code:
+              $ref: '#/components/schemas/ZipCode'
+            city:
+              $ref: '#/components/schemas/City'
+            state:
+              $ref: '#/components/schemas/State'
+            country:
+              $ref: '#/components/schemas/Country'
+        contact:
+          type: object
+          description: Contact information
+          properties:
+            name:
+              $ref: '#/components/schemas/Name'
+            email:
+              $ref: '#/components/schemas/Email'
+            phone_number:
+              $ref: '#/components/schemas/PhoneNumber'
+            additional_phone_number:
+              $ref: '#/components/schemas/AdditionalPhoneNumber'
+    CreatedResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Pismo internal code
+        message:
+          type: string
+          description: Message
+    ErrorRequestResponse:
+      type: object
+      description: Error payload returned by the API
+      properties:
+        code:
+          type: string
+          description: Pismo internal error code
+        message:
+          type: string
+          description: Error message
+        details:
+          type: object
+          description: If necessary, this field shows which fields failed validation
+          properties:
+            payload:
+              type: array
+              description: Array of fields with error
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                    description: Name of field with error
+                  message:
+                    type: string
+                    description: Error message referring to the field
+    UpdateMarketplaceRequest:
+      type: object
+      description: Update marketplace information
+      properties:
+        marketplace_name:
+          $ref: '#/components/schemas/MarketplaceName'
+        brand_name:
+          $ref: '#/components/schemas/BrandName'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        registration:
+          $ref: '#/components/schemas/Registration'
+        registration2:
+          $ref: '#/components/schemas/Registration2'
+        external_id:
+          $ref: '#/components/schemas/ExternalId'
+        address:
+          type: object
+          properties:
+            number:
+              $ref: '#/components/schemas/Number'
+            street:
+              $ref: '#/components/schemas/Street'
+            complementary_address:
+              $ref: '#/components/schemas/ComplementaryAddress'
+            neighborhood:
+              $ref: '#/components/schemas/Neighborhood'
+            zip_code:
+              $ref: '#/components/schemas/ZipCode'
+            city:
+              $ref: '#/components/schemas/City'
+            state:
+              $ref: '#/components/schemas/State'
+            country:
+              $ref: '#/components/schemas/Country'
+        contact:
+          type: object
+          properties:
+            name:
+              $ref: '#/components/schemas/Name'
+            email:
+              $ref: '#/components/schemas/Email'
+            phone_number:
+              $ref: '#/components/schemas/PhoneNumber'
+            additional_phone_number:
+              $ref: '#/components/schemas/AdditionalPhoneNumber'
+    CreateMarketplaceResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/MarketplaceId'
+    DocumentNumber:
+      type: string
+      description: >-
+        Marketplace document number. This is the government document code, such
+        as a government-issued tax ID
+      minLength: 1
+      maxLength: 14
+      example: '20166135000139'
+    Email:
+      type: string
+      description: >-
+        Marketplace contact email address. Its format must be a valid email
+        address
+      minLength: 1
+      maxLength: 255
+      example: email@email.com
+    ExternalId:
+      type: string
+      description: Marketplace ID used on client's system
+      minLength: 1
+      maxLength: 50
+      example: '1123'
+    GetBlockedMerchantsResponse:
+      type: array
+      items:
+        type: object
+        properties:
+          marketplace_id:
+            $ref: '#/components/schemas/MarketplaceId'
+          merchant_ids:
+            $ref: '#/components/schemas/MerchantIds'
+    GetMarketplaceByIdResponse:
+      description: >-
+        Marketplace details returned by the endpoint that gets a marketplace by
+        ID
+      properties:
+        id:
+          $ref: '#/components/schemas/MarketplaceId'
+        document_number:
+          type: string
+          description: Marketplace document number
+          example: '12345678901234'
+        brand_name:
+          type: string
+          description: Marketplace brand name
+          example: Tech Store Brasil
+        marketplace_name:
+          type: string
+          description: Marketplace name
+          example: TechStore Marketplace
+        registration:
+          type: string
+          description: Official company registration with the local municipality
+          minLength: 1
+          maxLength: 15
+        registration2:
+          type: string
+          description: >-
+            Complementary registration number issued by local authorities. In
+            certain countries, businesses may be required to hold multiple
+            municipal registrations at national, state, or regional levels.
+          minLength: 1
+          maxLength: 15
+        external_id:
+          type: string
+          description: Marketplace external identifier
+          example: EXT-MP-001
+        address:
+          type: object
+          description: Marketplace address information
+          properties:
+            street:
+              type: string
+              description: Street address
+              example: Rua das Flores, 123
+            number:
+              type: integer
+              format: int32
+              description: Address number
+              example: 123
+            neighborhood:
+              type: string
+              description: Field intended for entering the neighborhood name
+              maximum: 50
+            zip_code:
+              type: string
+              description: ZIP/postal code
+              example: 01234-567
+            city:
+              type: string
+              description: City name
+              example: São Paulo
+            state:
+              type: string
+              description: State/province
+              example: SP
+            country:
+              type: string
+              description: Country name
+              example: Brasil
+        contact:
+          type: object
+          description: Contact information
+          properties:
+            name:
+              type: string
+              description: Contact person name
+              example: João Silva
+            email:
+              type: string
+              format: email
+              description: Contact email
+              example: joao.silva@techstore.com
+            phone_number:
+              type: string
+              description: Primary phone number
+              example: +55 11 99999-9999
+            additional_phone_number:
+              type: string
+              description: Secondary phone number
+              example: +55 11 88888-8888
+    InternalServerErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Message
+    MarketplaceId:
+      type: integer
+      format: int64
+      description: Marketplace ID
+      minimum: 1
+      maximum: 18446744073709552000
+      example: 51148
+    MarketplaceName:
+      type: string
+      description: Registered, legal marketplace name
+      minLength: 1
+      maxLength: 100
+      example: Acme Products, LLC
+    MerchantId:
+      type: integer
+      format: int64
+      description: Merchant ID
+      minimum: 1
+      maximum: 18446744073709552000
+      example: 24175
+    MerchantIds:
+      type: array
+      items:
+        $ref: '#/components/schemas/MerchantId'
+    Name:
+      type: string
+      description: Contact name for the marketplace
+      minLength: 1
+      maxLength: 50
+      example: Jane Doe
+    Neighborhood:
+      type: string
+      description: >-
+        Name of the neighborhood or administrative region where the address is
+        located
+      minLength: 1
+      maxLength: 50
+      example: West End
+    Number:
+      type: integer
+      format: int32
+      description: Numerical identifier for the specific location within a street or avenue
+      minimum: 0
+      maximum: 2147483647
+      example: 22
+    PhoneNumber:
+      type: string
+      description: Phone number. Dashes and parentheses are optional
+      example: '5558739452'
+      minLength: 1
+      maxLength: 25
+    Registration:
+      type: string
+      description: >-
+        Municipal registration number. In some countries the municipal
+        registration is called a business license
+      minLength: 1
+      maxLength: 15
+      example: 123.456.789
+    Registration2:
+      type: string
+      description: >-
+        Additional municipal registration number. In some countries, two munipal
+        registration numbers are required — one for the country and another for
+        the state
+      minLength: 1
+      maxLength: 15
+      example: 123.456.790
+    RunSettlementPayload:
+      type: object
+      required:
+        - marketplace_id
+        - merchant_id
+      properties:
+        marketplace_id:
+          $ref: '#/components/schemas/MarketplaceId'
+        merchant_id:
+          $ref: '#/components/schemas/MerchantId'
+    SettlementMerchantsPayload:
+      type: object
+      required:
+        - marketplace_id
+        - merchant_ids
+      properties:
+        marketplace_id:
+          $ref: '#/components/schemas/MarketplaceId'
+        merchant_ids:
+          $ref: '#/components/schemas/MerchantIds'
+    State:
+      type: string
+      description: >-
+        Abbreviation or full name of the state, province, or administrative
+        division
+      minLength: 2
+      maxLength: 2
+      example: CA
+    Street:
+      type: string
+      description: Name of the street, avenue, or primary thoroughfare of the address
+      minLength: 1
+      maxLength: 80
+      example: Maple Avenue
+    ZipCode:
+      type: string
+      description: >-
+        Postal code. This is called a zip code in the United States, but you can
+        use other types of postal codes
+      minLength: 1
+      maxLength: 9
+      example: '91941'
+    AdvancementId:
+      type: integer
+      format: int32
+      description: Advancement request id
+      example: 23
+    AdvancementRequestDate:
+      type: string
+      format: date
+      description: Request date of the advancement. (Format = YYYY-MM-DD)
+      example: '2024-11-23'
+    AdvancedGrossAmount:
+      type: string
+      description: Gross amount requested
+      example: '200.00'
+    AdvancedDiscountAmount:
+      type: string
+      description: Advancement discount amount
+      example: '3.50'
+    AdvancedNetAmount:
+      type: string
+      description: Advancement net amount
+      example: '196.5'
+    AdvancementFee:
+      type: string
+      description: Fixed advancement fee
+      example: '1.00'
+    AdvancementDiscountRate:
+      type: string
+      description: Merchant discount rate applied to the advancement operation
+      example: '0.0125'
+    InterestMethod:
+      type: string
+      description: Type of interest
+      enum:
+        - SIMPLE
+        - COMPOUND
+        - SIMPLIFIED
+      example: SIMPLIFIED
+    ListAdvancementRequestsResponse:
+      type: object
+      properties:
+        advancements:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                $ref: '#/components/schemas/AdvancementId'
+              request_date:
+                $ref: '#/components/schemas/AdvancementRequestDate'
+              advanced_gross_amount:
+                $ref: '#/components/schemas/AdvancedGrossAmount'
+              advanced_discount_amount:
+                $ref: '#/components/schemas/AdvancedDiscountAmount'
+              advancement_fee:
+                $ref: '#/components/schemas/AdvancementFee'
+              discount_rate:
+                $ref: '#/components/schemas/AdvancementDiscountRate'
+              advanced_net_amount:
+                $ref: '#/components/schemas/AdvancedNetAmount'
+              interest_method:
+                $ref: '#/components/schemas/InterestMethod'
+    ListMarketplaceMerchantsLinkResponse:
+      properties:
+        page_size:
+          type: integer
+          format: int32
+          description: Number of items per page
+          minimum: 1
+          maximum: 1000
+        current_page:
+          type: integer
+          format: int32
+          description: Current page number
+          minimum: 1
+        has_next_page:
+          type: boolean
+          description: Is there a next page of results?
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                $ref: '#/components/schemas/MerchantId'
+              name:
+                type: string
+                description: Merchant name
+              document_number:
+                type: string
+                description: Merchant document number
+  examples:
+    BadRequestResponse:
+      summary: Bad request response
+      value:
+        code: ESMG0900
+        message: Failed during validation of request payload
+        details:
+          payload:
+            - field: field_name
+              message: validation message
+    ConflictResponse:
+      summary: Conflict response
+      value:
+        code: ESMG0900
+        message: Failed during validation of request payload
+        details:
+          payload:
+            - field: field_name
+              message: validation message
+    CreateMarketplaceRequestExample:
+      summary: Create marketplace payload
+      value:
+        document_number: '99419954904000'
+        registration: REG123456
+        registration2: REG654321
+        brand_name: Natalia
+        marketplace_name: Test Marketplace
+        external_id: EXT-40790
+        address:
+          street: Main Street
+          number: 100
+          complementary_address: Suite 10
+          neighborhood: Downtown
+          zip_code: 22345-477
+          city: Test City
+          state: SP
+          country: BR
+        contact:
+          name: John Doe
+          email: marketplace@teste.com
+          phone_number: '+5511999999999'
+          additional_phone_number: '+5562222233445'
+    UpdateMarketplaceRequestExample:
+      summary: Update marketplace payload
+      value:
+        document_number: '99419954904000'
+        registration: REG123456
+        registration2: REG654321
+        brand_name: Natalia
+        marketplace_name: Test Marketplace
+        external_id: EXT-40790
+        address:
+          street: Main Street
+          number: 100
+          complementary_address: Suite 10
+          neighborhood: Downtown
+          zip_code: 22345-477
+          city: Test City
+          state: SP
+          country: BR
+        contact:
+          name: John Doe
+          email: marketplace@teste.com
+          phone_number: '+5511999999999'
+          additional_phone_number: '+5562222233445'
+    CreateMarketplaceResponseExample:
+      summary: Create marketplace payload response
+      value:
+        id: 99
+    CreatedResponseExample:
+      summary: Created response
+      value:
+        code: ISMG0001
+        message: Success.
+    GetBlockedMerchantsResponseExample:
+      summary: Get blocked merchants response
+      value:
+        - marketplace_id: 1
+          merchant_ids:
+            - 1
+            - 2
+        - marketplace_id: 2
+          merchant_ids:
+            - 3
+    GetMarketplaceByIdExample:
+      summary: Get marketplace by ID response
+      value:
+        id: 1654
+        document_number: '12345678901234'
+        brand_name: Tech Store Brasil
+        marketplace_name: TechStore Marketplace
+        registration: REG123456
+        registration2: REG654321
+        external_id: EXT-MP-001
+        address:
+          street: Rua das Flores, 123
+          number: 123
+          neighborhood: Jardim das Acácias
+          zip_code: 01234-567
+          city: São Paulo
+          state: SP
+          country: Brasil
+        contact:
+          name: João Silva
+          email: joao.silva@techstore.com
+          phone_number: +55 11 99999-9999
+          additional_phone_number: +55 11 88888-8888
+    ListMarketplaceMerchantsLink:
+      summary: List linked merchants
+      value:
+        page_size: 100
+        current_page: 1
+        has_next_page: true
+        items:
+          - id: 1
+            name: Merchant 1
+            document_number: '123'
+          - id: 2
+            name: Merchant 2
+            document_number: '456'
+          - id: 3
+            name: Merchant 3
+            document_number: '789'
+    InternalServerErrorResponseExample:
+      summary: Internal server error response
+      value:
+        message: Internal Server Error
+    ConfigNotFoundResponse:
+      summary: Not Found Response
+      value:
+        code: ESMA5000
+        message: Config does not exists
+    NotFoundResponse:
+      summary: Not Found Response
+      value:
+        code: ISMA1001
+        message: Not found.
+        details:
+          payload:
+            - field: field_name
+              description: not found message
+    RunSettlementPayload:
+      summary: Run Settlement Payload
+      value:
+        marketplace_id: 1
+        merchant_id: 1
+    SettlementMerchantsPayloadExample:
+      summary: Block Merchants Payload
+      value:
+        marketplace_id: 1
+        merchant_ids:
+          - 1
+  responses:
+    200Success:
+      description: Ok
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GetBlockedMerchantsResponse'
+          examples:
+            merchant-transactions-response-success:
+              $ref: '#/components/examples/GetBlockedMerchantsResponseExample'
+    201MarketplaceCreate:
+      description: Create marketplace
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateMarketplaceResponse'
+          examples:
+            marketplace-response-success:
+              $ref: '#/components/examples/CreateMarketplaceResponseExample'
+    201Created:
+      description: Created
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreatedResponse'
+          examples:
+            merchant-transactions-response-success:
+              $ref: '#/components/examples/CreatedResponseExample'
+    202Accepted:
+      description: Accepted
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreatedResponse'
+          examples:
+            merchant-transactions-response-success:
+              $ref: '#/components/examples/CreatedResponseExample'
+    500InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InternalServerErrorResponse'
+          examples:
+            merchant-transactions-response-success:
+              $ref: '#/components/examples/InternalServerErrorResponseExample'
+    400BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRequestResponse'
+          examples:
+            merchant-transactions-response-success:
+              $ref: '#/components/examples/BadRequestResponse'
+    409Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRequestResponse'
+          examples:
+            conflict-response:
+              $ref: '#/components/examples/ConflictResponse'
+    ConfigNotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRequestResponse'
+          examples:
+            merchant-transactions-response-success:
+              $ref: '#/components/examples/ConfigNotFoundResponse'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRequestResponse'
+          examples:
+            generic-not-found-response:
+              $ref: '#/components/examples/NotFoundResponse'
+paths:
+  /v1/settlements/actions/block:
+    post:
+      summary: Block merchants for settlement
+      operationId: blockMerchantsForSettlement
+      tags:
+        - Settlement actions
+      description: |
+        Block merchants for settlement.
+
+        Designates merchants that should be skipped in the settlement process.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettlementMerchantsPayload'
+            examples:
+              merchant-transactions-response-success:
+                $ref: '#/components/examples/SettlementMerchantsPayloadExample'
+      responses:
+        '201':
+          $ref: '#/components/responses/201Created'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/settlements/actions/unblock:
+    post:
+      summary: Unblock merchants for settlement
+      operationId: unblockMerchantsForSettlement
+      tags:
+        - Settlement actions
+      description: >
+        Unblock merchants that were previously blocked using the [Block
+        merchants for settlement](ref:blockmerchantsforsettlement) endpoint.
+        Unblocked merchants are no longer skipped in the settlement process.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettlementMerchantsPayload'
+            examples:
+              merchant-transactions-response-success:
+                $ref: '#/components/examples/SettlementMerchantsPayloadExample'
+      responses:
+        '200':
+          $ref: '#/components/responses/200Success'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/settlements/merchants/blocked:
+    get:
+      summary: Get blocked merchants
+      operationId: getBlockedMerchants
+      tags:
+        - Settlement actions
+      description: >
+        Retrieve merchants that were previously blocked using the [Block
+        merchants for settlement](ref:blockmerchantsforsettlement) endpoint.
+      responses:
+        '200':
+          $ref: '#/components/responses/200Success'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/settlements/actions/run:
+    post:
+      summary: Run settlement
+      operationId: runSettlement
+      tags:
+        - Settlement actions
+      description: |
+        Start the settlement process for a specified merchant.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunSettlementPayload'
+            examples:
+              merchant-transactions-response-success:
+                $ref: '#/components/examples/RunSettlementPayload'
+      responses:
+        '202':
+          $ref: '#/components/responses/202Accepted'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/merchants/{merchantId}/settlements/advancements:
+    get:
+      summary: List advancement requests settled
+      operationId: getAdvancementsBySettlement
+      tags:
+        - Settlements
+      description: >
+        List advancement requests settled per merchant using a
+        <strong>tracking_id</strong>.
+      parameters:
+        - $ref: '#/components/parameters/MerchantId'
+        - $ref: '#/components/parameters/TrackingId'
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAdvancementRequestsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v3/marketplaces:
+    post:
+      summary: Create marketplace
+      operationId: createMarketplace
+      tags:
+        - Marketplace
+      description: >
+        This endpoint creates a new marketplace.
+
+        This endpoint generates a <a
+        href="https://developers.pismo.io/events/docs/marketplace-marketplace-created-2">Marketplace
+        created</a> event.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMarketplaceRequest'
+            examples:
+              marketplace-request-success:
+                $ref: '#/components/examples/CreateMarketplaceRequestExample'
+      responses:
+        '201':
+          $ref: '#/components/responses/201MarketplaceCreate'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v3/marketplaces/{marketplaceId}:
+    get:
+      summary: Get marketplace by ID
+      operationId: getMarketplaceById
+      tags:
+        - Marketplace
+      description: >
+        Retrieve marketplace information by its ID.
+
+
+        Returns detailed information about a specific marketplace including its
+        configuration, contact details, and address information.
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceId'
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMarketplaceByIdResponse'
+              examples:
+                marketplace-details:
+                  $ref: '#/components/examples/GetMarketplaceByIdExample'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/marketplaces/{marketplaceId}:
+    patch:
+      summary: Update marketplace
+      operationId: updateMarketplace
+      tags:
+        - Marketplace
+      description: >
+        This endpoint updates the marketplace information.
+
+        This endpoint generates a <a
+        href="https://developers.pismo.io/events/docs/marketplace-marketplace-updated-2">Marketplace
+        updated</a> event.
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMarketplaceRequest'
+            examples:
+              marketplace-request-success:
+                $ref: '#/components/examples/UpdateMarketplaceRequestExample'
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMarketplaceByIdResponse'
+              examples:
+                marketplace-details:
+                  $ref: '#/components/examples/GetMarketplaceByIdExample'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/marketplaces/{marketplaceId}/merchants:
+    post:
+      summary: Link marketplace to merchants
+      operationId: createMarketplaceMerchantsLink
+      tags:
+        - Marketplace merchants links
+      description: |
+        Link marketplace with a list of merchants.
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                merchants:
+                  description: List of merchant IDs
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                    description: Merchant ID
+                    minimum: 1
+                    maximum: 18446744073709552000
+                  example:
+                    - 1
+                    - 2
+                    - 3
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    get:
+      summary: List merchants linked to a marketplace
+      operationId: listMarketplaceMerchantsLinked
+      tags:
+        - Marketplace merchants links
+      description: |
+        Returns information about the merchants linked to this marketplace
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Subnet'
+        - $ref: '#/components/parameters/HqId'
+        - $ref: '#/components/parameters/BranchId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMarketplaceMerchantsLinkResponse'
+              examples:
+                marketplaces-merchants-link-list:
+                  $ref: '#/components/examples/ListMarketplaceMerchantsLink'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/marketplaces/{marketplaceId}/merchants/{merchantId}:
+    delete:
+      summary: Unlink marketplace and merchant
+      operationId: deleteMarketplaceMerchantLink
+      tags:
+        - Marketplace merchants links
+      description: |
+        Delete link between marketplace and merchant.
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceId'
+        - $ref: '#/components/parameters/MerchantId'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'

@@ -1,0 +1,370 @@
+openapi: 3.1.0
+info:
+  title: Revolving credit - Delinquent account
+  version: 1.0.0
+  description: >-
+    CRELI (CREdit LIquidation) API. This is the API that handles delinquent
+    account closure.
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/delinquent-account
+    description: Sandbox API server for testing
+security:
+  - BearerAuth: []
+tags:
+  - name: Delinquent account closure
+    description: Endpoints to manage delinquent account closure.
+components:
+  parameters:
+    CorrelationIDheader:
+      in: header
+      name: x-cid
+      schema:
+        type: string
+      description: >
+        The Correlation IDentifier field is used to link related API requests
+        and events. The x-cid can help the Pismo engineering team track
+        everything related to a call. You can find the x-cid field in the
+        response header from an API endpoint call.
+
+
+        If this field isn't passed, one is automatically generated.
+      example: 5bb05174-4e80-11ea-b77f-2e728ce88125
+    AccountIDpath:
+      in: path
+      name: account_id
+      description: Account ID
+      required: true
+      style: simple
+      schema:
+        type: integer
+        example: 6912345
+  schemas:
+    AccountStatus:
+      type: string
+      description: >
+        Delinquent account entity status
+
+
+        This field can have the following values.
+
+        `CREATED`—Created a delinquent account register to initiate the process.
+
+        `STARTED`—Started posting interest accruals.
+
+        `INTEREST_ACCRUAL_POSTED`—Finished posting nterest accruals.
+
+        `INSTALLMENT_ADVANCED`—Checked all transactions that need to be deducted
+        separately.
+
+        `CREDIT_SEPARATED_TRANSACTION_REQUEST`—Requested a deduction for each
+        transaction selected to be settled separately.
+
+        `CREDIT_SEPARATED_TRANSACTION_CREATED`—Created deduction transactions.
+
+        `CREDIT_TRANSACTION_REQUESTED`—Posted a credit transaction to the
+        account.
+
+        `ACCOUNT_CANCELLED`—Cancelled account.
+
+        `CARD_BLOCKED`—Requested that all cards be blocked.
+
+        `SUCCESS`—Blocked all cards. Generated account [delinquent closure
+        event](https://developers.pismo.io/events/docs/delinquent-account-delinquent-account-1).
+
+        `SUCCESS_EVENT_SENT`—Sent `SUCCESS` event to customer.
+      enum:
+        - CREATED
+        - STARTED
+        - INTEREST_ACCRUAL_POSTED
+        - INSTALLMENTS_ADVANCED
+        - CREDIT_SEPARATED_TRANSACTION_REQUEST
+        - CREDIT_SEPARATED_TRANSACTION_CREATED
+        - CREDIT_TRANSACTION_REQUESTED
+        - ACCOUNT_CANCELLED
+        - CARD_BLOCKED
+        - SUCCESS
+        - SUCCESS_EVENT_SENT
+      example: CREATED
+    AuthorizationID:
+      type: integer
+      description: >
+        Before the Pismo platform can close an account, the account's balance
+        must be zero. If that is not the case, the platform creates a debit
+        transaction for the non-zero amount. `authorization_id` is the
+        authorization ID for this transaction.
+      example: 1
+    CreatedAt:
+      type: string
+      description: Date/time (UTC) that asset was registered on Pismo platform
+      example: '2023-03-30T12:26:41'
+    DelinquentAccountClosureID:
+      type: integer
+      description: ID for the delinquent account closure
+      example: 1
+    DueDays:
+      type: integer
+      description: >-
+        Due days. The number of days the account has been overdue. (Today minus
+        `open_due_date`).
+      example: 10
+    ExcludedStep:
+      type: string
+      description: Step to skip when closing a delinquent account
+      enum:
+        - POST_INTEREST_ACCRUAL
+        - POST_INSTALLMENT_ADVANCE
+        - POST_CREDIT_TRANSACTION
+        - SET_CARD_AS_BLOCKED
+      example: POST_INTEREST_ACCRUAL
+    ExcludedSteps:
+      type: array
+      description: Steps to skip when closing a delinquent account
+      items:
+        $ref: '#/components/schemas/ExcludedStep'
+      example:
+        - SET_CARD_AS_BLOCKED
+    FinalAccountStatus:
+      type: string
+      description: >
+        Final status for the closed delinquent account. Use the [List
+        statuses](ref:v4-get-account-status) endpoint to list the available
+        account statuses.
+      example: CANCELLED
+    InstallmentAdvanceID:
+      type: integer
+      description: >
+        Installment advance ID. If the account has any future installments, they
+        need to be advanced to the current cycle 
+
+        before the account can be closed. `installment-advance-id` is the ID of
+        the debit transaction that is used to advance 
+
+        those installments.
+      example: 1
+    TrackingID:
+      type: string
+      description: >
+        Tracking identifier. Must consist of the characters [a-z,A-Z,0-9,-,:]
+        with a range from 1 to 128. If a client 
+
+        clicks the button more than once when sending the command to close an
+        account, the Pismo platform could create duplicate 
+
+        requests. The tracking identifier enables the platform to identify
+        duplicates and ignore them.
+      minLength: 1
+      maxLength: 128
+      example: 3368328d-e4c6-4c75-99a9-9d59f3501d8c
+    OpenDueDate:
+      type: string
+      description: >-
+        Open due date. This is the first day that the account became overdue.
+        BRT (Brazilian time zone = UTC-03).
+      example: '2023-01-01'
+    ProcessingCode:
+      type: string
+      description: >-
+        Processing code for the transaction that the Pismo platform creates to
+        zero out the account balance.
+      example: '008000'
+    ReasonForClosure:
+      type: string
+      description: >-
+        `external_id` of the status reason. This is the external ID that was
+        used to create the reason.
+      minLength: 1
+      maxLength: 60
+      example: 8c8a4dd7-e48f-4c15-85b7-9d12f401057f
+    UpdatedAt:
+      type: string
+      description: Date closure was updated. BRT (Brazilian time zone = UTC-03).
+      example: '2022-02-01'
+    GetAccountCloseResponse:
+      description: Returns information about the delinquent account closure process.
+      type: object
+      properties:
+        delinquent_account_closure_id:
+          $ref: '#/components/schemas/DelinquentAccountClosureID'
+        tracking_id:
+          $ref: '#/components/schemas/TrackingID'
+        open_due_date:
+          $ref: '#/components/schemas/OpenDueDate'
+        due_days:
+          $ref: '#/components/schemas/DueDays'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        installment_advance_id:
+          $ref: '#/components/schemas/InstallmentAdvanceID'
+        authorization_id:
+          $ref: '#/components/schemas/AuthorizationID'
+        cards:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                description: Card ID
+                example: 1
+              status:
+                type: string
+                description: Card status
+                example: NORMAL
+                enum:
+                  - CREATED
+                  - UNBOUND
+                  - NORMAL
+                  - REISSUED
+                  - BLOCKED
+                  - PENDING
+                  - WARNING
+                  - LOST
+                  - ROBBED
+                  - EXPIRED
+                  - DAMAGED
+                  - FRAUD
+                  - CANCELED
+                  - DELETED
+                  - BROKEN
+                  - THEFT
+                  - DEFECT
+              type:
+                type: string
+                description: Card type
+                example: PLASTIC
+                enum:
+                  - PLASTIC
+                  - VIRTUAL
+                  - RECURRING
+                  - TEMPORARY
+    PostAccountCloseRequest:
+      description: Resource used to request a delinquent closure of an account.
+      type: object
+      required:
+        - tracking_id
+      properties:
+        tracking_id:
+          $ref: '#/components/schemas/TrackingID'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        reason:
+          $ref: '#/components/schemas/ReasonForClosure'
+        final_account_status:
+          $ref: '#/components/schemas/FinalAccountStatus'
+        excluded_steps:
+          $ref: '#/components/schemas/ExcludedSteps'
+    PostAccountCloseResponse:
+      description: >-
+        Resource used to return information about delinquent account closure
+        requested.
+      type: object
+      properties:
+        open_due_date:
+          $ref: '#/components/schemas/OpenDueDate'
+        due_days:
+          $ref: '#/components/schemas/DueDays'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account access token. Tokens can expire quickly, which can result in an
+        "Unauthorized" error.
+      bearerFormat: JWT
+  responses:
+    400BadRequest:
+      description: Bad Request
+    404NotFound:
+      description: Not Found
+    409Conflict:
+      description: The specified resource status conflicts with the current request.
+    500InternalServer:
+      description: Internal server error
+paths:
+  /v1/accounts/{account_id}/close:
+    post:
+      tags:
+        - Delinquent account closure
+      summary: Close delinquent account
+      description: >
+        Sends the specified account to the delinquent account closure process.
+
+        This endpoint generates a [Delinquent account
+        closed](https://developers.pismo.io/events/docs/delinquent-account-delinquent-account-1)
+        event.
+
+
+        **NOTE:** This endpoint requires an account token — an access token
+        encoded with an account ID. Tokens can expire quickly, which can result
+        in a **401 Unauthorized** message.
+      operationId: delinquent-ccount-closure-post
+      parameters:
+        - $ref: '#/components/parameters/CorrelationIDheader'
+        - $ref: '#/components/parameters/AccountIDpath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostAccountCloseRequest'
+        required: true
+      responses:
+        '202':
+          description: >-
+            Accepted - Indicates that the server has accepted the request, and
+            the specified account has been sent to the delinquent account
+            closure process.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostAccountCloseResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/accounts/{account_id}:
+    get:
+      tags:
+        - Delinquent account closure
+      summary: Get delinquent account closure process information
+      description: >
+        Get a delinquent account closure entity that was accepted in the
+        process.
+
+
+        **NOTE:** This endpoint requires an account token — an access token
+        encoded with an account ID. Tokens can expire quickly, which can result
+        in a **401 Unauthorized** message.
+      operationId: delinquent-account-closure-get
+      parameters:
+        - $ref: '#/components/parameters/CorrelationIDheader'
+        - $ref: '#/components/parameters/AccountIDpath'
+      responses:
+        '200':
+          description: >-
+            Ok - Indicates that the delinquent account process for the given
+            account was found and returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAccountCloseResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'

@@ -1,0 +1,176 @@
+openapi: 3.0.0
+info:
+  title: Card issuing - Reconciliation
+  version: 1.0.0
+  description: Model for the Network transactions backoffice endpoints
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io
+    description: Sandbox API server for testing
+  - url: https://sandbox.pismolabs.io/network-transactions-backoffice-api
+    description: Sandbox API server for testing for transactions backoffice
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account access token. Tokens can expire quickly, which can result in an
+        "Unauthorized" error.
+      bearerFormat: JWT
+  parameters:
+    XTenantHeader:
+      in: header
+      name: x-tenant
+      description: Organization ID
+      schema:
+        type: string
+        example: TN-b77ecb37-d149-4674-a499-af0d11e404864
+    XCidHeader:
+      in: header
+      name: x-cid
+      description: CorrelationId present on clearing message
+      schema:
+        type: string
+        example: 7e5213b7-e0a3-46f4-bb6a-2c4f38e413fb
+  schemas:
+    ReconciliationRequest:
+      type: object
+      properties:
+        card_network:
+          type: string
+          description: Card network
+          example: valid card network
+        card_hash:
+          type: string
+          description: Card hash
+          example: valid card hash
+        reconciliation_reason:
+          type: string
+          description: Reason for reconciliation
+          example: valid reason
+        adjustments:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: Field to be adjusted
+                example: valid field
+              new_value:
+                type: string
+                description: New value for the field
+                example: valid field value
+                required:
+                  - field
+                  - new_value
+      required:
+        - card_network
+        - card_hash
+        - reconciliation_reason
+        - adjustments
+    ReconciliationResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Success message
+          example: The message has been received and is being processed.
+      required:
+        - message
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: BTN0000
+        message:
+          type: string
+          description: Error message
+          example: 'Validation error: Test message'
+      required:
+        - code
+        - message
+  responses:
+    400BadRequest:
+      description: >-
+        The request is not acceptable, the syntax is malformed, for example,
+        some type number parameter with a text content.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    401Unauthorized:
+      description: Access token is missing or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    403Forbidden:
+      description: The request has been lost
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    404NotFound:
+      description: The specified resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    500InternalServerError:
+      description: Internal Server Error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+security:
+  - BearerAuth: []
+tags:
+  - name: Network transactions backoffice
+    description: Network transactions backoffice related endpoints
+paths:
+  /v1/clearing-reconciliation:
+    post:
+      summary: Perform clearing reconciliation
+      description: >-
+        Perform clearing reconciliation using the provided clearing message. The
+        clearing message must be pending to enable reprocessing.
+      operationId: performClearingReconciliation
+      tags:
+        - Network transactions backoffice
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XTenantHeader'
+        - $ref: '#/components/parameters/XCidHeader'
+      requestBody:
+        description: Clearing reconciliation request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReconciliationRequest'
+      responses:
+        '202':
+          description: Reconciliation response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReconciliationResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'

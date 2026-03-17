@@ -1,0 +1,929 @@
+openapi: 3.1.0
+info:
+  title: Revolving credit - Calendar management
+  description: Endpoints to handle calendars
+  termsOfService: https://developers.pismo.io/terms/
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/calendar-management
+    description: Sandbox API server for testing
+tags:
+  - name: Account due dates
+    description: Endpoint to get account due dates
+  - name: List calendars
+    description: Endpoint to list calendars
+  - name: Program calendar strategies
+    description: Endpoints for program calendar strategies
+  - name: Account calendar strategies
+    description: Endpoints for account calendar strategies
+  - name: Close account cycle
+    description: Endpoint to close cycle for a specific account
+components:
+  parameters:
+    AccountIdPath:
+      name: accountId
+      in: path
+      description: Account ID
+      required: true
+      style: simple
+      schema:
+        type: integer
+        format: int64
+        example: 6912345
+    ActiveQuery:
+      name: active
+      in: query
+      description: Is the program calendar strategy active?
+      schema:
+        type: boolean
+        example: true
+    CorrelationIdHeader:
+      in: header
+      name: x-cid
+      description: >
+        The Correlation Identifier field is used to link related API requests
+        and events. The x-cid can help the Pismo engineering team track
+        everything related to a call. You can find the x-cid field in the
+        response header of an API endpoint call.
+
+        If the x-cid value isn't passed, one is automatically generated.
+      schema:
+        type: string
+        example: 5bb05174-4e80-11ea-b77f-2e728ce88125
+    DivisionIdQuery:
+      name: divisionId
+      in: query
+      description: Division ID
+      required: false
+      schema:
+        type: integer
+        format: int64
+        example: 10
+    DueDayQuery:
+      name: dueDay
+      in: query
+      description: Due day of the calendar
+      required: false
+      schema:
+        type: integer
+        format: int32
+        example: 15
+    IncludeDivisionCalendarsQuery:
+      name: includeDivisionCalendars
+      in: query
+      description: Include division calendars?
+      required: false
+      schema:
+        type: boolean
+        example: true
+    NextCursorQuery:
+      name: nextCursor
+      in: query
+      description: Cursor for pagination
+      required: false
+      schema:
+        type: integer
+        format: int64
+        example: 30
+    PageQuery:
+      name: page
+      in: query
+      description: Page number
+      required: false
+      schema:
+        type: integer
+        format: int64
+        default: 1
+        example: 1
+    PerPageQuery:
+      name: perPage
+      in: query
+      description: Items per page
+      required: false
+      schema:
+        type: integer
+        format: int64
+        maximum: 500
+        minimum: 1
+        default: 10
+        example: 15
+    ProgramCalendarStrategyIdPath:
+      name: programCalendarStrategyId
+      in: path
+      description: Program calendar strategy ID
+      required: true
+      style: simple
+      schema:
+        type: integer
+        format: int64
+        example: 6912345
+    ProgramCalendarStrategyIdQuery:
+      name: programCalendarStrategyId
+      in: query
+      description: Program calendar strategy ID
+      required: false
+      schema:
+        type: integer
+        format: int64
+        example: 5
+    ProgramDueDateIdQuery:
+      name: programDueDateId
+      in: query
+      description: Program due date ID
+      required: false
+      schema:
+        type: integer
+        format: int64
+        example: 123
+    ProgramIdPath:
+      name: programId
+      in: path
+      description: Program ID
+      required: true
+      style: simple
+      schema:
+        type: integer
+        format: int64
+        example: 6912345
+    StrategyQuery:
+      name: strategy
+      in: query
+      description: |
+        Strategy used to create calendars
+      schema:
+        type: string
+        example: FIXED_CYCLE_CLOSING
+        enum:
+          - FIXED_CYCLE_CLOSING
+    XCidHeader:
+      name: x-cid
+      in: header
+      description: >
+        The Correlation Identifier field is used to link related API requests
+        and events. The x-cid can help the Pismo engineering team track
+        everything related to a call. You can find the x-cid field in the
+        response header of an API endpoint call.
+
+        If the x-cid value isn't passed, one is automatically generated.
+      required: false
+      schema:
+        type: string
+    XTenantHeader:
+      name: x-tenant
+      in: header
+      description: Tenant ID
+      required: true
+      schema:
+        type: string
+  schemas:
+    AccountCalendarStrategyGetResponseDto:
+      type: object
+      properties:
+        program_calendar_strategy_id:
+          $ref: '#/components/schemas/ProgramCalendarStrategyId'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
+    AccountCalendarDueDatesResponseDto:
+      type: array
+      items:
+        type: object
+        required:
+          - cycle_closing_date
+          - due_date
+          - statement_cycle
+        properties:
+          calendar_id:
+            $ref: '#/components/schemas/CalendarID'
+          cycle_closing_date:
+            $ref: '#/components/schemas/CycleClosingDate'
+          due_date:
+            $ref: '#/components/schemas/DueDate'
+          statement_cycle:
+            $ref: '#/components/schemas/CycleNumber'
+      example:
+        - calendar_id: 100
+          cycle_closing_date: '2025-10-01T00:00:00.000Z'
+          due_date: '2025-10-05T00:00:00.000Z'
+          statement_cycle: 3
+        - calendar_id: 101
+          cycle_closing_date: '2025-11-01T00:00:00.000Z'
+          due_date: '2025-11-05T00:00:00.000Z'
+          statement_cycle: 4
+        - calendar_id: 102
+          cycle_closing_date: '2025-12-01T00:00:00.000Z'
+          due_date: '2025-12-05T00:00:00.000Z'
+          statement_cycle: 5
+        - calendar_id: 103
+          cycle_closing_date: '2026-01-01T00:00:00.000Z'
+          due_date: '2026-01-05T00:00:00.000Z'
+          statement_cycle: 6
+        - cycle_closing_date: '2026-02-01T00:00:00.000Z'
+          due_date: '2026-02-05T00:00:00.000Z'
+          statement_cycle: 7
+    AccountCalendarStrategyPutRequestDto:
+      type: object
+      properties:
+        program_calendar_strategy_id:
+          $ref: '#/components/schemas/ProgramCalendarStrategyId'
+        apply_to_current_cycle:
+          $ref: '#/components/schemas/ApplyToCurrentCycle'
+      required:
+        - program_calendar_strategy_id
+    AccountCalendarStrategyPutResponseDto:
+      type: object
+      properties:
+        program_calendar_strategy_id:
+          $ref: '#/components/schemas/ProgramCalendarStrategyId'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
+    AccountIdResponse:
+      type: integer
+      description: Account ID
+      format: int64
+      example: 6912345
+    Active:
+      type: boolean
+      description: Is the program calendar strategy active?
+      default: true
+      example: true
+    ApplyToCurrentCycle:
+      type: boolean
+      description: Apply the strategy to the current cycle (`true`) or don't (`false`)?
+      example: true
+      default: false
+    CalendarDto:
+      type: object
+      properties:
+        calendar_id:
+          $ref: '#/components/schemas/CalendarID'
+        cycle_closing_date:
+          $ref: '#/components/schemas/CycleClosingDate'
+        due_date:
+          $ref: '#/components/schemas/DueDate'
+        real_due_date:
+          type: string
+          format: date
+          description: Real due date
+          example: '2024-09-18'
+        program_due_date_id:
+          type: integer
+          format: int64
+          description: Program due date ID
+          example: 1
+        program_calendar_strategy_id:
+          type: integer
+          format: int64
+          description: Program calendar strategy ID
+          example: 5
+        division_id:
+          type: integer
+          format: int64
+          description: Division ID
+          example: 10
+    CreatedAt:
+      type: string
+      format: date-time
+      description: >-
+        Datetime program calendar strategy was created. Format =
+        YYYY-MM-DDTHH:MM:SS:MM.
+      example: '2024-09-12T16:46:16.43663522'
+    CurrentPage:
+      type: integer
+      format: int32
+      description: Current page number
+      example: 1
+    CurrentStatementId:
+      type: integer
+      description: ID of current statement
+      format: int64
+      example: 325632587
+    CycleClosingDay:
+      type: integer
+      format: int32
+      description: Day of the month for the cycle closing. Must be in the range 1 to 28.
+      example: 10
+    CycleClosingRequest:
+      type: object
+      required:
+        - tracking_id
+      properties:
+        tracking_id:
+          $ref: '#/components/schemas/TrackingID'
+    CycleClosingResponseDto:
+      type: object
+      properties:
+        cycle_closing_request_id:
+          $ref: '#/components/schemas/CycleClosingRequestIdResponse'
+        account_id:
+          $ref: '#/components/schemas/AccountIdResponse'
+        current_statement_id:
+          $ref: '#/components/schemas/CurrentStatementId'
+        tracking_id:
+          $ref: '#/components/schemas/TrackingID'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        status:
+          $ref: '#/components/schemas/StatusCycleClosingRequest'
+    CycleClosingRequestIdResponse:
+      type: integer
+      description: ID generated for the request by the Pismo platform
+      format: int64
+      example: 365
+    DaysBetweenCycleClosingAndDueDate:
+      type: integer
+      format: int32
+      description: Number of days between cycle closing and due date
+      example: 5
+    ErrorCode:
+      type: string
+      description: Error code
+      example: EX0001
+    CalendarID:
+      type: integer
+      format: int64
+      description: Calendar ID
+      example: 57868
+    CycleClosingDate:
+      type: string
+      format: date
+      description: Cycle closing date. Format = yyyy-mm-dd.
+      example: '2021-05-24'
+    DueDate:
+      type: string
+      format: date
+      description: Due date. Format = yyyy-mm-dd.
+      example: '2021-05-24'
+    CycleNumber:
+      type: integer
+      format: int32
+      description: Statement Cycle number.
+      example: 1
+    CreateOrPatchProgramCalendarStrategyRequestDto:
+      oneOf:
+        - $ref: '#/components/schemas/FIXED_CYCLE_CLOSING'
+    CreateProgramOrPatchCalendarStrategyResponseDto:
+      oneOf:
+        - $ref: '#/components/schemas/FIXED_CYCLE_CLOSING_response'
+    FIXED_CYCLE_CLOSING:
+      title: Fixed cycle closing strategy
+      description: Cycle closing date is fixed. Due date is dynamic.
+      type: object
+      required:
+        - configuration
+      properties:
+        strategy:
+          type: string
+          description: Program calendar strategy
+          enum:
+            - FIXED_CYCLE_CLOSING
+        configuration:
+          type: object
+          required:
+            - cycle_closing_day
+            - days_between_cycle_closing_and_due_date
+          properties:
+            cycle_closing_day:
+              $ref: '#/components/schemas/CycleClosingDay'
+            days_between_cycle_closing_and_due_date:
+              $ref: '#/components/schemas/DaysBetweenCycleClosingAndDueDate'
+        active:
+          $ref: '#/components/schemas/Active'
+    FIXED_CYCLE_CLOSING_ListResponse:
+      description: Cycle closing date is fixed. Due date is dynamic.
+      type: object
+      properties:
+        program_calendar_strategy_id:
+          $ref: '#/components/schemas/ProgramCalendarStrategyId'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        strategy:
+          $ref: '#/components/schemas/FixedCycleClosingStrategy'
+        configuration:
+          type: object
+          properties:
+            cycle_closing_day:
+              $ref: '#/components/schemas/CycleClosingDay'
+            days_between_cycle_closing_and_due_date:
+              $ref: '#/components/schemas/DaysBetweenCycleClosingAndDueDate'
+        active:
+          $ref: '#/components/schemas/Active'
+    FIXED_CYCLE_CLOSING_response:
+      title: Fixed cycle closing strategy
+      description: Cycle closing date is fixed. Due date is dynamic.
+      type: object
+      properties:
+        program_calendar_strategy_id:
+          $ref: '#/components/schemas/ProgramCalendarStrategyId'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        strategy:
+          $ref: '#/components/schemas/FixedCycleClosingStrategy'
+        configuration:
+          type: object
+          properties:
+            cycle_closing_day:
+              $ref: '#/components/schemas/CycleClosingDay'
+            days_between_cycle_closing_and_due_date:
+              $ref: '#/components/schemas/DaysBetweenCycleClosingAndDueDate'
+        active:
+          $ref: '#/components/schemas/Active'
+    FixedCycleClosingStrategy:
+      type: string
+      description: Program calendar strategy
+      example: FIXED_CYCLE_CLOSING
+    GetCalendarStrategyResponseDto:
+      oneOf:
+        - $ref: '#/components/schemas/FIXED_CYCLE_CLOSING_response'
+    GetCalendarsResponseDto:
+      type: object
+      description: Response returned by calendar list
+      properties:
+        has_next:
+          type: boolean
+          description: Is there is a next page?
+          example: true
+        next_cursor:
+          type: integer
+          format: int64
+          description: Cursor for the next page
+        calendars:
+          type: array
+          description: List of calendars
+          items:
+            $ref: '#/components/schemas/CalendarDto'
+    GetListCalendarStrategyResponseDto:
+      type: object
+      description: Response returned by program calendar strategy list
+      properties:
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        pages:
+          $ref: '#/components/schemas/NumberOfPages'
+        total_items:
+          $ref: '#/components/schemas/TotalItems'
+        items:
+          oneOf:
+            - $ref: '#/components/schemas/FIXED_CYCLE_CLOSING_ListResponse'
+          discriminator:
+            propertyName: strategy
+            description: Choose calendar strategy
+            program_calendar_strategy_id:
+              $ref: '#/components/schemas/ProgramCalendarStrategyId'
+            created_at:
+              $ref: '#/components/schemas/CreatedAt'
+            updated_at:
+              $ref: '#/components/schemas/UpdatedAt'
+            strategy:
+              oneOf:
+                - $ref: '#/components/schemas/FIXED_CYCLE_CLOSING'
+            active:
+              $ref: '#/components/schemas/Active'
+    NumberOfPages:
+      type: integer
+      format: int32
+      description: Number of pages
+      example: 10
+    PerPage:
+      type: integer
+      format: int32
+      description: Maximum number of items per page
+      maximimu: 500
+      minimum: 1
+      default: 10
+      example: 15
+    ProgramCalendarStrategyId:
+      type: integer
+      description: Program calendar strategy ID
+      format: int64
+      example: 67854322
+    StandardErrorResponse:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          type: string
+          description: Error message
+          example: Internal error
+    StatusCycleClosingRequest:
+      type: string
+      description: >-
+        Online cycle closing status. Possible values are [`PENDING`,
+        `CYCLE_CLOSING_REQUESTED`, `ERROR`].
+      enum:
+        - PENDING
+        - CYCLE_CLOSING_REQUESTED
+        - ERROR
+      example: PENDING
+    TotalItems:
+      type: integer
+      format: int32
+      description: Total number of items
+      example: 100
+    TrackingID:
+      name: trackingID
+      type: string
+      description: >
+        Customer created tracking ID. Must consist of alphanumeric characters
+        (a-z, A-Z, 0-9), hyphens (-), and colons (:), with a length from 1 to
+        128. The Pismo platform uses this field to implement idempotency and
+        prevent duplicates.
+      minLength: 1
+      maxLength: 128
+      example: 3368328d-e4c6-4c75-99a9-9d59f3501d8c
+    UpdatedAt:
+      type: string
+      format: date-time
+      description: >-
+        Datetime program calendar strategy was updated. Format =
+        YYYY-MM-DDTHH:MM:SS:MM
+      example: '2024-09-12T16:46:16.43663522'
+  responses:
+    400BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardErrorResponse'
+          examples:
+            Missing request header:
+              description: Missing request header
+              value:
+                code: EX0002
+                message: Missing request header for method parameter of type String
+    Patch400InvalidPayload:
+      description: Invalid payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardErrorResponse'
+          examples:
+            Calendar with same config already exist:
+              description: A program calendar with same configuration already exists
+              value:
+                code: EX300
+                message: Another strategy has the same configuration.
+            Calendar Strategy not found:
+              description: Calendar strategy not found.
+              value:
+                code: EX301
+                message: Calendar strategy not found.
+            Invalid configuration:
+              description: Field configuration is invalid
+              value:
+                code: EX302
+                message: Field configuration is invalid.
+            Invalid field cycleClosing:
+              description: Field cycle closing day must respect the range
+              value:
+                code: EX303
+                message: Field cycle_closing_day must be between 1 and 28.
+            Cycle closing day required:
+              description: Field cycle closing day must exists to update configuration
+              value:
+                code: EX304
+                message: Field cycle_closing_day is required.
+            Days between cycle closing and due date required:
+              description: >-
+                Field days between cycle closing and due date must exists to
+                update configuration
+              value:
+                code: EX305
+                message: Field days_between_cycle_closing_and_due_date is required.
+            Days between cycle closing and due date required range:
+              description: >-
+                Field days between cycle closing and due date must respect the
+                range
+              value:
+                code: EX307
+                message: >-
+                  Field days_between_cycle_closing_and_due_date must be between
+                  1 and 100.
+            None of the updatable attributes passed:
+              description: At least one of the updatable attributes must be passed
+              value:
+                code: EX308
+                message: >-
+                  To proceed with this operation, please provide either the
+                  configuration update, the active flag, or both.
+    500InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardErrorResponse'
+          examples:
+            Internal Server Error:
+              description: Service is unavailable
+              value:
+                code: GN0001
+                message: Service is unavailable
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account access token. Tokens can expire quickly, which can result in an
+        "Unauthorized" error.
+      bearerFormat: JWT
+security:
+  - BearerAuth: []
+paths:
+  /v1/programs/{programId}/calendar-strategies:
+    post:
+      tags:
+        - Program calendar strategies
+      summary: Create program calendar strategy
+      operationId: CreateProgramCalendarStrategy
+      description: >
+        Create a program calendar strategy.
+
+
+        Program calendar strategies provide new methods of calendar creation.
+        For example, in the `FIXED_CYCLE_CLOSING` strategy, the
+        `cycle_closing_date` of the calendar is fixed, but the due date is
+        dynamic. The due date is calculated from the values set in the
+        `configuration` object.
+
+
+        This endpoint generates a [Program calendar strategy
+        created](https://developers.pismo.io/events/docs/balance-program-calendar-strategy-created-1)
+        event.
+
+
+        <b>Note:</b> This endpoint cannot be used to create a [fixed due date
+        calendar](doc:fixed-due-date-calendars).
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: >-
+                #/components/schemas/CreateOrPatchProgramCalendarStrategyRequestDto
+        required: true
+      responses:
+        '202':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/CreateProgramOrPatchCalendarStrategyResponseDto
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    get:
+      tags:
+        - Program calendar strategies
+      summary: List program calendar strategies
+      operationId: ListProgramCalendarStrategies
+      description: >
+        List program calendar strategies and their configurations.
+
+
+        <b>Note:</b> This endpoint does not return information about a [fixed
+        due date calendar](doc:fixed-due-date-calendars).
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+        - $ref: '#/components/parameters/ActiveQuery'
+        - $ref: '#/components/parameters/StrategyQuery'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '202':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetListCalendarStrategyResponseDto'
+        '400':
+          $ref: '#/components/responses/Patch400InvalidPayload'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/programs/{programId}/calendar-strategies/{programCalendarStrategyId}:
+    get:
+      tags:
+        - Program calendar strategies
+      summary: Get program calendar strategy
+      operationId: GetProgramCalendarStrategy
+      description: >
+        Get a program calendar strategy by its ID.
+
+
+        <b>Note:</b> This endpoint cannot be used to retrieve information about
+        a [fixed due date calendar](doc:fixed-due-date-calendars).
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+        - $ref: '#/components/parameters/ProgramCalendarStrategyIdPath'
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+      responses:
+        '202':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCalendarStrategyResponseDto'
+        '400':
+          $ref: '#/components/responses/Patch400InvalidPayload'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    patch:
+      tags:
+        - Program calendar strategies
+      summary: Update program calendar strategy
+      operationId: UpdateProgramCalendarStrategy
+      description: >
+        Update a program calendar strategy.
+
+
+        This endpoint generates a [Program calendar strategy
+        updated](https://developers.pismo.io/events/docs/balance-program-calendar-strategy-updated-1)
+        event.
+
+
+        <b>Note:</b> This endpoint cannot be used to update a [fixed due date
+        calendar](doc:fixed-due-date-calendars).
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+        - $ref: '#/components/parameters/ProgramCalendarStrategyIdPath'
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: >-
+                #/components/schemas/CreateOrPatchProgramCalendarStrategyRequestDto
+        required: true
+      responses:
+        '202':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/CreateProgramOrPatchCalendarStrategyResponseDto
+        '400':
+          $ref: '#/components/responses/Patch400InvalidPayload'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/accounts/{accountId}/calendar-strategies:
+    get:
+      tags:
+        - Account calendar strategies
+      summary: Get account calendar strategy
+      operationId: GetAcountCalendarStrategy
+      description: >
+        Get the calendar strategy for an account.
+
+
+        <b>Notes:</b>
+
+        - A program calendar strategy is defined for a specific program.
+        However, it can be associated with an account in that program, so you
+        can search for accounts that are associated with a particular program
+        calendar strategy.
+
+        - This endpoint does not return information about a [fixed due date
+        calendar](doc:fixed-due-date-calendars).
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/XTenantHeader'
+        - $ref: '#/components/parameters/XCidHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountCalendarStrategyGetResponseDto'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    put:
+      tags:
+        - Account calendar strategies
+      summary: Update account calendar strategy
+      operationId: UpdateAcountCalendarStrategy
+      description: >
+        Update an account calendar strategy.
+
+
+        This endpoint generates a [Balance account
+        changed](https://developers.pismo.io/events/docs/balance-balance-account-change-1)
+        event.
+
+
+        <b>Notes:</b> 
+
+        - A program calendar strategy is defined for a specific program.
+        However, it can be associated with an account in that program, so you
+        change the program calendar strategy associated with the account by
+        specifying its ID.
+
+        - This endpoint cannot be used to update a [fixed due date
+        calendar](doc:fixed-due-date-calendars).
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/XTenantHeader'
+        - $ref: '#/components/parameters/XCidHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountCalendarStrategyPutRequestDto'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountCalendarStrategyPutResponseDto'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/accounts/{accountId}/statement-close:
+    post:
+      tags:
+        - Close account cycle
+      summary: Close account cycle
+      operationId: CycleClosingRequest
+      description: |
+        Close cycle for a specific account.
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/XTenantHeader'
+        - $ref: '#/components/parameters/XCidHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CycleClosingRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CycleClosingResponseDto'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/programs/{programId}/calendars:
+    get:
+      tags:
+        - List calendars
+      summary: List calendars
+      operationId: ListCalendars
+      description: >
+        List calendars for a program.
+
+
+        You can use the following fields to filter the results. At most one of
+        these fields should be filled.
+
+        - `dueDay`
+
+        - `programCalendarStrategyId`
+
+        - `divisionId`
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+        - $ref: '#/components/parameters/DueDayQuery'
+        - $ref: '#/components/parameters/ProgramDueDateIdQuery'
+        - $ref: '#/components/parameters/ProgramCalendarStrategyIdQuery'
+        - $ref: '#/components/parameters/IncludeDivisionCalendarsQuery'
+        - $ref: '#/components/parameters/DivisionIdQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/NextCursorQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCalendarsResponseDto'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
