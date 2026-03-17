@@ -1,1 +1,1 @@
-# pismo-api-specs
+# Pismo Open API Spec
