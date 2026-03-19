@@ -1,0 +1,1143 @@
+openapi: 3.0.1
+info:
+  title: Card issuing - 3DS authentication
+  description: 3DS API endpoint documentation.
+  contact:
+    name: API Support
+    email: support@pismo.com.br
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+    url: https://developers.pismo.io/licenses/
+  version: 1.0.0
+servers:
+  - url: https://api-sandbox.pismolabs.io/3ds-acs
+    description: Sandbox API server for testing
+tags:
+  - name: HST
+    description: Endpoints to provide integration with HST.
+  - name: Pre-authentication
+    description: Endpoint to provide pre authentication integration
+  - name: VCAS
+    description: Endpoints to provide integration with VCAS.
+components:
+  parameters:
+    accountIDheader:
+      in: header
+      name: account_id
+      schema:
+        type: integer
+      description: Account ID
+      required: true
+    cardIDheader:
+      in: header
+      name: card_id
+      schema:
+        type: integer
+      description: Card ID
+      required: true
+    tenantIDheader:
+      name: x-tenant
+      in: header
+      schema:
+        type: string
+      required: true
+      description: Tenant/org ID
+  schemas:
+    Account:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/AccountID'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        postal_code:
+          $ref: '#/components/schemas/PostalCode'
+    AccountV2:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/AccountID'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        phones:
+          type: array
+          items:
+            $ref: '#/components/schemas/StructuredPhone'
+        email:
+          $ref: '#/components/schemas/Email'
+    AccountID:
+      type: integer
+      description: Pismo account ID
+      example: 10045896
+    AccountStatus:
+      type: string
+      description: Account status
+      example: NORMAL
+      enum:
+        - NORMAL
+        - BLOCKED
+        - CANCELLED
+    AnsweredAt:
+      type: string
+      description: End-user action RFC3339 timestamp
+      example: '2022-12-21T10:08:58Z'
+    Any:
+      type: object
+      example:
+        valueA: a
+        valueB: 1
+        valueC: false
+        valueD:
+          valueD1: x
+        valueN: ...
+    Authenticated:
+      type: boolean
+      example: false
+    BadRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          example: INVALID-REQUEST-PAYLOAD
+        message:
+          type: string
+          example: The request payload is invalid
+    Card:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/CardID'
+        mode_id:
+          $ref: '#/components/schemas/CardModeID'
+        type:
+          $ref: '#/components/schemas/CardType'
+        hash:
+          $ref: '#/components/schemas/PANhash'
+        bin:
+          $ref: '#/components/schemas/CardBIN'
+        last_four_digits:
+          $ref: '#/components/schemas/CardLast4Digits'
+    CardBIN:
+      type: string
+      description: Card BIN (Bank Identification Number)
+      example: '885692'
+    CardID:
+      type: integer
+      description: Card ID
+      example: 869572
+    CardLast4Digits:
+      type: string
+      description: Card last four PAN digits
+      example: '0153'
+    CardModeID:
+      type: integer
+      description: Card mode ID
+      example: 102
+    CardStatus:
+      type: string
+      description: Card status
+      enum:
+        - NORMAL
+        - BLOCKED
+        - PENDING
+        - LOST
+        - ROBBED
+        - EXPIRED
+        - DAMAGED
+        - FRAUD
+        - WARNING
+        - CANCELED
+        - CREATED
+        - DELETED
+      example: BLOCKED
+    CardType:
+      type: string
+      description: Card type
+      enum:
+        - PLASTIC
+        - VIRTUAL
+        - RECURRING
+        - TEMPORARY
+      example: PLASTIC
+    ChallengeRequest:
+      type: object
+      required:
+        - id
+        - external_id
+        - provider
+        - type
+        - raw_provider
+      properties:
+        id:
+          $ref: '#/components/schemas/PismoAuthID'
+        external_id:
+          $ref: '#/components/schemas/ExternalID'
+        provider:
+          $ref: '#/components/schemas/Provider'
+        type:
+          $ref: '#/components/schemas/Type'
+        raw_provider:
+          $ref: '#/components/schemas/RawProvider'
+    ChallengeResponse:
+      type: object
+      required:
+        - id
+        - decision
+        - answered_at
+        - metadata
+      properties:
+        id:
+          $ref: '#/components/schemas/PismoAuthID'
+        decision:
+          $ref: '#/components/schemas/Decision'
+        answered_at:
+          $ref: '#/components/schemas/AnsweredAt'
+        metadata:
+          $ref: '#/components/schemas/Any'
+    ChallengeResultResponse:
+      type: object
+      properties:
+        authenticated:
+          $ref: '#/components/schemas/Authenticated'
+        description:
+          $ref: '#/components/schemas/Description'
+    CorrelationID:
+      type: string
+      description: >
+        The Correlation identifier field is used to link related API requests
+        and events. The CID can help the Pismo engineering team track everything
+        related to a call. If not passed, a random one is generated. You can
+        find the CID in the response header.
+      example: c737895c-8159-4c0c-a92a-a4f8600bff37
+    Customer:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/CustomerID'
+    CustomerID:
+      type: number
+      description: Customer ID
+      example: 867604
+    Decision:
+      type: string
+      example: approve
+      description: Client's anti-fraud decision
+      enum:
+        - approve
+        - reject
+    challenge_info:
+      type: object
+      description: Customer challenge information including cardholder data
+      properties:
+        cardholder_name:
+          type: string
+          description: Cardholder name
+          example: John Doe
+        method:
+          type: string
+          description: |
+            Method to be used to challenge the cardholder. Possible values:
+            - OTP
+            - OOB
+          enum:
+            - OTP
+            - OOB
+          example: OTP
+        cardholder_phone:
+          type: object
+          description: Cardholder phone number details
+          properties:
+            country_code:
+              type: string
+              description: Country code
+              example: '55'
+            area_code:
+              type: string
+              description: Area code
+              example: '11'
+            number:
+              type: string
+              description: Phone number without area code
+              example: '912345678'
+    EvaluatedDecision:
+      type: string
+      example: approve
+      description: Client's anti-fraud evaluated decision
+      enum:
+        - approve
+        - reject
+        - request_challenge
+    SubIssuerId:
+      type: string
+      example: ANOTHER_BANK
+      description: >-
+        Client's subissuer override, we will use this one to override the
+        issuerSpecificData.subissuerID, if empty, we will use the org_id value.
+    ProductId:
+      type: string
+      example: CREDIT
+      description: >-
+        Client's product override, we will use this one to override the
+        issuerSpecificData.productID, if empty, we will use the program_id
+        value.
+    Description:
+      type: string
+      description: Challenge result
+      example: Challenge expired
+    DocumentNumber:
+      type: string
+      description: >-
+        Cardholder document number. A government document number, such as a
+        Social Security number (US) or Cadastro de Pessoas Físicas number
+        (Brazil).
+      example: '00011122233'
+    Email:
+      type: string
+      description: E-mail
+      example: ho_lee_smokes@gmail.com
+    Evaluate:
+      type: object
+      required:
+        - id
+        - external_id
+        - provider
+        - type
+        - card
+        - account
+        - customer
+        - program
+        - raw_provider
+      properties:
+        id:
+          $ref: '#/components/schemas/PismoAuthID'
+        external_id:
+          $ref: '#/components/schemas/ExternalID'
+        provider:
+          $ref: '#/components/schemas/Provider'
+        type:
+          $ref: '#/components/schemas/Type'
+        card:
+          $ref: '#/components/schemas/Card'
+        account:
+          $ref: '#/components/schemas/Account'
+        program:
+          $ref: '#/components/schemas/Program'
+        customer:
+          $ref: '#/components/schemas/Customer'
+        raw_provider:
+          $ref: '#/components/schemas/RawProvider'
+    EvaluateResponse:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          $ref: '#/components/schemas/EvaluatedDecision'
+        challenge_info:
+          $ref: '#/components/schemas/challenge_info'
+        subissuer_id:
+          $ref: '#/components/schemas/SubIssuerId'
+        product_id:
+          $ref: '#/components/schemas/ProductId'
+        metadata:
+          $ref: '#/components/schemas/Any'
+    VCASStepUpRequest:
+      type: object
+      required:
+        - id
+        - provider
+        - type
+        - card
+        - account
+        - customer
+        - program
+        - raw_provider
+      properties:
+        id:
+          $ref: '#/components/schemas/PismoAuthID'
+        provider:
+          type: string
+          description: Third-party provider name
+          enum:
+            - VCAS
+          example: VCAS
+        type:
+          type: string
+          description: Operation performed
+          enum:
+            - STEPUP
+          example: STEPUP
+        card:
+          $ref: '#/components/schemas/Card'
+        account:
+          $ref: '#/components/schemas/AccountV2'
+        program:
+          $ref: '#/components/schemas/Program'
+        customer:
+          $ref: '#/components/schemas/Customer'
+        raw_provider:
+          $ref: '#/components/schemas/RawProvider'
+      example:
+        id: ff77635e-1cd6-4fda-992d-5ceb71d75644
+        provider: VCAS
+        type: STEPUP
+        card:
+          id: 869572
+          mode_id: 102
+          type: PLASTIC
+          hash: >-
+            WEPvOQuZvjfYEd0iBmr43bhWyOsylIsW95ebYrLD89App2iEq9IizP+8w73pxKQ4mI47EdhzYHF9RfXjrBOyug==
+          bin: '885692'
+          last_four_digits: '0153'
+        account:
+          id: 10045896
+          document_number: '00011122233'
+          phones:
+            - area_code: '31'
+              country_code: '55'
+              number: '998675309'
+              type: mobile
+          email: ho_lee_smokes@gmail.com
+        program:
+          id: 986
+        customer:
+          id: 867604
+        raw_provider:
+          ProcessorId: 5723ae630063ac1a9c3ab079
+          IssuerId: 5723ae630063ac1a9c3ab083
+          TransactionId: 00ec043e-40b5-4ce4-95c2-9e83b644f412
+          DSTransactionId: 00ec043e-40b5-4ce4-95c2-9e83b644f987
+          ThreeDSRequestorAuthenticationInd: '01'
+          StepupRequestId: 878f4751-4140-4881-9e4a-003e83524f22
+          DeviceLocale: en-US
+          DeviceUserAgent: >-
+            Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
+            like Gecko) Chrome/87.0.4280.88 Safari/537.36
+          MessageVersion: 2.2.0
+          RDXMessageVersion: 2.2.3
+          MessageCategory: '01'
+          MerchantInfo:
+            AcquirerId: '1337'
+            AcquirerCountryCode: '840'
+            MerchantId: '876543210'
+            MerchantName: Ranier Expeditions
+            MerchantURL: https://www.requestor.com
+            MerchantCategoryCode: '0123'
+            MerchantCountryCode: '840'
+            MerchantAppRedirectURL: >-
+              merchantScheme://appName?transID=b2385523-a66c-4907-ac3c-91848e8c0067
+          TransactionInfo:
+            TransactionCurrency: '840'
+            Channel: WEB
+    VCASStepUpResponse:
+      type: object
+      properties:
+        raw_response:
+          type: object
+          description: >-
+            Raw response to VCAS StepUp request, according with VCAS
+            documentation.
+          example:
+            ProcessorId: 5723ae630063ac1a9c3ab07976
+            IssuerId: 5723ae630063ac1a9c3ab080
+            TransactionId: 00ec043e-40b5-4ce4-95c2-9e83b644f412
+            StepupRequestId: 00ec043e-40b5-4ce4-95c2-9e83b644f412
+            StepupType: OTPEMAIL
+            Language: en-US
+            Status: SUCCESS
+            RiskIndicator: string
+            Credentials:
+              - Id: d94fd3fd-bef1-49cb-88ab-a6841261cea9
+                Type: OTPEMAIL
+                Text: jales@pismo.io
+            Reason:
+              ReasonCode: string
+              ReasonDescription: string
+            Error:
+              ReferenceNumber: string
+              ReasonDescription: string
+              Description: string
+              Message: string
+            WhyInfo:
+              Label: string
+              Text: string
+    VCASInitiateActionRequest:
+      type: object
+      required:
+        - id
+        - provider
+        - type
+        - card
+        - account
+        - customer
+        - program
+        - raw_provider
+      properties:
+        id:
+          $ref: '#/components/schemas/PismoAuthID'
+        provider:
+          type: string
+          description: Third-party provider name
+          enum:
+            - VCAS
+          example: VCAS
+        type:
+          type: string
+          description: The type of operation to be performed.
+          enum:
+            - INITIATE_ACTION_CALL
+          example: INITIATE_ACTION_CALL
+        card:
+          $ref: '#/components/schemas/Card'
+        account:
+          $ref: '#/components/schemas/AccountV2'
+        program:
+          $ref: '#/components/schemas/Program'
+        customer:
+          $ref: '#/components/schemas/Customer'
+        raw_provider:
+          $ref: '#/components/schemas/RawProvider'
+      example:
+        id: ff77635e-1cd6-4fda-992d-5ceb71d75644
+        provider: VCAS
+        type: INITIATE_ACTION_CALL
+        card:
+          id: 869572
+          mode_id: 102
+          type: PLASTIC
+          hash: >-
+            WEPvOQuZvjfYEd0iBmr43bhWyOsylIsW95ebYrLD89App2iEq9IizP+8w73pxKQ4mI47EdhzYHF9RfXjrBOyug==
+          bin: '885692'
+          last_four_digits: '0153'
+        account:
+          id: 10045896
+          document_number: '00011122233'
+          phones:
+            - area_code: '31'
+              country_code: '55'
+              number: '998675309'
+              type: mobile
+          email: ho_lee_smokes@gmail.com
+        program:
+          id: 986
+        customer:
+          id: 867604
+        raw_provider:
+          ProcessorId: 5723ae630063ac1a9c3ab079
+          IssuerId: 5723ae630063ac1a9c3ab654
+          TransactionId: 00ec043e-40b5-4ce4-95c2-9e83b644f412
+          DSTransactionId: 00ec043e-40b5-4ce4-95c2-9e83b644f258
+          ThreeDSRequestorAuthenticationInd: '01'
+          StepupRequestId: 878f4751-4140-4881-9e4a-003e83524f22
+          MessageVersion: 2.2.0
+          RDXMessageVersion: 2.2.3
+          MessageCategory: '01'
+          MerchantInfo:
+            AcquirerId: '1337'
+            AcquirerCountryCode: '840'
+            MerchantId: '876543210'
+            MerchantName: Ranier Expeditions
+            MerchantURL: https://www.requestor.com
+            MerchantCategoryCode: '0123'
+            MerchantCountryCode: '840'
+            MerchantAppRedirectURL: >-
+              merchantScheme://appName?transID=b2385523-a66c-4907-ac3c-91848e8c0067
+          TransactionInfo:
+            TransactionCurrency: '840'
+            Channel: WEB
+    VCASInitiateActionResponse:
+      type: object
+      properties:
+        raw_response:
+          type: object
+          description: >-
+            Raw response to VCAS InitiateAction request, according with VCAS
+            documentation.
+          example:
+            ProcessorId: 7723ae630063ac1a9c3ab07976
+            IssuerId: 5723ae630063ac1a9c3ab080
+            TransactionId: 00ec043e-40b5-4ce4-95c2-9e83b644f412
+            StepupRequestId: 00ec043e-40b5-4ce4-95c2-9e83b644f412
+            StepupType: OTP
+            Language: string
+            Status: SUCCESS
+            TransStatusReason: string
+            RiskIndicator: string
+            Credentials:
+              - Id: d94fd3fd-bef1-49cb-88ab-a6841261cea9
+                Type: OTPEMAIL
+                Text: '******@cardinalcommerce.com'
+            Reason:
+              ReasonCode: string
+              ReasonDescription: string
+            Error:
+              ReferenceNumber: string
+              ReasonDescription: string
+              Description: string
+              Message: string
+    VCASValidateRequest:
+      type: object
+      required:
+        - id
+        - provider
+        - type
+        - raw_provider
+      properties:
+        id:
+          $ref: '#/components/schemas/PismoAuthID'
+        provider:
+          type: string
+          description: Third-party provider name
+          enum:
+            - VCAS
+          example: VCAS
+        type:
+          type: string
+          description: >-
+            To validate the credential (e.g., OTP) provided by the cardholder
+            during a step-up authentication flow.
+          enum:
+            - VALIDATE
+          example: VALIDATE
+        raw_provider:
+          $ref: '#/components/schemas/RawProvider'
+      example:
+        id: ff77635e-1cd6-4fda-992d-5ceb71d75644
+        provider: VCAS
+        type: VALIDATE
+        raw_provider:
+          ProcessorId: 5723ae630063ac1a9c3ab079
+          IssuerId: 5723ae630063ac1a9c3ab481
+          TransactionId: 00ec043e-40b5-4ce4-95c2-9e83b644f412
+          DSTransactionId: 521fa021-4791-4579-a3e9-76de87c219c0
+          StepupRequestId: 878f4751-4140-4881-9e4a-003e83524f22
+          MessageVersion: 2.2.0
+          RDXMessageVersion: 2.2.3
+    VCASValidateResponse:
+      type: object
+      properties:
+        raw_response:
+          type: object
+          description: >-
+            Raw response to VCAS Validate request, according with VCAS
+            documentation.
+          example:
+            ProcessorId: 5723ae630063ac1a9c3ab079
+            IssuerId: 5723ae630063ac1a9c3ab671
+            TransactionId: 00ec043e-40b5-4ce4-95c2-9e83b644f412
+            StepupRequestId: 00ec043e-40b5-4ce4-95c2-9e83b644f618
+            Language: string
+            CredentialId: string
+            Status: SUCCESS
+            TransStatusReason: string
+            RiskIndicator: string
+            Reason:
+              ReasonCode: string
+              ReasonDescription: string
+            Error:
+              ReferenceNumber: string
+              ReasonDescription: string
+              Description: string
+              Message: string
+            RReqOverrides:
+              AuthenticationMethod: SMS_OTP
+              TransStatusReason: CARD_AUTH_FAILED
+              AuthenticationAttempts: string
+              CustomerCancel: true
+    ExternalID:
+      type: string
+      description: Provider-generated unique ID for client monitoring and tracking
+      example: ABC123456
+    InternalServerError:
+      type: object
+      properties:
+        code:
+          type: string
+          example: INVALID-STRUCT-SIGNATURE
+        message:
+          type: string
+          example: An error occurred while interpreting a structure
+    Metadata:
+      type: object
+      description: Metadata returned from client's anti-fraud validator
+      example:
+        valueA: a
+        valueB: 1
+        valueC: false
+        valueD:
+          valueD1: x
+        valueN: ...
+    Name:
+      type: string
+      example: Paul Bearer
+      description: name
+    PANhash:
+      type: string
+      description: |
+        Encrypted PAN using 2048 rsa key and base64 encoded.
+        Pismo provides the encrypt/decrypt keys for this field.
+      example: >-
+        WEPvOQuZvjfYEd0iBmr43bhWyOsylIsW95ebYrLD89App2iEq9IizP+8w73pxKQ4mI47EdhzYHF9RfXjrBOyug==
+    StructuredPhone:
+      type: object
+      description: Phone number structure
+      properties:
+        area_code:
+          type: string
+          description: Area code of the phone number
+          example: '31'
+        country_code:
+          type: string
+          description: Country code of the phone number
+          example: '55'
+        number:
+          type: string
+          description: Phone number without area code
+          example: '998675309'
+        type:
+          type: string
+          description: Type of phone number (e.g., mobile, commercial, residential)
+          example: mobile
+    Phone:
+      type: string
+      description: Phone number
+      example: '+5531998675309'
+    PismoAuthID:
+      type: string
+      description: Pismo-generated unique authentication ID
+      example: ff77635e-1cd6-4fda-992d-5ceb71d75644
+    PostalCode:
+      type: string
+      description: Cardholder postal code
+      example: '01701000'
+    PreAuthenticationAccount:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/AccountID'
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        name:
+          $ref: '#/components/schemas/Name'
+        phone:
+          $ref: '#/components/schemas/Phone'
+        email:
+          $ref: '#/components/schemas/Email'
+    PreAuthenticationCard:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/CardID'
+        status:
+          $ref: '#/components/schemas/CardStatus'
+        type:
+          $ref: '#/components/schemas/CardType'
+        hash:
+          $ref: '#/components/schemas/PANhash'
+        printed_name:
+          $ref: '#/components/schemas/PrintedName'
+    PreAuthenticationCustomer:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/CustomerID'
+        name:
+          $ref: '#/components/schemas/Name'
+        phone:
+          $ref: '#/components/schemas/Phone'
+        email:
+          $ref: '#/components/schemas/Email'
+    PreAuthenticationResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/CorrelationID'
+        external_id:
+          $ref: '#/components/schemas/ExternalID'
+        decision:
+          $ref: '#/components/schemas/Decision'
+        account:
+          $ref: '#/components/schemas/PreAuthenticationAccount'
+        customer:
+          $ref: '#/components/schemas/PreAuthenticationCustomer'
+        card:
+          $ref: '#/components/schemas/PreAuthenticationCard'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+    PreAuthenticationRequest:
+      type: object
+      required:
+        - id
+        - pan
+      properties:
+        id:
+          $ref: '#/components/schemas/ProviderID'
+        pan:
+          $ref: '#/components/schemas/PANhash'
+        raw_provider:
+          $ref: '#/components/schemas/RawProvider'
+    PrintedName:
+      type: string
+      minLength: 2
+      maxLength: 26
+      example: Nan Tucket
+      description: Printed card name
+    Program:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 986
+          description: Program ID
+    Provider:
+      type: string
+      description: Third-party provider name
+      enum:
+        - HST
+      example: HST
+    ProviderID:
+      type: string
+      description: Client-generated caller ID.
+      example: ff77635e-1cd6-4fda-992d-5ceb71d75644
+    RawProvider:
+      type: object
+      description: >-
+        All non-PCI information received from provider. Check provider
+        documentation for details.
+    Type:
+      type: string
+      description: Evaluation intention
+      example: authentication
+      enum:
+        - authentication
+        - challenge-request
+    UnprocessableEntityError:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Error message
+      required:
+        - code
+        - message
+  responses:
+    400BadRequestError:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BadRequest'
+    422UnprocessableEntityError:
+      description: Unprocessable entity error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnprocessableEntityError'
+          examples:
+            E3DS-001:
+              value:
+                code: E3DS-001
+                message: No account were found with the specified parameters
+            E3DS-002:
+              value:
+                code: E3DS-002
+                message: No account were found with address
+            E3DS-003:
+              value:
+                code: E3DS-003
+                message: No account were found with active phone
+            E3DS-004:
+              value:
+                code: E3DS-004
+                message: The account is not in a valid state
+            E3DS-005:
+              value:
+                code: E3DS-005
+                message: No card were found with the specified parameters
+            E3DS-006:
+              value:
+                code: E3DS-006
+                message: No card were found with this PAN
+            E3DS-007:
+              value:
+                code: E3DS-007
+                message: The card is not in a valid state
+            E3DS-008:
+              value:
+                code: E3DS-008
+                message: No customer were found with the specified parameters
+            E3DS-009:
+              value:
+                code: E3DS-009
+                message: There is no configuration to process this request
+            E3DS-010:
+              value:
+                code: E3DS-010
+                message: Entity not found
+            E3DS-011:
+              value:
+                code: E3DS-011
+                message: There was a failure communicating with an external service
+            E3DS-012:
+              value:
+                code: E3DS-012
+                message: Error while fetching customer phone
+            E3DS-013:
+              value:
+                code: E3DS-013
+                message: No active phones found to this customer
+    500InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InternalServerError'
+paths:
+  /v1/preauthenticate:
+    post:
+      summary: Send pre-authentication info
+      description: >
+        Send pre-authentication information to the client's anti-fraud validator
+        to evaluate. Pismo calls the vaidator's webhook and gets a response
+        before sending a response to the caller.
+
+
+        Pismo provides the encrypt/decrypt keys for the hashed PAN. Talk to your
+        Pismo representative about getting these keys.
+      operationId: postPreAuthenticate
+      tags:
+        - Pre-authentication
+      parameters:
+        - $ref: '#/components/parameters/tenantIDheader'
+      requestBody:
+        description: Send information to evaluation
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreAuthenticationRequest'
+            examples:
+              Basic example:
+                value:
+                  id: ff77635e-1cd6-4fda-992d-5ceb71d75644
+                  pan: >-
+                    SdEwfAxa93DJkuBvsfuRfOuqV+Gl3WJIJg4UkL9uK8/2up5UjxsJGNppELuQaad5xb04BE21uy7V0W9fvvGmQmLEpqomG/3J6ppEE0Ufs/CjV2MUacXYwu/Shvl81PPHdEm5gqoOgF4Pter0VVq8YLOEEgiO89htuzuxq8UdOPpFz48ojVLlWb6RYM8XdqPJ0MK/cmlygvpXiYlz/bmsIpinUztvejimyHIi+4Yw2ZjiuG+4Ie+3nndB17vHgNLCtD5krRukD28Y81QDvIzbWAUnqxzESA9gcVHzoWsRPrPksRUH/uce+25qnXnvNbyW0VsHYN2/vLkMhiGkeYBoCg==
+                  raw_provider:
+                    valueA: a
+                    valueB: 1
+                    valueC: false
+                    valueD:
+                      valueD1: x
+                    valueN: ...
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreAuthenticationResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequestError'
+        '422':
+          $ref: '#/components/responses/422UnprocessableEntityError'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /customer_evaluation_provided_url:
+    post:
+      summary: Send pre-authentication for evaluation
+      description: >-
+        Send pre authentication information to customer to evaluate the
+        authentication.
+      operationId: postEvaluate
+      tags:
+        - HST
+      parameters:
+        - $ref: '#/components/parameters/tenantIDheader'
+        - $ref: '#/components/parameters/accountIDheader'
+        - $ref: '#/components/parameters/cardIDheader'
+      requestBody:
+        description: Send information to evaluation
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Evaluate'
+            examples:
+              Basic example:
+                value:
+                  id: ff77635e-1cd6-4fda-992d-5ceb71d75644
+                  external_id: ABC123456
+                  provider: HST
+                  type: authentication
+                  card:
+                    id: 869572
+                    mode_id: 102
+                    type: PLASTIC
+                    hash: >-
+                      WEPvOQuZvjfYEd0iBmr43bhWyOsylIsW95ebYrLD89App2iEq9IizP+8w73pxKQ4mI47EdhzYHF9RfXjrBOyug==
+                    bin: '0153'
+                    last_four_digits: '0153'
+                  account:
+                    id: 10045896
+                    document_number: '00011122233'
+                    postal_code: '01701000'
+                  customer:
+                    id: 12045896
+                  program:
+                    id: 986
+                  raw_provider:
+                    valueA: a
+                    valueB: 1
+                    valueC: false
+                    valueD:
+                      valueD1: x
+                    valueN: ...
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluateResponse'
+  /customer_challenge_request_provided_url:
+    post:
+      summary: Send challenge information
+      description: Send pre-authentication information to customer for challenge.
+      operationId: postChallengeRequest
+      tags:
+        - HST
+      parameters:
+        - $ref: '#/components/parameters/tenantIDheader'
+        - $ref: '#/components/parameters/accountIDheader'
+        - $ref: '#/components/parameters/cardIDheader'
+      requestBody:
+        description: Send information to challenge solicitation
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeRequest'
+            examples:
+              Basic example:
+                value:
+                  id: ff77635e-1cd6-4fda-992d-5ceb71d75644
+                  external_id: ABC123456
+                  provider: HST
+                  type: challenge-request
+                  raw_provider:
+                    valueA: a
+                    valueB: 1
+                    valueC: false
+                    valueD:
+                      valueD1: x
+                    valueN: ...
+      responses:
+        '200':
+          description: OK
+  /v1/challenge-result:
+    post:
+      summary: Get challenge result
+      description: Receive challenge result.
+      operationId: postChallengeResult
+      tags:
+        - HST
+      requestBody:
+        description: Receive challenge result.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeResponse'
+            examples:
+              Basic example:
+                value:
+                  id: ff77635e-1cd6-4fda-992d-5ceb71d75644
+                  decision: approve
+                  answered_at: '2022-12-21T10:08:58Z'
+                  metadata:
+                    valueA: a
+                    valueB: 1
+                    valueC: false
+                    valueD:
+                      valueD1: x
+                    valueN: ...
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeResultResponse'
+  /issuer-vcas-stepup-endpoint:
+    post:
+      summary: Issuer’s endpoint to handle VCAs stepup flow.
+      description: >-
+        This endpoint will be used to inform VCAS which authentication types are
+        available for a specific user.
+      operationId: postStepUp
+      tags:
+        - VCAS
+      requestBody:
+        description: Request provided by Pismo containing transaction and information
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VCASStepUpRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VCASStepUpResponse'
+  /issuer-vcas-initiateaction-endpoint:
+    post:
+      summary: Issuer’s endpoint to handle VCAs initiate action flow.
+      description: >-
+        This endpoint will be used to inform the issuer about the initiate
+        action flow in the VCAS process.
+      operationId: postInitiateAction
+      tags:
+        - VCAS
+      requestBody:
+        description: Request provided by Pismo containing transaction and information
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VCASInitiateActionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VCASInitiateActionResponse'
+  /issuer-vcas-validate-endpoint:
+    post:
+      summary: Issuer’s endpoint to handle VCAs validate flow.
+      description: >-
+        This endpoint will be used to inform the issuer about the validation
+        flow.
+      operationId: postValidation
+      tags:
+        - VCAS
+      requestBody:
+        description: Request provided by Pismo containing transaction and information
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VCASValidateRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VCASValidateResponse'

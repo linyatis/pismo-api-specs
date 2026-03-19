@@ -1,0 +1,3074 @@
+openapi: 3.1.0
+info:
+  title: Banking - Integrated payments
+  version: '1.0'
+  description: API responsible for handling and processing integrated payments
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/integrated-payments
+    description: Sandbox API server for testing
+security:
+  - BearerAuth: []
+tags:
+  - name: Bank slip issuance
+    description: Operations related to issue and cancel issued bank slips
+  - name: Bank slip
+    description: Operations related to pay and get information about a bank slips
+  - name: Transfer
+    description: Operations related to transfer cashin and cashout
+components:
+  parameters:
+    clientRequestIdPath:
+      name: clientRequestId
+      in: path
+      description: Client request ID returned using the bank slip issue endpoint.
+      required: true
+      schema:
+        type: string
+      example: 6d6bdd2c-9980-4cf1-87ff-c99dc9ce6ef4
+    lastEvaluatedPaymentDatetimeQuery:
+      name: lastEvaluatedPaymentDatetimeQuery
+      in: query
+      description: >
+        Last payment datetime evaluated. This is the
+        last_evaluated_payment_datetime field returned in the response and is
+        used to find and return additional results. ISO 8601 format -
+        `yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`.
+      schema:
+        type: string
+        format: datetime
+      example: '2024-09-11T18:01:44Z'
+    authorizationHeader:
+      name: Authorization
+      in: header
+      description: >
+        Account token. Getting an account token requires you call the [Server
+        login 
+
+        endpoint](ref:post-passport-v2-s2s-access-token) with an account ID.
+        Tokens can expire 
+
+        quickly, which can result in an <b>Unauthorized</b> message. Enter this
+        field under 
+
+        `AUTHENTICATION`.
+      required: true
+      schema:
+        type: string
+      example: <account_token>
+    skipReconciliationHeader:
+      name: x-skip-reconciliation
+      in: header
+      description: >
+        If `true`, the reconciliation process is skipped and the Integrated
+        payments financial reconciliation event is not generated. Default is
+        `false`.<br>
+
+        The financial reconciliation process compares the transaction made on
+        Pismo with the same transaction made on the provider side (i.e., BTG or
+        Celcoin).
+      schema:
+        type: boolean
+      example: true
+    xSignatureHeader:
+      name: X-Signature
+      in: header
+      description: >
+        This header is designed for clients working with a third‑party provider
+        that requires certain transactions to include a certified digital
+        signature for added security. It is optional and should be used only if
+        your provider requires signature validation. When included, our APIs
+        forward the header to the provider, which verifies the signature and
+        approves or rejects the transaction based on its authenticity.
+      required: false
+      schema:
+        type: string
+      example: >-
+        5903AB76A8BC52E2CBD04E83042C32F26A23F022;s0k/tU3m+iAvWfrori8+TdhWqUn0jAAKvq/hyNuAEfxSE;20250909
+    idempotencyKeyHeader:
+      name: x-idempotency-key
+      in: header
+      description: >
+        Unique identifier (UUID) to ensure the operation remains idempotent,
+        allowing for operation repitition without causing unintended effects or
+        duplication. An idempotent operation is one that can be applied multiple
+        times, yet the outcome remains the same. it ensures that network errors,
+        retries, or failures can occur without introducing inconsistencies.
+      required: true
+      schema:
+        type: string
+      example: 6a17f82d-7365-4451-a83d-09403f05c1ec
+    lastEvaluatedCreationDatetime:
+      name: lastEvaluatedCreationDatetime
+      in: query
+      description: >
+        Last creation datetime filter. Displayed in ISO 8601 format:
+        `yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`.
+      schema:
+        type: string
+        format: datetime
+      example: '2024-09-11T18:01:44Z'
+    authorizationIdQuery:
+      name: authorizationId
+      in: query
+      description: Authorization ID filter used for searching fund transfers.
+      schema:
+        type: string
+      example: '1234'
+    perPageQuery:
+      name: perPage
+      in: query
+      description: Receipts per page. Min=1, max=100, default=20.
+      schema:
+        type: string
+        default: '20'
+        minLength: 1
+        maxLength: 100
+      example: '100'
+    pageQuery:
+      name: page
+      in: query
+      description: Current page. min=1 default=1
+      schema:
+        type: string
+        default: '1'
+        minLength: 1
+      example: '1'
+    orderQuery:
+      name: order
+      in: query
+      description: >-
+        Result ordering is done on bank slip creation datetime. Default is
+        `desc`.
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+      example: desc
+    beginDatetimeQuery:
+      name: beginDatetime
+      in: query
+      description: >
+        Begin datetime filter. ISO 8601 format -
+        `yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`.
+      schema:
+        type: string
+        format: datetime
+      example: '2024-09-11T18:01:44Z'
+    endDatetimeQuery:
+      name: endDatetime
+      in: query
+      description: >
+        End datetime filter. ISO 8601 format -
+        `syyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`.
+      schema:
+        type: string
+        format: datetime
+      example: '2024-09-11T18:01:44.000Z'
+    accountIdPath:
+      name: accountId
+      in: path
+      description: Your Pismo account ID.
+      required: true
+      schema:
+        type: string
+      example: '78123456'
+  schemas:
+    bankslips.bankslipReceipt:
+      type: object
+      properties:
+        account_id:
+          description: Pismo account ID.
+          type: integer
+        amount:
+          type: number
+        authorization_id:
+          description: Authorization ID.
+          type: integer
+        beneficiary_document_number:
+          description: >
+            A government document number, such as a CPF (Brazil) - Cadastro de
+            Pessoas Fisicas (Indiviual Taxpayer Registry) number, CNPJ (Brazil)
+            - Cadastro Nacional de Pessoa Juridica (National Registry of Legal
+            Entities) number - unique ID for legal entities, such as companies
+            and organizations.
+          type: string
+        beneficiary_name:
+          description: Beneficiary name.
+          type: string
+        client_request_id:
+          type: string
+          description: Client request ID.
+        currency_code:
+          type: string
+          description: ISO 4217 currency code. Can be either numeric or alphabetic.
+        customer_name:
+          description: Customer name.
+          type: string
+        description:
+          description: Bank slip description.
+          type: string
+        digitable_line:
+          description: Digitable line.
+          type: string
+        discount:
+          description: >-
+            Discount displayed in percentage granted to this bank slips if paid
+            until the due datetime specified in `due_datetime`.
+          type: number
+        document_number:
+          description: Document number related to the owner of bank slips.
+          type: string
+        due_datetime:
+          description: Due datetime. ISO 8601 format - `yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`.
+          type: string
+          format: date-time
+        external_id:
+          type: string
+          description: External provider transaction ID.
+        fine:
+          description: Fine applied to the bank slip amount in case of overdue.
+          type: number
+        interest:
+          description: Interest applied to the bank slip amount when overdue.
+          type: number
+        payment_datetime:
+          description: Date on which payment is made.
+          type: string
+          format: date-time
+        settlement_partner:
+          description: Settlement partner.
+          type: string
+        status:
+          description: >-
+            Bank slip status. Possible values are `CREATED`, `REGISTERED`, and
+            `CANCELLED`.
+          type: string
+        additional_info:
+          type: string
+          description: >
+            Additional information about the bank slip payment, including
+            provider-specific details.
+          example: NumCtrl = 123456
+    bankslips.bankslipsPayRequest:
+      required:
+        - account_id
+        - amount
+      type: object
+      properties:
+        account_id:
+          type: integer
+          description: Pismo Platform Account ID.
+          example: 7989342
+        amount:
+          type: number
+          description: Amount to pay.
+          example: 100
+        bankslip:
+          required:
+            - type
+          type: object
+          properties:
+            type:
+              type: integer
+              description: >
+                bank slip type. (`1` = compensation form, `2` = dealership).<br>
+
+                Compensation form refers to the method for processing the bank
+                slip. Dealership (cedente) refers to the entity or individual
+                that issues the bank slip.
+              enum:
+                - 1
+                - 2
+              example: 1
+            bar_code:
+              type: string
+              description: >
+                Bar code encoding bank slip information such as the bank code,
+                currency code, check digit, due date, amount, and beneficiary
+                information.
+              example: '22323423423423423'
+            digitable_line:
+              type: string
+              description: >-
+                Digitable line. On a Brazilian bank slip, the digitable line
+                contains numerical payment information encoding details like the
+                payment amount, due date, beneficiary information, and other
+                transaction-specific data.
+              example: '23792374039002121400385000334004688970000050227'
+            due_datetime:
+              type: string
+              description: >-
+                Due datetime. ISO 8601 format -
+                `yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`.
+              format: date-time
+              example: '2022-08-15T00:00:00.000Z'
+            original_amount:
+              type: number
+              description: Original amount.
+              example: 100
+          description: Bank slip information
+        currency_code:
+          type: string
+          description: ISO 4217 currency code. Can be either numeric or alphabetic.
+          example: BRL
+        external_authorization:
+          type: string
+          description: >
+            External authorization. Some providers return this value
+
+            to the `/v1/bankslips/validate` endpoint. If returned, this value
+            must
+
+            be passed on to a bank slip payment request.
+
+            Some providers return this to a [Validate bank
+            slip](ref:post-integrated-payments-api-v1-bankslips-validate) call.
+            If returned, you **must** pass it in a [Pay bank
+            slip](ref:post-integrated-payments-api-v1-bankslips-pay) endpoint
+            call.
+          example: '123456'
+    bankslips.bankslipsPayResponse:
+      type: object
+      properties:
+        account_id:
+          type: integer
+          description: Pismo Platform Account ID.
+          example: 12434
+        amount:
+          type: number
+          description: Amount paid.
+          example: 100
+        authorization_id:
+          type: integer
+          description: Pismo Platform Account ID.
+          example: 12434
+        bar_code:
+          type: string
+          description: >
+            Bar code encoding bank slip information such as the bank code,
+            currency code, check digit, due date, amount, and beneficiary
+            information.
+          example: '22323423423423423'
+        currency_code:
+          type: string
+          description: ISO 4217 currency code. Can be either numeric or alphabetic.
+          example: BRL
+        customer_name:
+          type: string
+          description: Customer name.
+          example: Customer Name
+        digitable_line:
+          type: string
+          description: >-
+            Digitable line. On a Brazilian bank slip, the digitable line
+            contains numerical payment information encoding details like the
+            payment amount, due date, beneficiary information, and other
+            transaction-specific data.
+          example: '23792374039002121400385000334004688970000050227'
+        due_datetime:
+          type: string
+          description: Due datetime. ISO 8601 format - `yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`.
+          format: date-time
+          example: '2021-05-25T00:00:00.000Z'
+        external_id:
+          type: string
+          description: Client-generated ID for client tracking and monitoring.
+          example: '12434'
+        payment_datetime:
+          type: string
+          description: Payment datetime.
+          format: date-time
+          example: '2021-05-25T00:00:00.000Z'
+        status:
+          type: string
+          description: >
+            Bank slip status. Possible values are `PAID`, `PROCESSING`,
+            `SETTLED`, `ERROR`, and `TIMEOUT`.
+          example: PROCESSING
+        additional_info:
+          type: string
+          description: >
+            Additional information about the bank slip payment, including
+            provider-specific details.
+          example: NumCtrl = 123456
+    bankslips.bankslipsValidateRequest:
+      required:
+        - type
+      type: object
+      properties:
+        type:
+          type: integer
+          description: >
+            Banslip type. (`1` = compensation form, `2` = dealership)<br>
+
+            Compensation form refers to the method for processing the bank slip.
+            Dealership (cedente) refers to the entity or individual that issues
+            the bank slip.
+          enum:
+            - 1
+            - 2
+          example: 1
+        bar_code:
+          type: string
+          description: >-
+            Bar code encoding bank slip information such as the bank code,
+            currency code, check digit, due date, amount, and beneficiary
+            information.
+          example: '22323423423423423'
+        digitable_line:
+          type: string
+          description: >-
+            Digitable line. On a Brazilian bank slip, the digitable line
+            contains numerical payment information encoding details like the
+            payment amount, due date, beneficiary information, and other
+            transaction-specific data.
+          example: '20890001091000001090980008176705191030000002000'
+    bankslips.bankslipsValidateResponse:
+      type: object
+      properties:
+        amount:
+          type: number
+          description: Amount to pay.
+          example: 10
+        assignor:
+          type: string
+          description: The name of the receiver bank.
+          example: BANCO ITAU S.A.
+        bar_code:
+          type: string
+          description: Bar code.
+          example: '22323423423423423'
+        beneficiary_document_number:
+          type: string
+          description: >
+            A government document number, such as a CPF (Brazil) - Cadastro de
+            Pessoas Fisicas (Indiviual Taxpayer Registry) number, CNPJ (Brazil)
+            - Cadastro Nacional de Pessoa Juridica (National Registry of Legal
+            Entities) number - unique ID for legal entities, such as companies
+            and organizations.
+          example: '123456789'
+        beneficiary_name:
+          type: string
+          description: Beneficiary name.
+          example: Beneficiary name
+        digitable_line:
+          type: string
+          description: >-
+            Digitable line. On a Brazilian bank slip, the digitable line
+            contains numerical payment information encoding details like the
+            payment amount, due date, beneficiary information, and other
+            transaction-specific data.
+          example: '34192374039002121400385000334004688970000050227'
+        discount_value:
+          type: number
+          description: Discount value.
+          example: 0
+        due_date:
+          type: string
+          format: datetime
+          description: Due datetime. ISO 8601 format - `yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`.
+          example: '2022-08-15T00:00:00.000Z'
+        external_authorization:
+          type: string
+          description: >
+            Some providers return this to a [Validate bank
+            slip](ref:post-integrated-payments-api-v1-bankslips-validate) call.
+            If returned, you must pass it in a Pay bank
+            slip](ref:post-integrated-payments-api-v1-bankslips-pay) endpoint
+            call.
+
+            If returned, this value must be passed on to a bank slip payment
+            request.
+          example: '123'
+        fine_value:
+          type: number
+          description: Fine value.
+          example: 0
+        interest_value:
+          type: number
+          description: Interest value.
+          example: 0
+        limit_date:
+          type: string
+          description: >-
+            Limit datetime to pay. ISO 8601 format -
+            `yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`.
+          format: date
+          example: '2022-08-15T00:00:00.000Z'
+        max_value:
+          type: number
+          description: Maximum value.
+          example: 10
+        min_value:
+          type: number
+          description: Minimum value.
+          example: 10
+        original_value:
+          type: number
+          description: Original value.
+          example: 10
+        payer_document_number:
+          type: string
+          description: >-
+            A government document number, such as a CPF (Brazil) - Cadastro de
+            Pessoas Fisicas (Indiviual Taxpayer Registry) number, CNPJ (Brazil)
+            - Cadastro Nacional de Pessoa Juridica (National Registry of Legal
+            Entities) number - unique ID for legal entities, such as companies
+            and organizations.
+          example: '923456789'
+        payer_name:
+          type: string
+          description: Payer's name.
+          example: Payer's name
+        settle_date:
+          type: string
+          format: date
+          description: Settlement date. ISO 8601 format - `yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`.
+          example: '2022-08-15T00:00:00.000Z'
+        type:
+          type: integer
+          description: >
+            bank slip type. (`1` = compensation form, `2` = dealership).<br>
+
+            Compensation form refers to the method for processing the bank slip.
+            Dealership (cedente) refers to the entity or individual that issues
+            the bank slip.
+          example: 1
+    bankslips.GetbankslipsReceiptsResponse:
+      type: object
+      properties:
+        begin_datetime:
+          description: Begin datetime. ISO 8601 format - `yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`.
+          type: string
+          format: date-time
+        end_datetime:
+          description: End datetime. ISO 8601 format - `yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`.
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/bankslips.bankslipReceipt'
+        last_evaluated_payment_datetime:
+          description: Last evaluated payment datetime.
+          type: string
+          format: date-time
+        per_page:
+          description: Number of results per page.
+          type: integer
+          example: 10
+        total_items:
+          description: Total items matching the filtering criteria.
+          type: integer
+          example: 100
+    bankslips_issue.IssueDebtor:
+      type: object
+      properties:
+        city:
+          description: City where the debtor resides.
+          type: string
+          example: New York
+        complement:
+          description: Additional address.
+          type: string
+          example: Complement
+        document_number:
+          description: >
+            A government document number, such as a CPF (Brazil) - Cadastro de
+            Pessoas Fisicas (Indiviual Taxpayer Registry) number, CNPJ (Brazil)
+            - Cadastro Nacional de Pessoa Juridica (National Registry of Legal
+            Entities) number - unique ID for legal entities, such as companies
+            and organizations.
+          type: string
+          example: '00000000000'
+        name:
+          description: Debtor's full name.
+          example: John Doe
+          type: string
+        neighborhood:
+          description: Neighborhood name where the debtor resides.
+          type: string
+          example: Neighborhood
+        number:
+          description: Street number.
+          type: string
+          example: '123'
+        state:
+          description: The name of the state.
+          type: string
+          example: UF
+        street:
+          description: The name of the street where the debtor resides.
+          type: string
+          example: Street
+        zip_code:
+          description: Zip code.
+          type: string
+          example: '00000000'
+    bankslips_issue.IssueDiscount:
+      type: object
+      properties:
+        amount:
+          description: >-
+            Discounted amount to be applied to the bank slip amount if paid
+            before or on the deadline.
+          type: number
+          example: 10
+        deadline:
+          description: Discount deadline.
+          type: string
+          example: '2024-09-25T00:00:00.000Z'
+        type:
+          description: Fixed bank slip type
+          type: string
+          example: fixed
+    bankslips_issue.IssueInstructions:
+      required:
+        - fine
+        - interest
+      type: object
+      properties:
+        fine:
+          description: Fine to be applied to the bank slip amount if overdue.
+          type: number
+          example: 5
+        interest:
+          description: Interest to be applied to the bank slips amount when overdue.
+          type: number
+          example: 10
+        discount:
+          $ref: '#/components/schemas/bankslips_issue.IssueDiscount'
+    bankslips_issue.IssueRequest:
+      required:
+        - amount
+        - due_date
+      type: object
+      properties:
+        amount:
+          description: bank slip amount.
+          type: number
+          example: 100
+        due_date:
+          description: bank slip payment due date.
+          type: string
+          format: date
+          example: '2024-07-25T00:00:00.000Z'
+        debtor:
+          $ref: '#/components/schemas/bankslips_issue.IssueDebtor'
+        description:
+          description: Description about the bank slip.
+          type: string
+          example: Long description.
+        instructions:
+          $ref: '#/components/schemas/bankslips_issue.IssueInstructions'
+        maximum_amount:
+          description: Maximum amount accepted when paying the bank slip.
+          type: number
+          example: 100
+        minimum_amount:
+          description: Minimum amount accepted when paying the bank slip.
+          type: number
+          example: 10
+        over_due_date:
+          description: >-
+            Last day to accept bank slip payments. After this date, the bank
+            slip is not paid.
+          type: string
+          format: date
+          example: '2024-08-25T00:00:00.000Z'
+        pix_key:
+          description: PIX key related to the bank slip.
+          type: string
+          example: pixkey@pix.com.br
+        issuer:
+          description: The name of the provider that issues the bank slip.
+          type: string
+          example: PISMO
+        transaction_id:
+          description: >-
+            Transaction ID related to the bank slip issue. This is the ID that
+            links the bank slip to the specific transaction performed in the
+            payments API. It can be used for tracking, reconciliation, and
+            reference purposes when managing bank slips and their associated
+            transactions.
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440000
+    bankslips_issue.IssueResponse:
+      type: object
+      properties:
+        client_request_id:
+          description: Unique identifier of the request controlled by the client.
+          type: string
+          example: 6d6bdd2c-9980-4cf1-87ff-c99dc9ce6ef4456
+        external_id:
+          description: Unique identifier of the request controlled by the provider.
+          type: string
+          example: 6d6bdd2c-9980-4cf1-87ff-c99dc9ce6ef4123
+        status:
+          description: >-
+            bank slip status. Possible values are `CREATED`, `CANCELLED`,
+            `REGISTERED`, and `ERROR`.
+          type: string
+          example: CREATED
+    bankslips_issue.DeleteIssueRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: bank slip delete reason.
+          example: Cancellation of client contract.
+    bankslips_issue.IssueReceiver:
+      type: object
+      properties:
+        document_number:
+          description: Recipient 's document number.
+          type: string
+        name:
+          description: Recipient name.
+          type: string
+    bankslips_issue.GetIssueResponse:
+      type: object
+      properties:
+        account_id:
+          description: Pismo Platform Account ID.
+          type: integer
+          example: 123
+        amount:
+          description: Bank slip amount.
+          type: number
+          example: 100
+        bar_code:
+          description: >
+            Bar code encoding bank slip information such as the bank code,
+            currency code, check digit, due date, amount, and beneficiary
+            information.
+          type: string
+          example: '6049000117010051039060004359977819483000015380998174912864'
+        client_request_id:
+          description: Client request ID.
+          type: string
+          example: 6d6bdd2c-9980-4cf1-87ff-123
+        correlation_id:
+          description: Correlation ID.
+          type: string
+          example: c537939d-5442-48b6-8b84-66465ba68880
+        created_at:
+          description: Date on which the resource was created.
+          type: string
+          example: '2024-07-24T00:00:00Z'
+        debtor:
+          $ref: '#/components/schemas/bankslips_issue.IssueDebtor'
+        description:
+          description: Description detailing the bank slip.
+          type: string
+          example: Long description.
+        digitable_line:
+          description: >
+            Digitable line.<br> 
+
+            For example on a Brazilian bank slip, the digitable line contains
+            numerical payment information encoding details like the payment
+            amount, due date, beneficiary information, and other
+            transaction-specific data.
+          type: string
+          example: '60490001170100510390600043599778194830000153809'
+        due_date:
+          description: Bank slip due date in ISO 8601 format.
+          type: string
+          example: '2024-07-25T00:00:00Z'
+        external_id:
+          description: External ID.
+          type: string
+          example: 6d6bdd2c-9980-4cf1-87ff-456
+        id:
+          description: Bank slip ID.
+          type: string
+          example: 050d8e9b-586e-4419-af13-d7c6be012fb2
+        instructions:
+          $ref: '#/components/schemas/bankslips_issue.IssueInstructions'
+        org_id:
+          description: Organization ID.
+          type: string
+          example: TN-000000000-00000-00000-0000-00000000000000
+        over_due_date:
+          description: >-
+            Last day to accept bank slip payments. After this date, the bank
+            slip is not paid.
+          type: string
+          example: '2024-07-25T00:00:00Z'
+        paid_amount:
+          description: Bank slip paid amount.
+          type: number
+          example: 100
+        pix_emv:
+          description: >-
+            The emv string that is used to pay (Pix Copia e Cola). Can be used
+            to generate the QRCode image representation.
+          type: string
+          example: >-
+            00020101021226980014br.gov.bcb.pix2576qrcode-h.pix.provider.com.br/pixqrcode/v2/cobv/cf8aebf27395133f638ca19870a5ef5204000053039865802BR5916
+        pix_key:
+          description: PIX key related to the bank slip.
+          type: string
+          example: pixkey@pix.com.br
+        provider:
+          description: The name of the provvider that issues the bank slip.
+          type: string
+          example: BTG
+        issuer:
+          description: The name of the provider that issues the bank slip.
+          type: string
+          example: PISMO
+        transaction_id:
+          description: >-
+            Transaction ID related to the bank slip issue. This is the ID that
+            links the bank slip to the specific transaction performed in the
+            payments API. It can be used for tracking, reconciliation, and
+            reference purposes when managing bank slips and their associated
+            transactions.
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440000
+        receiver:
+          $ref: '#/components/schemas/bankslips_issue.IssueReceiver'
+        status:
+          description: status of issued bankslip
+          type: string
+          example: REGISTERED
+        updated_at:
+          description: Date on which the bank slip is updated.
+          type: string
+          example: '2024-07-25T00:00:00Z'
+    bankslips_issue.ListIssueItem:
+      type: object
+      properties:
+        account_id:
+          description: Pismo Platform Account ID.
+          type: integer
+          example: 123
+        client_request_id:
+          description: Client request ID.
+          type: string
+          example: 6d6bdd2c-9980-4cf1-87ff-123
+        correlation_id:
+          description: Correlation ID.
+          type: string
+          example: c537939d-5442-48b6-8b84-66465ba68880
+        created_at:
+          description: Date on which the resource was created.
+          type: string
+          example: '2024-07-24T00:00:00Z'
+        due_date:
+          description: Bank slip due date in ISO 8601 format.
+          type: string
+          example: '2024-07-25T00:00:00Z'
+        external_id:
+          description: External ID.
+          type: string
+          example: 6d6bdd2c-9980-4cf1-87ff-456
+        id:
+          description: Bank slip ID.
+          type: string
+          example: 050d8e9b-586e-4419-af13-d7c6be012fb2
+        org_id:
+          description: Organization ID.
+          type: string
+          example: TN-000000000-00000-00000-0000-00000000000000
+        over_due_date:
+          description: >-
+            Last day to accept bank slip payments. After this date, the bank
+            slip is not paid.
+          type: string
+          example: '2024-07-25T00:00:00Z'
+        provider:
+          description: The name of the provvider that issues the bank slip.
+          type: string
+          example: BTG
+        issuer:
+          description: The name of the provider that issues the bank slip.
+          type: string
+          example: PISMO
+        transaction_id:
+          description: >-
+            Transaction ID related to the bank slip issue. This is the ID that
+            links the bank slip to the specific transaction performed in the
+            payments API. It can be used for tracking, reconciliation, and
+            reference purposes when managing bank slips and their associated
+            transactions.
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440000
+        status:
+          description: status of issued bankslip
+          type: string
+          example: REGISTERED
+        updated_at:
+          description: Date on which the bank slip is updated.
+          type: string
+          example: '2024-07-25T00:00:00Z'
+    bankslips_issue.OffsetPagination:
+      type: object
+      properties:
+        current_page:
+          description: Current page.
+          type: integer
+          example: 1
+        per_page:
+          description: Number per page.
+          type: integer
+          example: 10
+        total_items:
+          description: Total items listed on the page.
+          type: integer
+          example: 100
+        total_pages:
+          description: Total pages.
+          type: integer
+          example: 10
+    bankslips_issue.ListIssueResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/bankslips_issue.ListIssueItem'
+        pagination:
+          $ref: '#/components/schemas/bankslips_issue.OffsetPagination'
+    domain.Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error type code.
+          example: EIP0001
+        details:
+          type: string
+          description: Error details.
+          example: Error details
+        message:
+          type: string
+          description: Error message describing the error.
+          example: error
+    transaction.GetTransactionsItem:
+      type: object
+      properties:
+        account_id:
+          description: Pismo Platform Account ID.
+          type: integer
+        amount:
+          description: number.
+          type: number
+        authorization_id:
+          description: Pismo Platform authorization ID.
+          type: integer
+        created_at:
+          description: Date on which the resource was created.
+          type: string
+        currency_code:
+          type: string
+          description: ISO 4217 currency code. Can be either numeric or alphabetic.
+        external_party:
+          $ref: '#/components/schemas/transaction.Party'
+        internal_party:
+          $ref: '#/components/schemas/transaction.Party'
+        operation:
+          description: Transaction details.
+          type: string
+        status:
+          description: Transaction status.
+          type: string
+    transaction.GetTransactionsResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/transaction.GetTransactionsItem'
+        pagination:
+          $ref: '#/components/schemas/transaction.OffsetPagination'
+    transaction.OffsetPagination:
+      type: object
+      properties:
+        last_evaluated_creation_datetime:
+          description: Last creation date time.
+          type: string
+          format: date-time
+        per_page:
+          description: Number of items returned per page.
+          type: integer
+          example: 10
+        total_items:
+          description: Total number of items in the request based on the filter.
+          type: integer
+          example: 100
+        total_pages:
+          description: Total pages in the request that maches the filter.
+          type: integer
+          example: 10
+    transaction.Party:
+      type: object
+      properties:
+        bank:
+          description: Bank ID.
+          type: string
+        bank_account:
+          description: Bank account.
+          type: string
+        bank_branch:
+          description: Branch name.
+          type: string
+        document_number:
+          description: Document number.
+          type: string
+        name:
+          description: Full name.
+          type: string
+    transfers.Account:
+      required:
+        - identification
+        - type
+      type: object
+      properties:
+        bank:
+          $ref: '#/components/schemas/transfers.Bank'
+        identification:
+          type: string
+          description: >-
+            Account identification. Unique account identifier, for example a
+            bank account number.
+          example: '98765432'
+        type:
+          type: string
+          description: Account type.
+          example: CC
+    transfers.Bank:
+      required:
+        - branch
+        - code
+        - identification
+      type: object
+      properties:
+        branch:
+          type: string
+          description: Bank branch.
+          example: '0011'
+        code:
+          type: string
+          description: Alternative bank identifier, for example, in brazil is COMPE.
+          example: '30306294'
+        identification:
+          type: string
+          description: >-
+            Bank identification. The main bank identifier, for example, in
+            brazil is ISPB.
+          example: '30306294'
+    transfers.Client:
+      required:
+        - identification
+        - name
+        - type
+      type: object
+      properties:
+        account:
+          $ref: '#/components/schemas/transfers.Account'
+        identification:
+          type: string
+          description: Identification. Document number or another unique identifier.
+          example: '12345678900'
+        name:
+          description: Full name.
+          type: string
+          example: John Doe
+        type:
+          type: string
+          description: |
+            Type required by provider; for example: F = Legal person.
+          example: F
+    transfers.TransfersCashInRequest:
+      required:
+        - account_id
+        - amount
+        - external_id
+        - processing_code
+        - provider
+      type: object
+      properties:
+        account_id:
+          type: integer
+          description: Creditor's account.
+          example: 415424
+        amount:
+          type: number
+          description: Dot-seperated transfer amount in decimals.
+          example: 101.11
+        currency_code:
+          type: string
+          description: ISO 4217 currency code. Can be either numeric or alphabetic.
+          example: BRL
+        external_id:
+          type: string
+          description: External ID of the transfer.
+          example: S12345678900
+        processing_code:
+          type: string
+          description: Transfer processing code. Used to identify the type of transfer.
+          example: '876578435'
+        provider:
+          type: string
+          description: Creditor's provider.
+          example: BTG
+        debtor:
+          $ref: '#/components/schemas/transfers.Client'
+    transfers.TransfersCashInResponse:
+      type: object
+      properties:
+        authorization_id:
+          description: Pismo Platform authorization ID.
+          type: integer
+    transfers.TransfersCashOutRequest:
+      required:
+        - account_id
+        - amount
+        - processing_code
+      type: object
+      properties:
+        account_id:
+          description: Pismo Platform client ID.
+          type: integer
+          example: 415424
+        amount:
+          type: number
+          description: Dot-separated transfer amount in decimals.
+          example: 101.11
+        currency_code:
+          type: string
+          description: ISO 4217 currency code. Can be either numeric or alphabetic.
+          example: BRL
+        processing_code:
+          type: string
+          description: Transfer processing code. Used to identify the type of transfer.
+          example: '876578435'
+        creditor:
+          $ref: '#/components/schemas/transfers.Client'
+    transfers.TransfersCashOutResponse:
+      type: object
+      properties:
+        correlation_id:
+          description: Correlation ID.
+          type: string
+        external_id:
+          description: External ID of the provider.
+          type: string
+    ebill.RegistrationResponse:
+      type: object
+      properties:
+        id:
+          description: Registration ID.
+          type: string
+        external_id:
+          description: Provider's external ID.
+          type: string
+        status:
+          description: Registration status.
+          type: string
+    ebill.GetEbillResponse:
+      type: object
+      properties:
+        id:
+          description: Registration ID.
+          type: string
+        client_request_id:
+          description: Client request ID.
+          type: string
+        external_id:
+          description: Provider's external ID.
+          type: string
+        status:
+          description: Registration status.
+          type: string
+        document_number:
+          description: Document number.
+          type: string
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+paths:
+  /v1/bankslips-issue:
+    post:
+      tags:
+        - Bank slip issuance
+      operationId: post-integrated-payments-api-v1-bankslips-issue
+      summary: Issue bank slip
+      description: >
+        Create a bank slip and issue it to the provider. See [Bank
+        slips](doc:bank-slips) for more information.<br>
+
+        This endpoint generates the [Bank slip issuance
+        registered](https://developers.pismo.io/events/docs/integrated-payments-bankslip-issue-register-1)
+        event.
+      parameters:
+        - $ref: '#/components/parameters/idempotencyKeyHeader'
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bankslips_issue.IssueRequest'
+        required: true
+      responses:
+        '202':
+          description: Accepted
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bankslips_issue.IssueResponse'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0010:
+                  summary: Unmarshal error
+                  value:
+                    code: EIP0010
+                    message: Unmarshal error
+                EIP0012:
+                  summary: Account not found
+                  value:
+                    code: EIP0012
+                    message: Account not found
+                EIP0016:
+                  summary: IntlBankAccounts - API Account not found
+                  value:
+                    code: EIP0016
+                    message: IntlBankAccounts - API Account not found
+                EIP0017:
+                  summary: IntlBankAccounts - API returned 4xx error
+                  value:
+                    code: EIP0017
+                    message: IntlBankAccounts - API returned 4xx error
+                EIP0023:
+                  summary: BankingGatewayAPI - API returned 4xx error
+                  value:
+                    code: EIP0023
+                    message: BankingGatewayAPI - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0005:
+                  summary: Missing required header x-tenant
+                  value:
+                    code: EIP0005
+                    message: Missing required header {x-tenant}
+                EIP0006:
+                  summary: Invalid account ID header x-account-id
+                  value:
+                    code: EIP0006
+                    message: Invalid account ID header {x-account-id}
+                EIP0009:
+                  summary: Missing required header x-idempotency-key
+                  value:
+                    code: EIP0005
+                    message: Missing required header {x-idempotency-key}
+                EIP0029:
+                  summary: Account blocked or canceled
+                  value:
+                    code: EIP0029
+                    message: Account blocked or canceled
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0065:
+                  summary: BankingGatewayAPI returned 409 provider error
+                  value:
+                    code: EIP0029
+                    message: BankingGatewayAPI returned 409 provider error
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0015:
+                  summary: IntlBankAccounts - API timeout error
+                  value:
+                    code: EIP0015
+                    message: IntlBankAccounts - API timeout error
+                EIP0014:
+                  summary: Accounts - API returned 5xx error
+                  value:
+                    code: EIP0014
+                    message: Accounts - API returned 5xx error
+                EIP0007:
+                  summary: Internal error
+                  value:
+                    code: EIP0007
+                    message: Internal error
+                EIP0004:
+                  summary: HTTP request error
+                  value:
+                    code: EIP0004
+                    message: HTTP request error
+                EIP0011:
+                  summary: Accounts API timeout error
+                  value:
+                    code: EIP0011
+                    message: Accounts API timeout error
+                EIP0028:
+                  summary: Transaction database error
+                  value:
+                    code: EIP0028
+                    message: Transaction database error
+                EIP0022:
+                  summary: BankingGatewayAPI - API timeout error
+                  value:
+                    code: EIP0022
+                    message: BankingGatewayAPI - API timeout error
+        '502':
+          description: Bad Gateway
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0018:
+                  summary: IntlBankAccounts - API returned 5xx error
+                  value:
+                    code: EIP0018
+                    message: IntlBankAccounts - API returned 5xx error
+                EIP0024:
+                  summary: BankingGatewayAPI - API returned 5xx error
+                  value:
+                    code: EIP0024
+                    message: BankingGatewayAPI - API returned 5xx error
+    get:
+      tags:
+        - Bank slip issuance
+      operationId: get-integrated-payments-api-v1-bankslips-issue
+      summary: List issued bank slips
+      description: Retrieve a list of issued bank slips.
+      parameters:
+        - $ref: '#/components/parameters/perPageQuery'
+        - $ref: '#/components/parameters/pageQuery'
+        - $ref: '#/components/parameters/orderQuery'
+        - $ref: '#/components/parameters/beginDatetimeQuery'
+        - $ref: '#/components/parameters/endDatetimeQuery'
+        - name: status
+          in: query
+          description: Status of issued bank slip.
+          schema:
+            type: string
+          example: REGISTERED
+      responses:
+        '200':
+          description: Response Body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bankslips_issue.ListIssueResponse'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+  /v1/bankslips-issue/client-requests/{clientRequestId}:
+    get:
+      tags:
+        - Bank slip issuance
+      summary: Get issued bank slip
+      description: >-
+        Retrieve a previously issued bank slip from the provider. This endpoint
+        only returns one bank slip at a time.
+      operationId: get-integrated-payments-api-v1-bankslips-issue-retrieve
+      parameters:
+        - $ref: '#/components/parameters/clientRequestIdPath'
+        - $ref: '#/components/parameters/idempotencyKeyHeader'
+      responses:
+        '200':
+          description: Response Body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bankslips_issue.GetIssueResponse'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0072:
+                  summary: Missing required path parameter {client_request_id}
+                  value:
+                    code: EIP0072
+                    message: Missing required path parameter {client_request_id}
+                EIP0010:
+                  summary: Unmarshal error
+                  value:
+                    code: EIP0010
+                    message: Unmarshal error
+                EIP0023:
+                  summary: BankingGatewayAPI - API returned 4xx error
+                  value:
+                    code: EIP0023
+                    message: BankingGatewayAPI - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0005:
+                  summary: Missing required header {x-tenant}
+                  value:
+                    code: EIP0005
+                    message: Missing required header {x-tenant}
+                EIP0006:
+                  summary: Invalid account id header {x-account-id}
+                  value:
+                    code: EIP0006
+                    message: Invalid account id header {x-account-id}
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0073:
+                  summary: Bank slip issue not found
+                  value:
+                    code: EIP0073
+                    message: Bank slip issue not found
+                EIP0062:
+                  summary: BankingGatewayAPI - Register not found in provider
+                  value:
+                    code: EIP0062
+                    message: BankingGatewayAPI - Register not found in provider
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0065:
+                  summary: BankingGatewayAPI - API returned 409 provider error
+                  value:
+                    code: EIP0029
+                    message: BankingGatewayAPI - API returned 409 provider error
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0004:
+                  summary: HTTP request error
+                  value:
+                    code: EIP0004
+                    message: HTTP request error
+                EIP0007:
+                  summary: Internal error
+                  value:
+                    code: EIP0007
+                    message: Internal error
+                EIP0022:
+                  summary: BankingGatewayAPI - API timeout error
+                  value:
+                    code: EIP0022
+                    message: BankingGatewayAPI - API timeout error
+                EIP0074:
+                  summary: Bankslip issue database error
+                  value:
+                    code: EIP0074
+                    message: Bankslip issue database error
+                EIP0070:
+                  summary: BankingGateway API - Failed to unmarshal error response body
+                  value:
+                    code: EIP0070
+                    message: >-
+                      BankingGateway API - Failed to unmarshal error response
+                      body
+        '502':
+          description: Bad Gateway
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0024:
+                  summary: BankingGatewayAPI - API returned 5xx error
+                  value:
+                    code: EIP0024
+                    message: BankingGatewayAPI - API returned 5xx error
+    delete:
+      tags:
+        - Bank slip issuance
+      summary: Delete issued bank slip
+      operationId: delete-integrated-payments-api-v1-bankslips-issue
+      description: >
+        Delete a previously issued bank slip and cancel it for the provider.<br>
+
+        This endpoint produces the [Bank slip issuance
+        canceled](https://developers.pismo.io/events/docs/integrated-payments-bankslip-issue-cancel-1)
+        event.
+      parameters:
+        - $ref: '#/components/parameters/clientRequestIdPath'
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bankslips_issue.DeleteIssueRequest'
+        required: true
+      responses:
+        '204':
+          description: accepted
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content: {}
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0025:
+                  summary: Error unmarshalling request body
+                  value:
+                    code: EIP0025
+                    message: Error unmarshalling request body
+                EIP0010:
+                  summary: Unmarshal error
+                  value:
+                    code: EIP0010
+                    message: Unmarshal error
+                EIP0023:
+                  summary: BankingGatewayAPI - API returned 4xx error
+                  value:
+                    code: EIP0023
+                    message: BankingGatewayAPI - API returned 4xx error
+                EIP0003:
+                  summary: Bad Request
+                  value:
+                    code: EIP0003
+                    message: Bad Request
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0005:
+                  summary: Missing required header {x-tenant}
+                  value:
+                    code: EIP0005
+                    message: Missing required header {x-tenant}
+                EIP0006:
+                  summary: Invalid account id header {x-account-id}
+                  value:
+                    code: EIP0006
+                    message: Invalid account id header {x-account-id}
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0043:
+                  summary: Bank slip not found
+                  value:
+                    code: EIP0043
+                    message: Bank slip not found
+                EIP0062:
+                  summary: BankingGatewayAPI - Register not found in provider
+                  value:
+                    code: EIP0062
+                    message: BankingGatewayAPI - Register not found in provider
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0065:
+                  summary: BankingGatewayAPI - API returned 409 provider error
+                  value:
+                    code: EIP0065
+                    message: BankingGatewayAPI - API returned 409 provider error
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0007:
+                  summary: Internal error
+                  value:
+                    code: EIP0007
+                    message: Internal error
+                EIP0041:
+                  summary: Bank slip database error
+                  value:
+                    code: EIP0041
+                    message: Bank slip database error
+                EIP0004:
+                  summary: HTTP request error
+                  value:
+                    code: EIP0004
+                    message: HTTP request error
+                EIP0022:
+                  summary: BankingGatewayAPI - API timeout error
+                  value:
+                    code: EIP0022
+                    message: BankingGatewayAPI - API timeout error
+                EIP0070:
+                  summary: BankingGateway API - Failed to unmarshal error response body
+                  value:
+                    code: EIP0070
+                    message: >-
+                      BankingGateway API - Failed to unmarshal error response
+                      body
+                EIP0053:
+                  summary: Send integrity message error
+                  value:
+                    code: EIP0053
+                    message: Send integrity message error
+        '502':
+          description: Bad Gateway
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0024:
+                  summary: Bad Gateway
+                  value:
+                    code: EIP0024
+                    message: BankingGatewayAPI - API returned 5xx error
+        '504':
+          description: Gateway Timeout
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0024:
+                  summary: BankingGatewayAPI - API returned 5xx error
+                  value:
+                    code: EIP0024
+                    message: BankingGatewayAPI - API returned 5xx error
+  /v1/bankslips/pay:
+    post:
+      tags:
+        - Bank slip
+      summary: Pay bank slip
+      description: >
+        In Brazil, bank slips, known as *Boleto Bancarios* or simply *Boletos*
+        in Portuguese, are a popular payment method for various services, bills,
+        and purchases. When a payment needs to be made, the recipient (such as a
+        business or service provider) generates a Boleto with the necessary
+        payment details, such as the recipent's information, the payment amount,
+        due date, barcode, and other relevant information.
+
+        Pismo works with [BTG Pactual](https://www.btgpactual.us),
+        [Celcoin](https://celcoin.com.br), and [Itaú](https://www.itau.com.br)
+        to implement Boleto payments. In the future, Pismo may work with
+        additional financial companies.
+
+        This endpoint generates the following events: 
+
+        * [Authorization
+        created](https://developers.pismo.io/events/docs/authorization-authorization-event-1)
+        - This event contains bank slip information (beneficiary name and
+        document number, digitable line, amount, payment date, interest/fine and
+        discount (if any) in the `metadata` field.
+
+        * [Financial bank slip status
+        changed](https://developers.pismo.io/events/docs/integrated-payments-bankslip-status-change-1)
+        - Before clearing, a bank slip's status is `PAID`. After clearing, Pismo
+        changes its status to `SETTLED`.
+
+        * [Integrated payments financial
+        reconciliation](https://developers.pismo.io/events/docs/integrated-payments-financial-reconciliation-1)-
+        This event is generated after the transaction has been cleared and
+        accounts debited or credited. If `x-skip-reconciliation` is `true` or
+        the provider is JD Consultores, this event is not generated.<br>
+
+        See [Bank slips](doc:bank-slips) for more information.<br>
+
+        **Important**: You need to call [Validate bank
+        slip](ref:post-integrated-payments-api-v1-bankslips-validate) before
+        calling this endpoint and pass the `external_authorization` field value
+        if it is returned from that call here. 
+      operationId: post-integrated-payments-api-v1-bankslips-pay
+      parameters:
+        - $ref: '#/components/parameters/authorizationHeader'
+        - $ref: '#/components/parameters/idempotencyKeyHeader'
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bankslips.bankslipsPayRequest'
+        required: true
+      responses:
+        '202':
+          description: Accepted
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bankslips.bankslipsPayResponse'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0005:
+                  summary: Missing header
+                  value:
+                    code: EIP0005
+                    message: Missing required header {x-tenant}
+                EIP0006:
+                  summary: Missing header
+                  value:
+                    code: EIP0006
+                    message: Missing account-id header {x-account-id}
+                EIP0008:
+                  summary: Validation error
+                  value:
+                    code: EIP0008
+                    message: Validation error
+                EIP0010:
+                  summary: Unmarshal error
+                  value:
+                    code: EIP0010
+                    message: Unmarshal error
+                EIP0012:
+                  summary: Account not found
+                  value:
+                    code: EIP0012
+                    message: Account not found
+                EIP0013:
+                  summary: Accounts - API returned 4xx error
+                  value:
+                    code: EIP0013
+                    message: Accounts - API returned 4xx error
+                EIP0017:
+                  summary: IntlBankAccounts - API returned 4xx error
+                  value:
+                    code: EIP0017
+                    message: IntlBankAccounts - API returned 4xx error
+                EIP0023:
+                  summary: Banking gateway API error
+                  value:
+                    code: EPI0023
+                    message: Banking gateway API error - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0005:
+                  summary: Missing header
+                  value:
+                    code: EIP0005
+                    message: Missing required header {x-tenant}
+                EIP0006:
+                  summary: Missing header
+                  value:
+                    code: EIP0006
+                    message: Missing account-id header {x-account-id}
+                EIP0009:
+                  summary: Missing header
+                  value:
+                    code: EIP0009
+                    message: Missing account-id header {x-idempotency-key}
+                EIP0030:
+                  summary: Account ID not found
+                  value:
+                    code: EIP0030
+                    message: Entity's account ID does not match {x-account-id} header
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0065:
+                  summary: Conflict
+                  value:
+                    code: EIP0029
+                    message: BankingGatewayAPI returned 409 provider error
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0004:
+                  summary: HTTP request error
+                  value:
+                    code: EIP0004
+                    message: HTTP request error
+                EIP0007:
+                  summary: Internal error
+                  value:
+                    code: EIP0007
+                    message: Internal error
+                EIP0011:
+                  summary: Accounts API timeout error
+                  value:
+                    code: EIP0011
+                    message: Accounts API timeout error
+                EIP0015:
+                  summary: IntlBankAccounts API timeout error
+                  value:
+                    code: EIP0015
+                    message: IntlBankAccounts API timeout error
+                EIP0019:
+                  summary: P2P API timeout error
+                  value:
+                    code: EIP0015
+                    message: P2p - API timeout error
+                EIP0022:
+                  summary: BankingGatewayAPI API timeout error
+                  value:
+                    code: EIP0022
+                    message: BankingGatewayAPI API timeout error
+                EIP0028:
+                  summary: Transaction database error
+                  value:
+                    code: EIP0028
+                    message: Transacation database error
+                EIP0041:
+                  summary: Bank slip database error
+                  value:
+                    code: EIP0041
+                    message: Bank slip database error
+                EIP0051:
+                  summary: Schedule conciliation error
+                  value:
+                    code: EIP0053
+                    message: Schedule conciliation error
+                EIP0053:
+                  summary: Send integrity message error
+                  value:
+                    code: EIP0053
+                    message: Send integrity message error
+                EIP0069:
+                  summary: P2P API - Failure to unmarshal error
+                  value:
+                    code: EIP0069
+                    message: P2P API - Failed to unmarshal error response body
+        '502':
+          description: Bad Gateway
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0024:
+                  summary: Bad Gateway
+                  value:
+                    code: EIP0024
+                    message: BankingGatewayAPI - API returned 5xx error
+        '504':
+          description: Gateway Timeout
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0002:
+                  summary: Gateway Timeout
+                  value:
+                    code: EIP0002
+                    message: API request timeout
+  /v1/bankslips/validate:
+    post:
+      tags:
+        - Bank slip
+      summary: Validate bank slip
+      description: >
+        Validate bank slip with provider partner.<br>
+
+        You need to call this endpoint before calling [Pay bank
+        slip](ref:post-integrated-payments-api-v1-bankslips-pay). If this
+        endpoint returns an `external_authorization` field value, you must pass
+        it in the Pay bank slip call.<br>
+
+        For this endpoint, either `bar_code` or `digitable_line` **must** be
+        passed.
+      operationId: post-integrated-payments-api-v1-bankslips-validate
+      parameters:
+        - $ref: '#/components/parameters/authorizationHeader'
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bankslips.bankslipsValidateRequest'
+        required: true
+      responses:
+        '200':
+          description: Response Body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bankslips.bankslipsValidateResponse'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0008:
+                  summary: Validation error
+                  value:
+                    code: EIP0008
+                    message: Validation error
+                EIP0010:
+                  summary: Unmarshal error
+                  value:
+                    code: EIP0010
+                    message: Unmarshal error
+                EIP0023:
+                  summary: Banking gateway API error
+                  value:
+                    code: EPI0023
+                    message: Banking gateway API error - API returned 4xx error
+        '403':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0005:
+                  summary: Missing header
+                  value:
+                    code: EIP0005
+                    message: Missing required header {x-tenant}
+                EIP0006:
+                  summary: Missing header
+                  value:
+                    code: EIP0006
+                    message: Missing account-id header {x-account-id}
+        '409':
+          description: Conversion failure
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0049:
+                  summary: Convert barcode to digitable line failure
+                  value:
+                    code: EIP0029
+                    message: Convert barcode to digitable line failed
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0004:
+                  summary: HTTP request error
+                  value:
+                    code: EIP0004
+                    message: HTTP request error
+                EIP0007:
+                  summary: Internal error
+                  value:
+                    code: EIP0007
+                    message: Internal error
+                EIP0022:
+                  summary: BankingGatewayAPI API timeout error
+                  value:
+                    code: EIP0022
+                    message: BankingGatewayAPI API timeout error
+                EIP0024:
+                  summary: BankingGatewayAPI - API returned error 5xx error
+                  value:
+                    code: EIP0024
+                    message: BankingGatewayAPI - API returned error 5xx error
+  /v1/bankslips/receipts:
+    get:
+      tags:
+        - Bank slip
+      summary: List bank slip receipt
+      description: Retrieve bank slip payment receipts with filtering options.
+      operationId: get-integrated-payments-api-v1-bankslips-receipts
+      parameters:
+        - $ref: '#/components/parameters/lastEvaluatedPaymentDatetimeQuery'
+        - $ref: '#/components/parameters/authorizationIdQuery'
+        - $ref: '#/components/parameters/perPageQuery'
+        - $ref: '#/components/parameters/orderQuery'
+        - $ref: '#/components/parameters/beginDatetimeQuery'
+        - $ref: '#/components/parameters/endDatetimeQuery'
+      responses:
+        '200':
+          description: Success
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bankslips.GetbankslipsReceiptsResponse'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0010:
+                  summary: Unmarshal error
+                  value:
+                    code: EIP0010
+                    message: Unmarshal error
+                EIP0012:
+                  summary: Account not found
+                  value:
+                    code: EIP0012
+                    message: Account not found
+                EIP0013:
+                  summary: Accounts - API returned 4xx error
+                  value:
+                    code: EIP0013
+                    message: Accounts - API returned 4xx error
+                EIP0045:
+                  summary: Invalid query param
+                  value:
+                    code: EIP0045
+                    message: Invalid value for query param {value}
+                EIP0046:
+                  summary: Invalid datetime query param
+                  value:
+                    code: EIP0046
+                    message: >-
+                      Invalid value for datetime query parameter. RFC3339 format
+                      must be used
+                EIP0047:
+                  summary: Invalid query param
+                  value:
+                    code: EIP0047
+                    message: Invalid value for query param {value}
+        '403':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0005:
+                  summary: Missing header
+                  value:
+                    code: EIP0005
+                    message: Missing required header {x-tenant}
+                EIP0006:
+                  summary: Missing header
+                  value:
+                    code: EIP0006
+                    message: Missing account-id header {x-account-id}
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0004:
+                  summary: HTTP request error
+                  value:
+                    code: EIP0004
+                    message: HTTP request error
+                EIP0011:
+                  summary: Accounts API timeout error
+                  value:
+                    code: EIP0011
+                    message: Accounts API timeout error
+                EIP0041:
+                  summary: Bank slip database error
+                  value:
+                    code: EIP0041
+                    message: Bank slip database error
+  /v1/transfers/cashout:
+    post:
+      tags:
+        - Transfer
+      summary: Perform cash-out
+      description: >
+        Perform an external transfer, using a provider to process the outgoing
+        account resources.
+
+        This endpoint generates the following events:
+
+        * [Transfer-out
+        created](https://developers.pismo.io/events/docs/integrated-payments-transfer-out-created-1)
+        - Cash-out event.
+
+        * [Financial transaction status
+        updated](https://developers.pismo.io/events/docs/integrated-payments-transaction-status-change-1)
+        - Cash out status change. Status becomes `SETTLED` after clearing and
+        accounts have been credited and debited.
+
+        * [Integrated payments financial
+        reconciliation](https://developers.pismo.io/events/docs/integrated-payments-financial-reconciliation-1)-
+        This event is generated after the transaction has been cleared and
+        accounts debited or credited.
+      operationId: post-integrated-payments-api-v1-bankslips-cashout
+      parameters:
+        - $ref: '#/components/parameters/authorizationHeader'
+        - $ref: '#/components/parameters/idempotencyKeyHeader'
+        - $ref: '#/components/parameters/skipReconciliationHeader'
+        - $ref: '#/components/parameters/xSignatureHeader'
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/transfers.TransfersCashOutRequest'
+        required: true
+      responses:
+        '202':
+          description: Response Body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/transfers.TransfersCashOutResponse'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0003:
+                  summary: Bad Request
+                  value:
+                    code: EIP0003
+                    message: Bad Request
+                EIP0008:
+                  summary: Validation error
+                  value:
+                    code: EIP0008
+                    message: Validation error
+                EIP0010:
+                  summary: Unmarshal error
+                  value:
+                    code: EIP0010
+                    message: Unmarshal error
+                EIP0012:
+                  summary: Account not found
+                  value:
+                    code: EIP0012
+                    message: Account not found
+                EIP0013:
+                  summary: Accounts - API returned 4xx error
+                  value:
+                    code: EIP0013
+                    message: Accounts - API returned 4xx error
+                EIP0016:
+                  summary: Account not found
+                  value:
+                    code: EIP0016
+                    message: IntlBankAccounts - API Account not found
+                EIP0017:
+                  summary: IntlBankAccounts - API returned 4xx error
+                  value:
+                    code: EIP0017
+                    message: IntlBankAccounts - API returned 4xx error
+                EIP0020:
+                  summary: P2p - API returned 4xx error
+                  value:
+                    code: EIP0020
+                    message: P2p - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0005:
+                  summary: Missing tenant header
+                  value:
+                    code: EIP0005
+                    message: Missing required header {x-tenant}
+                EIP0006:
+                  summary: Invalid account header
+                  value:
+                    code: EIP0006
+                    message: Invalid account id header {x-account-id}
+                EIP0009:
+                  summary: Missing idempotency header
+                  value:
+                    code: EIP0009
+                    message: Missing required header {x-idempotency-key}
+                EIP0030:
+                  summary: Entity's account id does not match x-account-id header
+                  value:
+                    code: EIP0030
+                    message: Entity's account id does not match {x-account-id} header
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0029:
+                  summary: Account blocked or cancelled
+                  value:
+                    code: EIP0029
+                    message: Account blocked or cancelled
+                EIP0031:
+                  summary: Idempotency header already exists
+                  value:
+                    code: EIP0031
+                    message: '{x-idempotency-key} already exists'
+                EIP0065:
+                  summary: BankingGatewayAPI Provider Error
+                  value:
+                    code: EIP0065
+                    message: BankingGatewayAPI - API returned 409 provider error
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0004:
+                  summary: HTTP request error
+                  value:
+                    code: EIP0004
+                    message: HTTP request error
+                EIP0007:
+                  summary: Internal error
+                  value:
+                    code: EIP0007
+                    message: Internal error
+                EIP0011:
+                  summary: Accounts API timeout error
+                  value:
+                    code: EIP0011
+                    message: Accounts API timeout error
+                EIP0015:
+                  summary: IntlBankAccounts API timeout error
+                  value:
+                    code: EIP0015
+                    message: IntlBankAccounts API timeout error
+                EIP0022:
+                  summary: BankingGatewayAPI API timeout error
+                  value:
+                    code: EIP0022
+                    message: BankingGatewayAPI API timeout error
+  /v1/transfers:
+    get:
+      tags:
+        - Transfer
+      summary: List transfer
+      description: Retrieve transfers list.
+      operationId: get-integrated-payments-api-v1-transfers
+      parameters:
+        - $ref: '#/components/parameters/lastEvaluatedCreationDatetime'
+        - $ref: '#/components/parameters/authorizationIdQuery'
+        - $ref: '#/components/parameters/perPageQuery'
+        - $ref: '#/components/parameters/orderQuery'
+        - $ref: '#/components/parameters/beginDatetimeQuery'
+        - $ref: '#/components/parameters/endDatetimeQuery'
+      responses:
+        '200':
+          description: Response Body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/transaction.GetTransactionsResponse'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+  /v1/ebill-registration/accounts/{accountId}:
+    post:
+      tags:
+        - eBill registration
+      summary: Register eBill
+      description: >
+        Register eBill for an account.<br>
+
+        eBill offers an electronic view of bank slips linked to your document
+        number, simplifying daily use without paper documents. You can pay slips
+        via internet banking or a banking app, minimizing barcode errors, and
+        track all accounts under your document number. For more details, refer
+        to the [eBill](doc:banking-overview#ebill) section in the *Banking
+        overview* guide.<br>
+
+        This endpoint generates an [eBill registration status
+        updated](https://developers.pismo.io/events/docs/integrated-payments-ebill-status-change-1)
+        event.
+      operationId: post-integrated-payments-api-v1-ebill-registration-accounts-accountId
+      parameters:
+        - $ref: '#/components/parameters/accountIdPath'
+        - $ref: '#/components/parameters/idempotencyKeyHeader'
+      responses:
+        '201':
+          description: Response Body
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ebill.RegistrationResponse'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0005:
+                  summary: Missing required header {x-tenant}
+                  value:
+                    code: EIP0005
+                    message: Missing required header {x-tenant}
+                EIP0006:
+                  summary: Missing required header {x-account-id}
+                  value:
+                    code: EIP0006
+                    message: Missing required header {x-account-id}
+                EIP0008:
+                  summary: Validation error
+                  value:
+                    code: EIP0008
+                    message: Validation error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0005:
+                  summary: Missing required header {x-tenant}
+                  value:
+                    code: EIP0005
+                    message: Missing required header {x-tenant}
+                EIP0006:
+                  summary: Invalid account id header {x-account-id}
+                  value:
+                    code: EIP0006
+                    message: Invalid account id header {x-account-id}
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0065:
+                  summary: BankingGatewayAPI - API returned 409 provider error
+                  value:
+                    code: EIP0029
+                    message: BankingGatewayAPI - API returned 409 provider error
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0004:
+                  summary: HTTP request error
+                  value:
+                    code: EIP0004
+                    message: HTTP request error
+                EIP0007:
+                  summary: Internal error
+                  value:
+                    code: EIP0007
+                    message: Internal error
+                EIP0022:
+                  summary: BankingGatewayAPI - API timeout error
+                  value:
+                    code: EIP0022
+                    message: BankingGatewayAPI - API timeout error
+        '502':
+          description: Bad Gateway
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0024:
+                  summary: BankingGatewayAPI - API returned 5xx error
+                  value:
+                    code: EIP0024
+                    message: BankingGatewayAPI - API returned 5xx error
+    get:
+      tags:
+        - eBill registration
+      summary: Get eBill registration
+      description: Retrieve eBill registration information.
+      operationId: get-integrated-payments-api-v1-ebill-registration-accounts-accountId
+      parameters:
+        - $ref: '#/components/parameters/accountIdPath'
+        - $ref: '#/components/parameters/idempotencyKeyHeader'
+      responses:
+        '200':
+          description: Response Body
+          headers:
+            x-cid:
+              description: Request tracking identifier.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ebill.GetEbillResponse'
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0072:
+                  summary: Missing required path parameter {client_request_id}
+                  value:
+                    code: EIP0072
+                    message: Missing required path parameter {client_request_id}
+                EIP0010:
+                  summary: Unmarshal error
+                  value:
+                    code: EIP0010
+                    message: Unmarshal error
+                EIP0023:
+                  summary: BankingGatewayAPI - API returned 4xx error
+                  value:
+                    code: EIP0023
+                    message: BankingGatewayAPI - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0005:
+                  summary: Missing required header {x-tenant}
+                  value:
+                    code: EIP0005
+                    message: Missing required header {x-tenant}
+                EIP0006:
+                  summary: Invalid account id header {x-account-id}
+                  value:
+                    code: EIP0006
+                    message: Invalid account id header {x-account-id}
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0073:
+                  summary: eBill registration not found
+                  value:
+                    code: EIP0073
+                    message: eBill registration not found
+                EIP0062:
+                  summary: BankingGatewayAPI - Register not found in provider
+                  value:
+                    code: EIP0062
+                    message: BankingGatewayAPI - Register not found in provider
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0065:
+                  summary: BankingGatewayAPI - API returned 409 provider error
+                  value:
+                    code: EIP0029
+                    message: BankingGatewayAPI - API returned 409 provider error
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0004:
+                  summary: HTTP request error
+                  value:
+                    code: EIP0004
+                    message: HTTP request error
+                EIP0007:
+                  summary: Internal error
+                  value:
+                    code: EIP0007
+                    message: Internal error
+                EIP0022:
+                  summary: BankingGatewayAPI - API timeout error
+                  value:
+                    code: EIP0022
+                    message: BankingGatewayAPI - API timeout error
+                EIP0074:
+                  summary: eBill registration database error
+                  value:
+                    code: EIP0074
+                    message: eBill registration database error
+                EIP0070:
+                  summary: BankingGateway API - Failed to unmarshal error response body
+                  value:
+                    code: EIP0070
+                    message: >-
+                      BankingGateway API - Failed to unmarshal error response
+                      body
+        '502':
+          description: Bad Gateway
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0024:
+                  summary: BankingGatewayAPI - API returned 5xx error
+                  value:
+                    code: EIP0024
+                    message: BankingGatewayAPI - API returned 5xx error
+    delete:
+      tags:
+        - eBill registration
+      summary: Delete eBill registration
+      description: >
+        Delete eBill registration.<br>
+
+        This endpoint produces an [eBill registration status
+        updated](https://developers.pismo.io/events/docs/integrated-payments-ebill-status-change-1)
+        event.
+      operationId: delete-integrated-payments-api-v1-ebill-registration-accounts-accountId
+      parameters:
+        - $ref: '#/components/parameters/accountIdPath'
+        - $ref: '#/components/parameters/idempotencyKeyHeader'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+        '400':
+          description: Bad Request
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0072:
+                  summary: Missing required path parameter {client_request_id}
+                  value:
+                    code: EIP0072
+                    message: Missing required path parameter {client_request_id}
+                EIP0010:
+                  summary: Unmarshal error
+                  value:
+                    code: EIP0010
+                    message: Unmarshal error
+                EIP0023:
+                  summary: BankingGatewayAPI - API returned 4xx error
+                  value:
+                    code: EIP0023
+                    message: BankingGatewayAPI - API returned 4xx error
+        '403':
+          description: Forbidden
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0005:
+                  summary: Missing required header {x-tenant}
+                  value:
+                    code: EIP0005
+                    message: Missing required header {x-tenant}
+                EIP0006:
+                  summary: Invalid account id header {x-account-id}
+                  value:
+                    code: EIP0006
+                    message: Invalid account id header {x-account-id}
+        '404':
+          description: Not Found
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0073:
+                  summary: eBill registration not found
+                  value:
+                    code: EIP0073
+                    message: eBill registration not found
+                EIP0062:
+                  summary: BankingGatewayAPI - Register not found in provider
+                  value:
+                    code: EIP0062
+                    message: BankingGatewayAPI - Register not found in provider
+        '409':
+          description: Conflict
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0065:
+                  summary: BankingGatewayAPI - API returned 409 provider error
+                  value:
+                    code: EIP0029
+                    message: BankingGatewayAPI - API returned 409 provider error
+        '500':
+          description: Internal Server Error
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0004:
+                  summary: HTTP request error
+                  value:
+                    code: EIP0004
+                    message: HTTP request error
+                EIP0007:
+                  summary: Internal error
+                  value:
+                    code: EIP0007
+                    message: Internal error
+                EIP0022:
+                  summary: BankingGatewayAPI - API timeout error
+                  value:
+                    code: EIP0022
+                    message: BankingGatewayAPI - API timeout error
+                EIP0074:
+                  summary: eBill registration database error
+                  value:
+                    code: EIP0074
+                    message: eBill registration database error
+                EIP0070:
+                  summary: BankingGateway API - Failed to unmarshal error response body
+                  value:
+                    code: EIP0070
+                    message: >-
+                      BankingGateway API - Failed to unmarshal error response
+                      body
+        '502':
+          description: Bad Gateway
+          headers:
+            x-cid:
+              description: Request tracking ID.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/domain.Error'
+              examples:
+                EIP0024:
+                  summary: BankingGatewayAPI - API returned 5xx error
+                  value:
+                    code: EIP0024
+                    message: BankingGatewayAPI - API returned 5xx error

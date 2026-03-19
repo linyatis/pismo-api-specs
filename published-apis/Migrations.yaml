@@ -1,0 +1,4705 @@
+openapi: 3.1.0
+info:
+  title: Migrations
+  version: 0.0.7
+  description: >
+    Use this service to migrate **entities** (including accounts, customer data,
+    card data, and transaction history) from an external system to the Pismo
+    platform.
+
+
+    For more information, refer to [Migrations
+    overview](doc:migrations-overview).
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://gw-pci.pismolabs.io/migrations
+    description: EXT API server for testing
+  - url: https://sandbox.pismolabs.io/migrations
+    description: Sandbox API server for testing
+security:
+  - bearerAuth: []
+tags:
+  - name: Account migration
+    description: Account migration
+  - name: Accrual migration
+    description: Accrual migration
+  - name: Authorization migration
+    description: Authorization migration
+  - name: Balance migration
+    description: Balance migration
+  - name: Card migration
+    description: Card migration
+  - name: Customer migration
+    description: Customer migration
+  - name: Dispute migration
+    description: Dispute migration
+  - name: Delinquency bucket migration
+    description: Delinquency bucket migration
+  - name: Fee model migration
+    description: Fee model migration
+  - name: Merchant migration
+    description: Merchant migration
+  - name: Merchant transaction migration
+    description: Merchant transaction migration
+  - name: On-us authorization migration
+    description: On-us authorization migration
+  - name: Statement migration
+    description: Statement migration
+  - name: Token migration
+    description: Token migration
+  - name: Transaction migration
+    description: Transaction migration
+  - name: Recurring charge plan migration
+    description: Recurring charge plan migration
+  - name: Recurring charge link migration
+    description: Recurring charge link migration
+components:
+  parameters:
+    auth:
+      name: Authorization
+      in: header
+      schema:
+        type: string
+      required: true
+      description: >
+        JSON Web Token (JWT). Tokens expire quickly, which can result in an
+        **Unauthorized** message.
+      example: >-
+        eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEyMywiaWF0IjoxNjA1MjI3NjAwfQ.s7E6zJX6Z3fN3xg6Yx6dKXlPi1JX4-3zQ7yA7sD1F8E
+  schemas:
+    PostDisputeV1Request:
+      description: Dispute migration payload
+      title: Dispute migration
+      type: object
+      required:
+        - migration
+      properties:
+        migration:
+          type: object
+          required:
+            - id
+            - version_date
+          properties:
+            id:
+              type: string
+              pattern: ^[a-zA-Z0-9-._]+$
+              maxLength: 255
+              description: Record ID for migration purposes.
+              example: 5a8ade4e-e89a-11eb-9dd1-4b56d86f7a21
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+            authorization_id:
+              type: string
+              pattern: ^[a-zA-Z0-9-._]+$
+              maxLength: 255
+              description: >-
+                Migration ID of the authorization this dispute is associated
+                with, if applicable.
+            card_id:
+              type: string
+              pattern: ^[a-zA-Z0-9-._]+$
+              maxLength: 255
+              description: >-
+                Migration ID of the card this dispute is associated with, if
+                applicable. This field is **required** when an
+                `authorization_id` is not provided.
+        modality:
+          type: integer
+          description: Reason code for the dispute, as defined by the card network.
+          example: 30
+        comment:
+          type: string
+          maxLength: 5000
+          description: >-
+            Client custom dispute comment (used to explain why a dispute is
+            partial, for example).
+          example: Custom comment
+        disputed_amount:
+          type: number
+          minimum: 0
+          description: Amount being disputed.
+          example: 50.42
+        network_brand_type:
+          type: string
+          description: Network brand where the transaction under dispute occurred.
+          maxLength: 255
+          example: Elo
+        is_partial:
+          type: boolean
+          description: Is this a partial dispute?
+          example: true
+        airport_tax:
+          type: boolean
+          description: Is this dispute related to an airport tax?
+          example: true
+        airport_tax_partial:
+          type: boolean
+          description: Should the airport tax be partially disputed?
+          example: true
+        airport_tax_amount:
+          type: number
+          minimum: 0
+          description: Airport tax amount being disputed.
+          example: 30
+        arn:
+          type: string
+          pattern: ^[a-zA-Z0-9-._]+$
+          description: Acquirer reference number.
+          maxLength: 255
+          example: '123456'
+        transaction_date:
+          type: string
+          format: date
+          description: >-
+            Date of the transaction this dispute is associated with.
+            **Required** when `authorization_id` is not provided.
+          example: '2024-09-08'
+        transaction_amount:
+          type: number
+          minimum: 0
+          description: >-
+            Amount of the transaction this dispute is associated with.
+            **Required** when `authorization_id` is not provided.
+          example: 40
+        authorization_code:
+          type: string
+          description: >-
+            Authorization code of of the transaction this dispute is associated
+            with. **Required** when `authorization_id` is not provided.
+          example: '123455'
+        status:
+          type: string
+          description: >-
+            Status of the dispute being migrated. For a glossary of valid
+            statuses, refer to [Migration statuses and
+            events](doc:disputes-state-machine#migration-statuses-and-events).
+          example: SECOND_PRESENTMENT
+        installment_number:
+          type: integer
+          minimum: 1
+          description: >-
+            Number of the installment the dispute is associated to. **Required**
+            when the dispute is related to an installment transaction.
+          example: 1
+        installment_disputed_amount:
+          type: number
+          minimum: 0
+          description: >-
+            Installment amount being disputed. **Required** when the dispute is
+            related to an installment transaction.
+        pre_arb_is_partial:
+          type: boolean
+          description: >-
+            Is the pre-arbitration amount for a partial amount dispute,
+            represented by `pre_arb_amount`? If empty, disputes are created as
+            full amount, same as `false`.
+          example: true
+        pre_arb_amount:
+          type: number
+          minimum: 0
+          description: >-
+            Pre-arbitration amount being disputed. **Required** when
+            `pre_arb_is_partial = true`.
+          example: 30
+    FeeModelAccountV1Request:
+      title: Account fee model migration
+      type: object
+      required:
+        - migration
+        - fee_model_id
+      properties:
+        migration:
+          type: object
+          description: Migration information for the account fee model being migrated
+          required:
+            - id
+            - account_ids
+          properties:
+            id:
+              type: string
+              pattern: ^[a-zA-Z0-9-._]+$
+              maxLength: 255
+              description: Record ID for migration purposes.
+              example: a-unique-migration-id
+            account_ids:
+              type: array
+              description: >-
+                List of migration IDs for the accounts to which the fee model is
+                attached (should be the same migration IDs used on account
+                migration).
+              minItems: 1
+              maxItems: 512
+              items:
+                type: string
+                pattern: ^[a-zA-Z0-9-._]+$
+                maxLength: 255
+                example: a-unique-account-id
+        fee_model_id:
+          type: string
+          format: uuid
+          description: Fee model ID
+          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+    PostPreGoLiveV1Request:
+      title: Pre Go-Live
+      type: object
+      required:
+        - migration
+        - go_live_date
+      properties:
+        migration:
+          type: object
+          description: >-
+            Migration data that specifies which accounts should undergo Pre
+            Go-live
+          required:
+            - phase_id
+          properties:
+            phase_id:
+              type: string
+              description: >
+                Migration phase ID. The pre go-live process is triggered for
+                every account with the specified phase ID.
+              maxLength: 60
+              example: Feb2025_Phase_3_of_4
+        go_live_date:
+          type: string
+          format: date
+          description: >
+            Expected Go-live date for the accounts undergoing Pre Go-live. The
+            Pre Go-live process uses this value to determine which statements to
+            use during account balance validations.
+    PostRecurringChargePlansV1Request:
+      title: Recurring charge plan migrations
+      type: object
+      required:
+        - migration
+      properties:
+        origin:
+          type: string
+          description: Migration origin
+          enum:
+            - FILE
+            - API
+          example: FILE
+        migration:
+          type: object
+          description: Additional migration details
+          required:
+            - id
+            - version_date
+          properties:
+            id:
+              type: string
+              description: Unique migration ID
+              maxLength: 255
+              example: a-unique-plan-id
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+        number_of_cycles:
+          type: integer
+          description: Number of cycles the plan should generate charges for.
+          example: 12
+        split_transaction:
+          type: boolean
+          description: >-
+            Apply the Recurring Charge amount in a split transaction? When
+            false, split the amount into separate transactions with the full
+            `installment_amount` ("primary transaction") and the discount value
+            ("secondary transaction").
+          example: true
+        description:
+          type: string
+          description: >-
+            Description for the recurring charge transactions. If
+            `split_transaction` is set to `true`, this is used as the
+            description for the primary transaction. Use the placeholder
+            `{counter}` to indicate where the cycle count should be placed (for
+            example, `{counter} Annuity` generates a `2/12 Annuity` description
+            for the second of 12 installments).
+          example: Additional Card Annuity {counter}
+        processing_code:
+          type: string
+          description: >-
+            Processing code for recurring charge transactions. If
+            `split_transaction` is set to `true`, this is used as the processing
+            code for the primary transaction.
+          example: '220042'
+        installment_amount:
+          type: number
+          description: >-
+            Full amount of a recurring charge installment before any discount is
+            applied
+          example: 500.61
+        first_cycles_to_discount:
+          type: integer
+          description: >-
+            Number of cycles the discount (defined by `discount_percentage`)
+            should be applied to before reverting to the full charge. This value
+            should be between `0` and `number_of_cycles`, if present.
+          example: 3
+        discount_percentage:
+          type: number
+          description: >-
+            Percentage value to be discounted if `first_cycles_to_discount` is
+            configured.
+          example: 12.5
+        minimum_spend_to_charge:
+          type: number
+          description: Minimum debit amount on statement to enable cycle charging.
+          example: 100
+        renew_method:
+          type: string
+          description: >-
+            Whether to automatically renew the recurring charge plan at the end
+            of the cycle.
+          enum:
+            - NO_RENEW
+            - WITHOUT_DISCOUNT
+            - WITH_DISCOUNT
+          example: NO_RENEW
+        secondary_description:
+          type: string
+          description: >-
+            Description for the secondary transaction, when `split_transaction`
+            is set to `true`.
+          example: Annual Plan Discount
+        secondary_processing_code:
+          type: string
+          description: >-
+            Processing code used to create the secondary transaction, when
+            `split_transaction` is set to `true`.
+          example: '200032'
+    PostRecurringChargeLinksV1Request:
+      title: Recurring charge link migrations
+      type: object
+      required:
+        - migration
+        - links
+      properties:
+        migration:
+          type: object
+          description: Additional migration details
+          required:
+            - account_id
+          properties:
+            account_id:
+              description: >-
+                Migration ID for the account that will be linked to the
+                recurring charge plans
+              type: string
+              example: a-migration-account-id
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostRecurringChargePlanLinkV1Item'
+          minItems: 1
+        origin:
+          type: string
+          description: Migration origin
+          enum:
+            - FILE
+            - API
+          example: FILE
+    PostRecurringChargePlanLinkV1Item:
+      title: Recurring charge plan link migrations
+      type: object
+      required:
+        - migration_id
+        - migration_version
+      properties:
+        migration_id:
+          type: string
+          description: Record identifier for migration.
+          example: a-unique-migration-id
+        migration_version:
+          type: string
+          format: datetime
+          description: >-
+            Record identifier for update data. Valid format
+            (`yyyy-MM-ddTHH:mm:ss.sssZ`).
+          example: '2021-09-13T19:54:41Z'
+        recurring_charge_plan_id:
+          type: integer
+          description: >-
+            ID of the recurring charge plan to link to the account. When this
+            field is defined, the value in `recurring_charge_plan_migration_id`
+            is ignored.
+          example: 123321
+        recurring_charge_plan_migration_id:
+          type: string
+          description: >-
+            Migration ID of the recurring charge plan to link to the account, in
+            cases where the plan was also migrated. Either this field or
+            `recurring_charge_plan_id` should be provided.
+          example: a-unique-plan-id
+        description:
+          type: string
+          description: >-
+            Description for the recurring charge transactions. If set, this
+            overrides the `description` defined in the recurring charge plan
+          example: Account-Specific Annuity Fee
+        post_installment_charge_on_current_cycle:
+          type: boolean
+          description: >-
+            Apply the recurring charge on the current account cycle? When false,
+            apply charge in the next account cycle.
+          example: false
+        start_installment_charge_in:
+          type: integer
+          description: >-
+            Indicates in which installment to start applying the charge. It
+            should be greater than the current account cycle, and smaller than
+            the `number_of_cycles` defined in the plan.
+          example: 6
+        renew:
+          type: boolean
+          description: Renew link automatically after the last cycle?
+          default: false
+          example: true
+    AccountsV2Request:
+      title: Account migrations (v2)
+      required:
+        - applicant
+        - migration
+      type: object
+      properties:
+        due_date_id:
+          type: integer
+          description: >-
+            ID of account due date. **REQUIRED** for credit accounts. Uses a
+            value returned from the [Get program due
+            dates](ref:getprogramduedates) endpoint.
+          example: 101010
+        program_id:
+          type: integer
+          description: >-
+            Account's program ID. Must be a program ID previously configured on
+            the Pismo platform.
+          example: 1234
+        applicant:
+          type: object
+          description: >
+            Applicant details. At least one of the following objects are
+            **REQUIRED**: `personal` (for personal accounts) or `company` (for
+            business accounts). Pass one or the other but not both.
+          required:
+            - document_number
+          properties:
+            document_number:
+              type: string
+              description: Document number
+              maxLength: 60
+              example: '111111111'
+            birth_date:
+              type: string
+              format: date
+              description: >-
+                Applicant date of birth. Required for personal accounts. For a
+                company, this could be the company incorporation date. Format =
+                YYYY-MM-DD.
+              example: '1975-01-15'
+            personal:
+              $ref: '#/components/schemas/AccountsV2Personal'
+            addresses:
+              type: array
+              description: Applicant addresses
+              items:
+                $ref: '#/components/schemas/AccountsV2Address'
+            phones:
+              type: array
+              description: Applicant telephone
+              items:
+                $ref: '#/components/schemas/AccountsV2Phone'
+            company:
+              $ref: '#/components/schemas/AccountsV2Company'
+            account:
+              $ref: '#/components/schemas/AccountsV2Account'
+            migration:
+              $ref: '#/components/schemas/AccountsV2Migration'
+        metadata:
+          type: object
+          description: Account metadata
+          example:
+            key1: value1
+            key2: value2
+    AccountsV2Personal:
+      type: object
+      description: >-
+        Applicant personal information. Either this or the `company` object is
+        **REQUIRED**. Pass one or the other but not both.
+      required:
+        - name
+      properties:
+        external_id:
+          type: string
+          description: Record ID from an external system
+          maxLength: 60
+          example: 3829df2a-e7e2-11eb-aafd-1bb0c073f513
+        name:
+          type: string
+          description: Applicant name
+          maxLength: 60
+          example: João Silva
+        email:
+          type: string
+          description: Applicant email
+          maxLength: 60
+          example: joao.silva@pismo.com
+        gender:
+          type: string
+          description: Applicant gender
+          enum:
+            - M
+            - F
+          example: M
+        printed_name:
+          type: string
+          maxLength: 25
+          description: >-
+            Applicant name to be printed on a card (2 characters minimum, 25
+            characters max). Use only letters (a-z|A-Z) and space, as specified
+            in the ISO EMV tag 5F20 for cardholder name. No letters with
+            accents, numbers, or special characters.
+          example: Joao Silva
+        nickname:
+          type: string
+          description: Applicant nickname
+          maxLength: 60
+          example: João
+        social_name:
+          type: string
+          description: Applicant social name
+          maxLength: 60
+          example: João
+        country_of_birth:
+          type: string
+          description: Applicant country of birth
+          maxLength: 60
+          example: Brazil
+        state_of_birth:
+          type: string
+          description: Applicant state of birth
+          maxLength: 60
+          example: SP
+        city_of_birth:
+          type: string
+          description: Applicant city of birth
+          maxLength: 60
+          example: Osasco
+        registration:
+          type: object
+          description: Applicant document details
+          properties:
+            number:
+              type: string
+              description: Document's number
+              maxLength: 30
+              example: '111111111'
+            issuer:
+              type: string
+              description: Document's issuer
+              maxLength: 30
+              example: Any
+            issuing_state:
+              type: string
+              description: >-
+                Document's issuing state, using the ISO 3166-2 (2 letter)
+                standard for states and country sub-divisions
+              maxLength: 2
+              example: SP
+            issuing_date:
+              type: string
+              description: Document's issue date
+              format: date
+              example: '2021-07-01'
+        education_degree:
+          type: string
+          description: Applicant highest education degree
+          maxLength: 60
+          example: Bachelor's Degree
+        marital_status:
+          type: string
+          description: Applicant marital status
+          enum:
+            - SINGLE
+            - MARRIED
+            - DIVORCED
+            - WIDOWER
+          example: SINGLE
+        fathers_name:
+          type: string
+          description: Applicant father's name
+          maxLength: 60
+          example: Carlos
+        mothers_name:
+          type: string
+          description: Applicant mother's name
+          maxLength: 60
+          example: Fátima
+        nationality:
+          type: string
+          description: Applicant nationality
+          maxLength: 60
+          example: Brazilian
+        other_id_number:
+          type: string
+          description: Additional document number
+          example: 14564543-32
+        document_type:
+          type: string
+          description: Document type for the document associated with `other_id_number`
+          maxLength: 60
+          example: CNPJ - Brazilian tax number
+        document_issued_by:
+          type: string
+          description: Issuer for the document associated with `other_id_number`
+          example: SSP
+        document_issued_at:
+          type: string
+          maxLength: 30
+          description: >-
+            Document issuer location for the document associated with
+            `other_id_number`. Typically a state using the ISO 3166-2 (2 letter)
+            standard for states and country sub-divisions but any string is
+            accepted.
+          example: CA
+        document_issued_date:
+          type: string
+          format: date
+          description: >-
+            Issued date for the document associated with `other_id_number`.
+            Format = YYYY-MM-DD.
+          example: '2004-07-05'
+        occupation:
+          type: string
+          description: Applicant profession
+          maxLength: 60
+          example: Engineer
+        assets:
+          type: number
+          description: Applicant assets
+          minimum: 0
+          example: 125000
+        income:
+          type: number
+          description: Applicant income
+          minimum: 0
+          example: 5000
+        net_worth:
+          type: number
+          description: Applicant net worth
+          minimum: 0
+          example: 200000
+        statutory:
+          type: boolean
+          description: Applicant works for a government entity?
+          example: true
+    AccountsV2Address:
+      type: object
+      properties:
+        zip_code:
+          type: string
+          description: Address zip (postal) code
+          minLength: 1
+          maxLength: 9
+          example: '90210'
+        address:
+          type: string
+          description: Address street
+          minLength: 1
+          maxLength: 80
+          example: Avenida das Neves
+        number:
+          type: integer
+          description: Address number
+          minLength: 1
+          maxLength: 10
+          example: 100
+        neighborhood:
+          type: string
+          description: Address neighborhood
+          minLength: 1
+          maxLength: 50
+          example: Vila Nova
+        complementary_address:
+          type: string
+          description: Address complement
+          minLength: 1
+          maxLength: 50
+          example: Apartamento 500
+        city:
+          type: string
+          description: Address city
+          minLength: 1
+          maxLength: 60
+          example: São Paulo
+        state:
+          type: string
+          description: Address state
+          minLength: 2
+          maxLength: 2
+          example: SP
+        country:
+          type: string
+          description: Address country
+          example: Brazil
+        address_type:
+          type: string
+          description: Address type. Valid values (`RESIDENTIAL`, `COMMERCIAL`, `OTHER`)
+          enum:
+            - RESIDENTIAL
+            - COMMERCIAL
+            - OTHER
+          example: RESIDENTIAL
+        mailing_address:
+          type: boolean
+          description: Mark as a mailing address?
+          example: true
+        date:
+          type: string
+          format: date
+          description: >-
+            Date since the applicant has resided at this address. Format =
+            YYYY-MM-DD.
+          example: '2013-05-15'
+    AccountsV2Phone:
+      type: object
+      properties:
+        phone_type:
+          type: string
+          description: Telephone type
+          enum:
+            - RESIDENTIAL
+            - COMMERCIAL
+            - MOBILE
+          example: RESIDENTIAL
+        phone:
+          type: string
+          description: Telephone number
+          maxLength: 12
+          example: 91234-5678
+        country_code:
+          type: string
+          description: Telephone country code
+          maxLength: 3
+          example: '11'
+        area_code:
+          type: string
+          description: Telephone area code
+          maxLength: 5
+          example: '031'
+    AccountsV2Company:
+      type: object
+      description: >-
+        Applicant company information (for business accounts). Either this or
+        the `personal` object is **REQUIRED**. Pass one or the other but not
+        both.
+      properties:
+        external_id:
+          type: string
+          description: Exterrnal ID
+          maxLength: 60
+          example: '312312'
+        name:
+          type: string
+          description: Company legal name
+          maxLength: 60
+          example: Pismo LTDA
+        email:
+          type: string
+          description: Company email address
+          example: cadastro@pismo.io
+          maxLength: 60
+        registration_number:
+          type: string
+          description: ID under which the company is registered
+          maxLength: 30
+          example: '123456789'
+        registration_issuer:
+          type: string
+          description: Document issuer
+          maxLength: 30
+          example: '123456789'
+        company_name:
+          type: string
+          description: Company brand name
+          maxLength: 60
+          example: Pismo
+        activity:
+          type: string
+          description: Company field of industry
+          maxLength: 30
+          example: Software development
+        company_type:
+          type: string
+          description: Company type
+          maxLength: 60
+          example: Ltda
+        company_format:
+          type: string
+          description: Company social type
+          maxLength: 60
+          example: Ltda
+        company_constitution_date:
+          type: string
+          format: date
+          description: Company incorporation date. Format = YYYY-MM-DD.
+          example: '2017-11-21'
+        occupation:
+          type: string
+          description: Company main occupation
+          maxLength: 60
+          example: Engineering
+        annual_revenues:
+          type: number
+          description: Company average monthly revenue for the last 12 months
+          example: 20000000
+        type:
+          type: string
+          description: Company business relations type
+          maxLength: 60
+          example: Customer service
+        number_of_partners:
+          type: integer
+          description: Number of partners in company
+          maximum: 999999
+          example: 2
+        fiscal_situation:
+          type: string
+          description: Company fiscal situation
+          maxLength: 60
+          example: Normal
+        debt:
+          type: number
+          description: Company debt
+          example: 500000
+        income:
+          type: number
+          description: Company income
+          minimum: 0
+          example: 3000000
+        net_worth:
+          type: number
+          description: Company net worth
+          minimum: 0
+          example: 20000000
+    AccountsV2Account:
+      type: object
+      description: >-
+        Applicant account information, for either a personal account or a
+        company account
+      properties:
+        external_id:
+          type: string
+          description: A record identifier for external purposes
+          maxLength: 60
+          example: 980f2c12-e899-11eb-8639-c37913a46510
+        total_credit_limit:
+          type: number
+          format: float
+          description: A user-defined account limit, between 0 and the granted limit
+          example: 3500
+        max_credit_limit:
+          type: number
+          description: >-
+            Maximum credit limit determined by the issuer, typically by using a
+            credit analysis
+          example: 5000
+        percentage_over_limit:
+          type: number
+          format: float
+          description: >-
+            For credit accounts (program type `CREDIT`), percentage of the
+            maximum spending limit (`granted_limit`) over the credit limit set
+            on the account
+          maximum: 100
+          example: 5.5
+        total_overdraft_limit:
+          type: number
+          description: >-
+            Account balance that goes over the credit limit. This field
+            determines to what extent the account balance limit can go negative
+            for debit account
+          example: 500
+        available_credit_limit:
+          type: number
+          description: >-
+            Amount available to the applicant's credit or debit account. Despite
+            the name `available_credit_limit`, this field is also used for debit
+            accounts, to represent the available balance.
+          example: 20000
+        exchange_mode:
+          type: string
+          description: >-
+            Should foreign transaction be charged on the day it occured
+            (`SAME_DAY`) or on the statement's closing date (`CLOSING`)?
+          enum:
+            - SAME_DAY
+            - CLOSING
+          example: SAME_DAY
+        is_overlimit:
+          type: boolean
+          description: >
+            Has account exceeded the limit at least once during the current
+            cycle? **Note**: Include this field only when overlimit information
+            exists for migrated accounts.
+          example: false
+        parent_account_id:
+          type: integer
+          description: ID of parent account
+          example: 20
+        total_installment_credit_limit:
+          type: number
+          description: >-
+            Total amount for a separate credit limit, such as for a
+            client-specific credit line
+          example: 1000
+        available_total_installment_credit:
+          type: number
+          description: >-
+            Available amount for the separate credit limit, whose total is
+            defined by `total_installment_credit_limit`
+          example: 999
+        available_withdrawal_credit:
+          type: number
+          description: Amount available for withdrawal
+          example: 22
+    AccountsV2Migration:
+      type: object
+      description: Extra information for migration
+      required:
+        - id
+        - version_date
+      properties:
+        id:
+          type: string
+          description: Record ID for migration purposes
+          example: 5a8ade4e-e89a-11eb-9dd1-4b56d86f7a21
+        version_date:
+          $ref: '#/components/schemas/VersionDate'
+        account_status:
+          type: string
+          description: >
+            Current account status. For more information on standard account
+            statuses, refer to [Account
+            status](doc:accounts-overview#account-status). Set your system
+            values using the [Create status](ref:v4-post-account-status)
+            endpoint. Migrating accounts typically have `STAND-BY` as their
+            status during migration. Examples are `BLOCKED`, `CANCELLED`,
+            `NORMAL`, `OVERDUE`, or `STAND-BY`.
+          example: STAND-BY
+          default: STAND-BY
+        creation_date:
+          type: string
+          format: date
+          description: >-
+            Date that the entry was created on the original system. Format =
+            YYYY-MM-DD.
+          example: '2021-08-10'
+        go_live_account_status:
+          type: string
+          description: >-
+            Account status after go-live. Current account status on the original
+            system. For more information, refer to [Account
+            status](doc:accounts-overview#account-status). Set your system
+            values using the [Create status](ref:v4-post-account-status)
+            endpoint. Migrating accounts typically have `STAND-BY` as their
+            status during migration. Examples are `BLOCKED`, `CANCELLED`,
+            `NORMAL`, `OVERDUE`, or `STAND-BY`.
+          example: NORMAL
+          default: NORMAL
+        open_due_date:
+          type: string
+          format: date
+          description: >
+            The date the platform uses to start calculating accrued interest for
+            an overdue account. If the cardholder did not pay the minimum amount
+            due on the previous statement date, the Pismo platform uses this
+            value as the starting date for accruals calculation after the
+            account goes live. If a migrated payment is identified during
+            pre-go-live, the account is not overdue, and the platform removes
+            its `open_due_date` automatically. Use this field only for credit
+            accounts. Mandatory for an overdue account. Format = YYYY-MM-DD.
+          example: '2021-08-21'
+        phase_id:
+          type: string
+          description: >-
+            Used to group accounts under the same ID. Used during account
+            go-live, account rollback, and PCI go-live.
+          maxLength: 60
+          example: Rollout_Jan2025
+        status:
+          type: string
+          description: >-
+            Migration status of card. The platform does not consider embossing
+            on migrated cards since they are already issued.
+          example: TO_MIGRATE
+          enum:
+            - TO_MIGRATE
+            - MIGRATING
+    CardsV1Request:
+      title: Card migrations
+      type: object
+      required:
+        - abu_enabled
+        - bin
+        - contactless_enabled
+        - issuing_date
+        - migration
+        - mode
+        - name
+        - network
+        - status
+      properties:
+        abu_enabled:
+          type: boolean
+          description: Include card on Mastercard's Automatic Billing Updater (ABU)?
+          default: false
+          example: true
+        bin:
+          type: string
+          description: New BIN of card (use with template_id)
+          example: '12345'
+        contactless_enabled:
+          type: boolean
+          description: Is contactless enabled?
+          default: true
+          example: true
+        issuing_date:
+          type: string
+          description: Issuing date and hour of a card. Format = YYYY-MM-ddTHH:mm:SSZ.
+          format: datetime
+          example: '2021-09-13T19:54:41Z'
+        migration:
+          type: object
+          description: Additional migration details
+          required:
+            - id
+            - version_date
+          properties:
+            id:
+              description: >
+                Record identifier for migration purposes. This is a unique ID
+                that you need to generate.
+
+                **Note:** Using PCI or any other sensitive personal data for
+                migration ID poses serious security risks. This includes a
+                <<glossary:document_number>>, PAN, or telephone number. For
+                enhanced security, use a hash for this field ([SHA-256 with
+                salt](https://auth0.com/blog/adding-salt-to-hashing-a-better-way-to-store-passwords/)
+                is recommended).
+              type: string
+              example: 5a8ade4e-e89a-11eb-9dd1-4b56d86f7a21
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+            account_id:
+              type: string
+              description: >
+                This value must match `applicant.migration.id` from the [Migrate
+                accounts](ref:postaccountsv1) endpoint. Used to link cards to an
+                account. This unique key is **REQUIRED** for named cards.
+              example: migration-external-id
+            combo_account_id:
+              type: string
+              minLength: 1
+              maxLength: 120
+              description: >
+                This field is **REQUIRED** to migrate a **combo card**, which
+                has both credit and debit functions. The value **must match the
+                migration ID of the account previously migrated** (from the
+                `migration` object of the [Migrate accounts](ref:postaccountsv2)
+                endpoint). To migrate a combo card, you first need to migrate
+                both of its associated accounts (credit and debit). For more
+                information, refer to [Create combination card with card
+                modes](doc:cards-overview-1#create-a-combination-card-with-card-modes)
+                and [Migrations overview, Cards](doc:migrations-overview#cards).
+
+
+                **Note**: Both accounts must be registered to the same
+                <<glossary:document_number>>, which identifies their owner on
+                the Pismo platform.
+
+                 For example, if migrating the credit account first, do these steps:
+                  1. Migrate the **credit account**: `document number = 123` and `migration_id = abc`.
+                  1. Migrate the **debit account**: `document number = 123` and `migration_id = def`.
+                  1. Migrate the card:
+                      - For **credit** account: `mode = COMBO`, `migration.accountId = 123abc`, `migration.cardId = XXX`, and  `migration.combo_account_id = 123abcXXX`
+                      - For **debit** account: `mode = COMBO`, `migration.accountId = 123def`, migration.cardId = YYY, and  `migration.combo_account_id = 123defYYY`.
+              example: 123abcYYY
+            customer_id:
+              type: string
+              description: >
+                Customer ID that is used when a card is linked to an additional
+                customer on the account, instead of the account owner. Use when
+                migrating an additional card for that customer.
+            reissued_id:
+              type: string
+              description: >
+                Card reissued migration ID, enabling the system to track the
+                previous card's migration. You must set this ID to the original
+                migration ID of any card that has been reissued.
+              example: A7F5B84429989D089D2
+        mode:
+          type: string
+          description: Card mode
+          enum:
+            - CREDIT
+            - DEBIT
+            - COMBO
+          example: CREDIT
+        name:
+          type: string
+          description: >
+            Nickname of card. An account can have multiple cards. For example,
+            an account could have one plastic card and three virtual cards. You
+            give them nicknames to identify them: "Plastic card", "Netflix
+            card", and so on. You cannot repeat the same nickname for multiple
+            plastic cards.
+          maxLength: 50
+          minLength: 3
+          example: Personal
+        network:
+          type: string
+          description: Card network name
+          enum:
+            - VISA
+            - MASTERCARD
+            - ELO
+        status:
+          type: string
+          description: >
+            Migration status of card. The platform does not consider embossing
+            on migrated cards since they are already issued. Typically set to
+            either `TO_MIGRATE` or `MIGRATING`. For more information on allowed
+            values, refer to [Card status](doc:card-lifecycle-and-statuses).
+          example: TO_MIGRATE
+        additional:
+          type: boolean
+          deprecated: true
+          description: >-
+            Is this an additional card? Use when a card is linked to an
+            additional customer on the account, and you must send the previous
+            migration customer's migration ID.
+          example: false
+        atc:
+          type: array
+          description: >-
+            Card ATC list ([Application Transaction
+            Counter](doc:application-transaction-counter-atc)). For example,
+            `[21,20,19,18,16,15,14]`. Only send if you have the correct
+            information from the current processor. Sends `null` by default.
+          items:
+            type: integer
+          example:
+            - 100
+            - 101
+        cvv_rotation_interval:
+          type: number
+          description: >
+            **REQUIRED** for a virtual card. Rotation interval in hours for a
+            virtual card's CVV. You can pass "0" if the virtual card does not
+            have CVV rotation. To force a card's CVV rotation, you can call the
+            [Rotate virtual card CVV](ref:post-v2-reset-cvv) endpoint.
+          minimum: 0
+          maximum: 4320
+          default: 24
+          example: 48
+        expiration_date:
+          type: string
+          format: datetime
+          description: Expiration date of card. Format = YYYY/MM.
+          example: 2025/12
+        metadata:
+          type: object
+          description: >-
+            Metadata (free-form fields) formatted as a JSON object using any
+            key-value pairs.
+          example:
+            key1: value1
+            key2: value2
+        phase_id:
+          type: string
+          description: >
+            Migration phase ID. Account migration can be split into phases
+            (batches), where each phase must have a unique phase ID. When
+            assigning a phase ID, use a name that is meaningful, such as
+            `Rollout_Jan2025`. **REQUIRED** for noname cards; optional for
+            nominal cards.
+          example: Rollout_Jan2025
+        printed_name:
+          type: string
+          description: >-
+            Applicant name to be printed on a card (2 characters minimum, 25
+            characters max). Use only letters (a-z|A-Z) and space, as specified
+            in the ISO EMV tag 5F20 for cardholder name. No letters with
+            accents, numbers, or special characters.
+          maxLength: 25
+          minLength: 2
+          example: Joao S Silva
+        program_id:
+          description: >
+            ID of a program created specifically for noname cards. Used to link
+            noname cards to this type of account.
+
+
+            **Note:** This field is **REQUIRED** for noname cards but otherwise
+            optional.
+          example: 23456
+        stage:
+          type: string
+          description: >-
+            Card stage. **REQUIRED** for named cards. Set to `UNBLOCKED`
+            initially.
+          enum:
+            - CREATED
+            - BLOCKED
+            - UNBLOCKED
+          example: UNBLOCKED
+        template_id:
+          type: string
+          description: >-
+            Used in order to override the definitions of the program when
+            creating a card. Only send if the card's brand is different from the
+            account's program brand.
+          example: VISA
+        transaction_limit:
+          type: number
+          description: >-
+            Card transaction limit. (Only for virtual cards.) Sends "0" by
+            default.
+          minimum: 0
+          example: 12500
+        type:
+          type: string
+          description: >-
+            Card type. It is not possible to change the type after migration, so
+            if you need to change it you must recreate the card to get a new
+            type.
+          enum:
+            - PLASTIC
+            - VIRTUAL
+          example: PLASTIC
+        unlock_date:
+          type: string
+          description: Card unlock date and time. Format = YYYY-MM-ddTHH:mm:ss.SSSSSZ.
+          format: datetime
+          example: '2022-06-06T20:30:00Z'
+    PciCardsV1Request:
+      title: PCI card migrations
+      type: object
+      required:
+        - pan
+        - pin_type
+        - service_code
+      properties:
+        migration:
+          type: object
+          description: Applicant additional migration information
+          required:
+            - id
+            - version_date
+          properties:
+            id:
+              type: string
+              description: >-
+                Card migration ID; the same ID used in the `migration.id` field
+                in [Migrate cards](ref:postcardsv1). You use this ID to link
+                card information with its PCI data.
+              example: 5a8ade4e-e89a-11eb-9dd1-4b56d86f7a21
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+        pan:
+          type: string
+          description: >
+            Card's PAN
+
+
+            **Note:** The PAN shown here is a fictional example used for
+            documentation purposes. It does not represent a real card number.
+          example: 123456******7890
+        pin_block:
+          type: string
+          description: >
+            Card's PIN block password. Must conform to ISO-9564 Format 0 and be
+            encrypted using Zone PIN Key (ZPK). If you do not provide a value in
+            this field, Pismo generates a random password for you.
+          example: 670D35C104A6E41F
+          deprecated: true
+        encrypted_pin:
+          type: string
+          description: >
+            Card's PIN block password with two available formats. The first
+            format conforms to ISO-9564 Format 0 and must be encrypted using
+            Zone PIN Key (ZPK). The second format is a PIN offset. If you do not
+            provide a value in this field, Pismo generates a random password for
+            you.
+        password_tries:
+          type: string
+          description: Cardholder password failure attempts, from 0 to 3.
+          example: '0'
+        password_updated:
+          type: string
+          description: |
+            Is the PIN block password changed? Defaults to changed.
+            `0`—Not changed
+            `1`—Changed
+          enum:
+            - '0'
+            - '1'
+          example: '1'
+          default: '1'
+        pin_type:
+          type: string
+          description: >
+            Format used for the password. Can be either PINOFFSET_IBM3464 or
+            PINBLOCK_FORMAT0. When using PINOFFSET_IBM3464 you must use PIN
+            Verification Key (PVK) exchange. For PINBLOCK_FORMAT0 use Zone PIN
+            Key (ZPK) exchange.
+          default: PINBLOCK_FORMAT0
+        pin_validation_data:
+          type: string
+          description: >
+            **REQUIRED** if pinType = `PINOFFSET_IBM3464`. Format = "11 first
+            PAN digits + letter N".
+          example: 59999900017N
+        service_code:
+          type: string
+          description: >
+            Card service code for Card Verification Value 2 (CVV2). If your
+            virtual card has a different service code, contact your Pismo
+            representative.
+          example: '000'
+    PostAccrualsV1Request:
+      title: Accruals migrations
+      type: object
+      required:
+        - migration
+      properties:
+        migration:
+          type: object
+          description: Client-provided migration details
+          required:
+            - account_id
+            - id
+            - version_date
+          properties:
+            account_id:
+              type: string
+              description: ID for the account. Must match the ID used for migration.
+              example: account-migration-id
+            id:
+              type: string
+              description: >
+                ID that you generate for accruals migration. When you send two
+                accruals records with the same ID, only the first record is
+                created.
+
+
+                When you send two records with the same ID, the system rejects
+                the second record **unless** you send a later `version_date`
+                than the first record's `version_date` to ensure idempotency.
+              maxLength: 60
+              example: 5a8ade4e-e89a-11eb-9dd1-4b56d86f7a21
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+            authorization_id:
+              type: string
+              description: >
+                Record ID for `DECENDIAL_IOF` accruals that identifies the
+                authorization of the accrual. `DECENDIAL_IOF` is a Brazilian tax
+                charged on a loan or an installment. (Installments are
+                considered a type of loan.)
+              example: accountMigrationId_referenceNumber_planCode_authorizationType
+        accounting_date:
+          type: string
+          description: >-
+            Accounting date for the migration, which you must set to the go-live
+            date. Format = YYYY-MM-DD.
+          format: date
+          example: '2022-03-28'
+        metadata:
+          type: object
+          description: >-
+            Accruals metadata (free-form fields) formatted as a JSON object
+            using any key-value pairs.
+          example:
+            key1: value1
+            key2: value2
+        type:
+          type: string
+          description: >
+            Accrual type 
+
+
+            **Note:** Do not use `DECENDIAL_IOF` or `WITHDRAW_IOF` as these are
+            **outdated**.
+
+
+            - `REFINANCING`—Interest accrual amounts where the cardholder pays
+            less than the minumum invoice amount
+
+            - `NOTACCRUABLE_NOTFINEABLE`—Amounts that are not subject to
+            accruals or fines
+          enum:
+            - REFINANCING
+            - DECENDIAL_IOF
+            - WITHDRAW_IOF
+            - NOTACCRUABLE_NOTFINEABLE
+          example: REFINANCING
+        authorization_type:
+          type: string
+          deprecated: true
+          description: >-
+            Authorization type of the transaction. **Note:** Required when
+            accrual type is `DECENDIAL_IOF`, however `DECENDIAL_IOF` is outdated
+            and should not be used.
+          example: PLATFORM
+          enum:
+            - PLATFORM
+            - NETWORK
+            - ON_US
+            - BANKING
+        projected_values:
+          type: array
+          description: >-
+            List of projected accrual values, for an account between cycle
+            closing and due date. (For pending accruals, use a `values` array.)
+            These values will be split between the dates ranging from cycle
+            closing date (exclusive) up to the due date. For projected
+            `REFINANCING` accruals, the interest is on revolving charges. These
+            charges might be reversed if the account receives an advance
+            payment. If the projection occurs on the cutoff date, the projected
+            balance is calculated to match the actual amount between the cutoff
+            and the invoice due date.
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                description: The type of accrual value
+                enum:
+                  - REFINANCING
+                  - IOF
+                  - OVERDUE
+                  - FINE
+                example: REFINANCING
+              amount:
+                type: string
+                description: The calculated accrual amount.
+                example: '2.55'
+              interest_rate:
+                type: number
+                minimum: 0
+                example: 1
+        values:
+          type: array
+          description: >
+            List of accrual values for pending accruals. (For projected
+            accruals, use a `projected_values` array.)
+
+            For pending `REFINANCING` accruals, the original processor
+            calculated the value for revolving overdue charges. The pending
+            amount refers to a daily amount for the period from the day after
+            the due date in the prior month (M-1) up to the go-live date (known
+            in Brazil as "saldo rotativo"). Pass the value when the account
+            holder paid less than the Total Amount Due (TAD).
+          items:
+            type: object
+            properties:
+              amount:
+                type: string
+                description: Accrual amount
+                example: '2.55'
+              type:
+                type: string
+                description: >
+                  Accrual amount type
+
+
+                  - `REFINANCING`—Original processor's interest amounts. These
+                  daily accruals are applied to transactions on the cycle
+                  closing date and relate to overdue balances—either revolving
+                  balances (known in Brazil as "saldo rotativo") or overdue
+                  amounts from payment agreements. The pending accruals are
+                  summarized by account using two decimal places. This accrual
+                  split covers the period from the day after the due date in the
+                  prior month (M-1) up to the go-live date.
+
+                  - `IOF`—Accrual related to the Brazilian tax calculated on a
+                  loan or an installment
+
+                  - `OVERDUE`—Interest accrued on late payment
+
+                  - `FINE`—Provides the fine value for the next cycle. Send this
+                  `FINE` accrual type when the account holder paid less than the
+                  minimum invoice amount.
+                enum:
+                  - REFINANCING
+                  - IOF
+                  - OVERDUE
+                  - FINE
+                example: REFINANCING
+    PostAuthorizationsV1Request:
+      title: Network authorization migrations
+      type: object
+      required:
+        - acquirer_bin
+        - arqc_presence
+        - authorization_code
+        - authorization_response_code
+        - authorization_status
+        - contract_amount
+        - currency_conversion_date
+        - cvv_presence
+        - entry_mode
+        - event_date_hour
+        - event_date_hour_utc
+        - local_amount
+        - local_currency_code
+        - merchant_city
+        - merchant_name
+        - merchant_state_or_country
+        - migration
+        - mti
+        - network
+        - nsu
+        - pin_presence
+        - postings
+        - principal_amount
+        - processing_code
+        - retrieval_reference_number
+        - settlement_amount
+        - settlement_currency_code
+        - track1_presence
+        - track2_presence
+        - transaction_identifier
+        - update_limit
+      properties:
+        acquirer_bin:
+          type: string
+          description: Authorization acquirer BIN
+          example: '65153141'
+        arqc_presence:
+          type: boolean
+          description: Is authorization ARQC (Authorization Request Cryptogram) present?
+          example: false
+        authorization_code:
+          type: string
+          description: >-
+            Authorization code generated for this operation (6 alphanumeric
+            characters, DE 38).
+          example: R1CM3D
+        authorization_response_code:
+          type: string
+          description: >
+            Response code of the authorization (DE 39), such as `00` (Approved)
+            or `51` (Insufficient Funds). This value must be a valid code for
+            the card network.
+          example: '00'
+        authorization_status:
+          type: string
+          description: >
+            Authorization status
+
+            - `PENDING`—Authorizations from Base I pending confirmation
+
+            - `PROCESSED`—Base II confirmation
+
+            - `DROPPED`—Authorization discarded if the confirmation (Base II
+            confirmation) is not received within 10 days.
+
+            - `DECLINED`—Authorization denied when the validation fails
+            (response code <> `00`).
+
+            - `CANCELED`—Canceled authorization
+
+            For information about clearing (Base II) and Base I authorization,
+            refer to [Clearing/base II](doc:clearing).
+          enum:
+            - PENDING
+            - PROCESSED
+            - DROPPED
+            - DECLINED
+            - CANCELED
+          example: PENDING
+        contract_amount:
+          type: number
+          description: Total authorization amount with fees
+          example: 19.9
+        currency_conversion_date:
+          type: string
+          format: datetime
+          description: >-
+            Authorization currency conversion date. Format =
+            YYYY-MM-DDTHH:mm:ssZ.
+          example: '2021-08-11T11:25:43.56752Z'
+        cvv_presence:
+          type: boolean
+          description: Is authorization CVV present?
+          example: false
+        entry_mode:
+          type: string
+          description: >-
+            Authorization entry mode (such as `05` - Manual entry or `02` -
+            Magnetic stripe read).
+          example: '01'
+        event_date_hour:
+          type: string
+          format: datetime
+          description: >-
+            Local authorization date and time according to value received in
+            flag message (DE 12 and 13 + year). Pismo accepts this value but
+            does not adjust for time zones in reporting or other uses. To order
+            authorizations chronologically, use `event_date_hour_utc`. UTC
+            (Coordinated Universal Time) simplifies comparisons for settlement,
+            SLA tracking, and reporting, and prevents mismatches caused by local
+            offsets. Format = YYYY-MM-DDTHH:MM:SS.
+          example: '2021-08-11T11:25:43'
+        event_date_hour_utc:
+          type: string
+          description: >-
+            Authorization event UTC date and time. UTC (Coordinated Universal
+            Time) simplifies comparisons for settlement, SLA tracking, and
+            reporting, and prevents mismatches caused by local offsets. Format =
+            YYYY-MM-DDTHH:MM:SSZ.
+          example: '2021-08-11T8:25:43Z'
+        local_amount:
+          type: number
+          description: >-
+            Local currency value (DE 04), indicating the amount the cardholder
+            requested in the acquirer's local currency or the transaction's
+            source location.
+          example: 15.35
+        local_currency_code:
+          type: string
+          description: Local ISO-4217 currency code (DE 49)
+          example: '986'
+        merchant_city:
+          type: string
+          maxLength: 15
+          description: >-
+            Authorization merchant city (DE 43 city field, maximum 15
+            characters)
+          example: ANTA GORDA
+        merchant_name:
+          type: string
+          description: Authorization merchant name
+          example: Merchant XYZ
+        merchant_state_or_country:
+          type: string
+          description: >-
+            Authorization merchant state or country using ISO 3166-1 alpha-2
+            country code
+          maxLength: 2
+          example: RS
+        migration:
+          type: object
+          description: Applicant additional migration information
+          required:
+            - account_id
+            - card_id
+            - id
+            - version_date
+          properties:
+            account_id:
+              type: string
+              description: >-
+                ID of the migrated account. Use the `account_id` when migrating
+                an account. When an account has additional cards with different
+                customer names, the customer ID is taken from the card's
+                migration ID.
+              example: account-migration-id
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+            card_id:
+              type: string
+              description: >-
+                ID of the migrated card. The `card_id` must match the
+                `migration.id` from the [Migrate cards](ref:postcardsv1)
+                endpoint.
+              maxLength: 255
+              example: card-migration-id_1234
+            id:
+              type: string
+              description: >
+                Record identifier for migrated authorizations.
+
+                **Note:** Using PCI or any other sensitive data for a migration
+                ID poses serious security risks. This includes
+                <<glossary:document_number>>, PAN, or telephone number. For
+                enhanced security, use a hash for this field ([SHA-256 with
+                salt](https://auth0.com/blog/adding-salt-to-hashing-a-better-way-to-store-passwords/)
+                is recommended.)
+              example: 5a8ade4e-e89a-11eb-9dd1-4b56d86f7a21
+            tokenization_id:
+              type: string
+              description: >-
+                ID of the migrated token on a tokenized purchase. Must match the
+                `migration.id` field returned from the [Migrate
+                tokens](ref:posttokensv1) endpoint.
+              example: tokenization-id-2468
+        mti:
+          type: string
+          description: |
+            Authorization ISO 8583 MTI (message type indicator):
+              `0100`—Purchase
+              `0120`—Purchase advice
+              `0200`—Debit purchase
+              `0400`—Cancellation
+              `0420`—Cancellation advice
+          enum:
+            - '0100'
+            - '0120'
+            - '0200'
+            - '0400'
+            - '0420'
+          example: '0100'
+        network:
+          type: string
+          description: Brand (such as Visa or Mastercard)
+          enum:
+            - VISA
+            - MASTERCARD
+            - ELO
+          example: VISA
+        nsu:
+          type: string
+          description: >
+            Provides a DE Field 11 value that a message initiator assigns to
+            uniquely identify a transaction as NSU or STAN:
+
+            - **NSU** (Network Settlement Utility) tracks the flow of funds
+            between parties involved in a payment card transaction. Different
+            payment card networks could have their own NSU systems. For example,
+            Visa has VisaNet, Mastercard has BankNet, or the payment network
+            could have a third-party network.
+
+            - **STAN** (System Trace Audit Number) is a number (DE Field 11)
+            that the message initiator assigns to uniquely identify a
+            transaction.
+          maxLength: 6
+          example: W12345
+        pin_presence:
+          type: boolean
+          description: Is authorization PIN present?
+          example: false
+        postings:
+          type: object
+          description: >-
+            Posting metadata (key-value pairs) that accepts any value. Maximum
+            size is 1000 bytes.
+          maxProperties: 50
+          additionalProperties:
+            type: string
+            maxLength: 200
+          example:
+            key1: value1
+            key2: value2
+        principal_amount:
+          type: number
+          description: Total authorization amount, not including fees
+          example: 171.42
+        processing_code:
+          type: string
+          description: >
+            Authorization **processing code** (custom alphanumeric identifier
+            that defines how the Pismo platform handles a certain financial
+            operation type).
+
+
+            Processing codes are integral to the transactions flow on the Pismo
+            platform. The platform uses predefined processing codes to evaluate
+            and process operations. For more information, refer to [Processing
+            codes and transaction
+            types](doc:processing-codes-and-transaction-types).
+
+
+            **Note:** This processing code may not exactly match the DE03
+            (subfield 1) message from Visa, Mastercard or any other network.
+
+            example: "00"
+        retrieval_reference_number:
+          type: string
+          description: >-
+            Authorization retrieval reference number received in flag message
+            (DE 37)
+          example: '664151'
+        settlement_amount:
+          type: number
+          description: >-
+            Settlement currency amount (DE 05, destination amount). Indicates
+            the amount transferred between the acquirer and the issuer equal to
+            DE 04 (amount, transaction) in the settlement currency. Mastercard
+            programs and services use U.S. dollars as the currency of
+            settlement.
+          example: 171.42
+        settlement_currency_code:
+          type: string
+          description: Authorization settlement currency code
+          example: '840'
+        track1_presence:
+          type: boolean
+          description: Is authorization magnetic stripe Track 1 data present?
+          example: false
+        track2_presence:
+          type: boolean
+          description: Is authorization magnetic stripe Track 2 data present?
+          example: false
+        transaction_identifier:
+          type: string
+          description: >
+            Unique transaction ID (refer to DE 63 for Mastercard, DE 62.2 for
+            Visa).
+
+
+            **Note**: This field is critical for doing network reconciliations
+            post migration. If you are migrating pending authorizations and you
+            don't have this field, contact your Pismo representative for
+            guidance.
+          example: de63
+        update_limit:
+          type: boolean
+          description: >
+            Should the authorization affect the account's credit limit?
+
+
+            **Note:** This should only be true in specific scenarios. Before you
+            enable this option, contact your Pismo representative for guidance.
+          default: false
+        cardholder_amount:
+          type: number
+          description: >-
+            Transaction amount billed to the cardholder in the issuer's currency
+            (DE 06 optional).
+          example: 172.42
+        cardholder_currency_code:
+          type: string
+          description: >
+            Cardholder currency code (DE 51, cardholder), in ISO 4217 numeric
+            code format
+          example: '840'
+        cardholder_currency_conversion_rate:
+          type: number
+          description: >-
+            Conversion rate between local amount and cardholder amount (the DE
+            10 conversion rate that the brand sends)
+          example: 0.99
+        installment_amount:
+          type: number
+          description: Authorization installment amount
+          example: 171.42
+        merchant_category_code:
+          type: string
+          description: >-
+            Authorization merchant category code (MCC), a four-digit ISO 18245
+            number
+          example: '1011'
+        merchant_id:
+          type: string
+          description: Authorization merchant ID
+          example: xF5E0
+        metadata:
+          type: object
+          description: >-
+            Authorization metadata (key-value pairs) that accepts any values
+            **except PCI data**. Maximum size is 1000 bytes.
+          example:
+            key1: value1
+            key2: value2
+        number_of_installments:
+          type: integer
+          description: >-
+            Total number of installments related to the authorization that is
+            being migrated
+          default: 1
+          example: 2
+        pre_authorization:
+          type: boolean
+          description: >-
+            Is authorization a pre-authorization? On pending authorizations,
+            this affects the time that it takes to cancel the authorization if
+            no confirmation arrives from the network settlement file.
+          example: false
+        referral_updated_at:
+          type: string
+          format: datetime
+          description: >-
+            Date and time when the referral was last updated. Identifies when a
+            fraud suspicion is no longer valid. Format = YYYY-MM-ddTHH:mm:ss.
+          example: '2021-08-11T11:25:43'
+        settlement_currency_rate:
+          type: string
+          description: Authorization settlement currency rate
+          example: '1.50000112'
+        terminal_capability:
+          type: string
+          description: >-
+            Is terminal pre-authorized? Field 130 (Visa) and DE 61 (Mastercard)
+            POS (Point Of Sale). **REQUIRED** for chip purchases.
+          example: '000001100003'
+        token_requestor_id:
+          type: string
+          description: Authorization token requestor ID
+          example: ZAMBAS
+        wallet_identifier:
+          type: string
+          description: Authorization wallet identifier
+          example: GOOGLE PAY
+        ledger_impact:
+          deprecated: true
+          type: array
+          description: >
+            Limits impacted by the ledger during the authorization.
+
+
+            **Note:** This is a legacy field. You should use the
+            `ledger_updates` array instead.
+          items:
+            type: string
+            example: AVAILABLE_INSTALLMENT_LIMIT
+    PostOnUsAuthorizationsV1Request:
+      title: On-us authorization migrations
+      type: object
+      required:
+        - migration
+      properties:
+        migration:
+          type: object
+          description: Additional migration details
+          required:
+            - account_id
+            - id
+            - version_date
+          properties:
+            account_id:
+              type: string
+              description: Record identifier for account migration
+              maxLength: 60
+              example: example_id_0123
+            id:
+              type: string
+              description: >
+                ID you provide for migrating on-us authorizations.
+
+
+                When you send two records with the same ID, the system only
+                creates the first record. Pismo's idempotence mechanism rejects
+                the second record **unless** the `version_date` is later than
+                the `version_date` of the first record.
+              example: 5a8ade4e-e89a-11eb-9dd1-4b56d86f7a21
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+            card_id:
+              type: string
+              description: >-
+                Record identifier for card migration. This is the ID for private
+                label cards.
+              example: example_id_0123
+            merchant_id:
+              type: string
+              description: Record identifier for merchant migration.
+              maxLength: 60
+              example: example_id_0123
+            original_authorization_id:
+              type: string
+              description: >-
+                Pismo migration ID assigned to a purchase. You send this ID when
+                requesting an on-us authorization for a cancellation.
+              example: example_id_0123
+        authorization_code:
+          type: string
+          description: >-
+            Alphanumeric code generated in an authorization request and assigned
+            to the authorization response.
+          example: R1CM3D
+        authorization_denial_code:
+          type: string
+          description: >-
+            Code for a denied authorization. **REQUIRED** if the authorization
+            is denied.
+          example: EX001
+        authorization_response_code:
+          type: string
+          description: >
+            Authorization response code from the Pismo platform. For details,
+            refer to [Authorization validation rules for platform
+            operations](doc:authorization-validation-rules-for-platform-operations). 
+             `00`—Approved
+             `05`—Do not honor
+             `12`—Invalid transaction
+             `14`—Invalid card
+             `30`—Invalid format
+             `51`—Insufficient funds
+             `54`—Expired card
+             `55`—Invalid PIN
+             `57`—Action not permitted
+             `59`—Suspected fraud
+             `62`—Invalid account
+             `63`—Security violation
+             `75`—PIN tries exceeded
+             `92`—External system error
+             `96`—Internal system error
+          example: '00'
+        authorization_status_id:
+          type: integer
+          format: int64
+          description: |
+            Authorization status identifier:
+            `1`—TO BE PROCESSED
+            `2`—PROCESSED
+            `3`—DENIED
+            `4`—CANCELED
+            `6`—CANCEL AUTHORIZATION
+            `7`—PRE-AUTHORIZATION
+          example: 2
+        contract_amount:
+          type: number
+          description: Total authorized amount (including fees)
+          example: 15
+        currency:
+          type: string
+          description: Requested authorization currency code (ISO 4217)
+          example: USD
+        custom_response_code:
+          type: string
+          description: >-
+            Custom response code for the authorization such as `FL1` for
+            referral authorization
+          example: FL1
+        datetime_utc:
+          format: datetime
+          type: string
+          description: Original authorization date (UTC)
+          example: '2021-09-13T19:54:41Z'
+        description:
+          type: string
+          description: Authorization description
+          example: Payment
+        destination_currency:
+          type: string
+          description: Target currency converted for the authorized transaction (ISO 4217)
+          example: BRL
+        entry_mode:
+          type: string
+          description: >
+            POS Terminal PAN Entry Mode to indicate method to initiate a
+            transaction (DE 22 subfield 1) such as `01` manual, `05` chip, `07`
+            contactless, `10` ecommerce, or `81` ecommerce CAVV.
+          example: '01'
+        installments_details:
+          type: array
+          description: >-
+            Details about each installment related to the authorization that is
+            being migrated.
+          items:
+            type: object
+            properties:
+              number:
+                type: integer
+                description: >-
+                  Installment number. Used with `number_of_installments` to
+                  identify which installment this is.
+                example: 2
+              amortization_amount:
+                type: number
+                description: Amortization amount related to this installment.
+                example: 111
+              installment_amount:
+                type: number
+                description: >
+                  Amount of this installment. **Note:** Total contract purchase
+                  amount is the sum total of all installment amounts.
+                example: 111
+              principal_amount:
+                type: number
+                description: >-
+                  Total amount of the authorization after calculation, excluding
+                  any fees.
+                example: 111
+        installments_plan:
+          type: string
+          description: ID of the installment plan used to calculate this purchase
+          example: R1CM3D
+        local_amount:
+          type: number
+          description: Authorization amount in local currency
+          example: 10
+        marketplace_id:
+          type: integer
+          format: int64
+          description: Marketplace ID associated with the merchant
+          example: 123
+        metadata:
+          type: object
+          description: Authorization metadata
+          example:
+            key1: value1
+            key2: value2
+        mti:
+          title: Message Type Identifier
+          type: string
+          description: |
+            Authorization ISO 8583 MTI (message type indicator):
+             `0100`—Purchase
+             `0120`—Purchase advice
+             `0200`—Debit purchase
+             `0400`—Cancellation
+             `0420`—Cancellation advice
+          example: '0100'
+        network:
+          type: string
+          description: >-
+            Card network used in the authorization (such as `VISA`,
+            `MASTERCARD`, or `ELO`)
+          enum:
+            - VISA
+            - MASTERCARD
+            - ELO
+          example: VISA
+        nsu:
+          type: string
+          description: >
+            Card network authorization code sent when a card payment has been
+            approved.
+
+
+            NSU (Network Settlement Utility) tracks the flow of funds between
+            parties involved in a payment card transaction. Different payment
+            card networks could have their own NSU systems. For example, Visa
+            has VisaNet, Mastercard has BankNet, or the payment network could
+            have a third-party network.
+          example: W123456
+        number_of_installments:
+          type: integer
+          description: Total number of installments related to the migrating authorization
+          default: 1
+          example: 10
+        payment_datetime:
+          format: date-time
+          type: string
+          description: Payment date (UTC)
+          example: '2021-09-13T19:54:41Z'
+        principal_amount:
+          type: number
+          description: Total authorized amount (excluding fees)
+          example: 15
+        processing_code:
+          type: string
+          description: >
+            Pismo **processing code** (custom alphanumeric identifier that
+            defines how the platform handles a certain financial operation
+            type).
+
+
+            Processing codes are integral to the transactions flow on the Pismo
+            platform. The platform uses predefined processing codes to evaluate
+            and process operations. For more information, refer to [Processing
+            codes and transaction
+            types](doc:processing-codes-and-transaction-types).
+          example: '00'
+        terminal_id:
+          type: string
+          description: >-
+            POS terminal ID (TID) associated with the merchant; identifies where
+            an authorization is processed
+          example: '123'
+        tid:
+          type: string
+          description: Transaction ID. This is the external ID from the network.
+          example: '123'
+        tracking_id:
+          type: string
+          description: >
+            ID you provide for authorizations. If not provided, the Pismo
+            platform generates one. This field is useful for tracking and
+            searching transaction information.
+
+
+            - This field is **REQUIRED** to guarantee the idempotency of a
+            request. Requests that use the same `tracking_id` are considered the
+            same. If `tracking_id` is not received, each request is treated as a
+            new one.
+
+
+            - A tracking ID also is used after migration for cancellations and
+            confirmations. Make sure to send the `tracking_id` that matches the
+            transaction you intend to reference.
+          example: example_id_0123
+    PostCustomersV1Request:
+      title: Customer migrations
+      type: object
+      required:
+        - migration
+      properties:
+        migration:
+          type: object
+          description: Applicant additional migration information
+          required:
+            - account_id
+            - id
+            - version_date
+          properties:
+            account_id:
+              type: string
+              description: Record identifier for the account migration
+              maxLength: 60
+              example: account-migration-id
+            id:
+              type: string
+              description: >
+                Record customer identifier that you provide for migration
+                purposes.
+
+
+                **Note**: Using
+                [LGPD](https://en.wikipedia.org/wiki/General_Personal_Data_Protection_Law)
+                (Lei Geral de Proteção de Dados Pessoais), PCI or any other
+                sensitive personal data for migration ID poses serious security
+                risks, this includes your <<glossary:document_number>>, PAN, or
+                telephone number. For enhanced security, use hash for this field
+                ([SHA-256 with
+                salt](https://auth0.com/blog/adding-salt-to-hashing-a-better-way-to-store-passwords/)
+                is recommended).
+              maxLength: 60
+              example: 5a8ade4e-e89a-11eb-9dd1-4b56d86f7a21
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+        is_active:
+          type: boolean
+          description: >
+            Is customer active?
+
+
+            **Note:** If the program containing the account is configured to
+            prevent multiple cardholders, `is_active = false`, overrides this
+            block.
+          example: false
+          default: true
+        social_name:
+          type: string
+          description: Social name of the customer
+          example: John Doe
+        email:
+          type: string
+          description: Customer's email address
+          example: john_doe@email.com
+        entity:
+          type: object
+          description: Customer entity
+          properties:
+            name:
+              type: string
+              description: Customer's name
+              example: John Doe
+            document_number:
+              type: string
+              description: Customer's <<glossary:document_number>>
+              example: '12345678901'
+            registration:
+              type: string
+              description: Customer's registration number
+              example: '12345678901'
+            birth_date:
+              type: string
+              format: date
+              description: Customer's birth date
+              example: '1985-01-19'
+            gender:
+              type: string
+              description: Customer's gender
+              enum:
+                - F
+                - M
+              example: F
+            mother_name:
+              type: string
+              description: >-
+                Customer's mother's name. When applying for a registration
+                number in Brazil, such as a Brazilian ID card (also known as
+                Registro Geral), it is customary to also use the name of the
+                applicant's mother to apply, this ensures that the applicant's
+                ID is unique.
+              example: Jane Doe
+            marital_status:
+              description: Customer's marital status
+              enum:
+                - SINGLE
+                - MARRIED
+                - DIVORCED
+                - WIDOWER
+              example: SINGLE
+    PostGoLiveV1Request:
+      title: Bulk accounts Go-live
+      type: object
+      required:
+        - migration
+        - type
+      properties:
+        type:
+          type: string
+          description: >
+            Accounts go-live. For more information, refer to the [Migrations
+            overview](doc:migrations-overview#pre-go-live-and-go-live) guide.
+        migration:
+          type: object
+          description: Applicant additional migration information
+          required:
+            - phase_id
+          properties:
+            phase_id:
+              type: string
+              description: >
+                Migration phase ID, which represents a batch of an account
+                migration. Account migration can be split into smaller batches
+                where each batch must have a unique phase ID. When assigning a
+                phase ID, you must a value that is meaningful; for example:
+                `Rollout_Jan2025`.
+
+
+                **Important:** Calling the [Migrate accounts
+                Go-live](ref:postgolivev1) endpoint migrates every account that
+                has this phase ID. For each successfully migrated account, the
+                operation changes its status to `MIGRATED`.
+              maxLength: 60
+              example: Rollout_Jan2025
+            status:
+              type: string
+              description: >-
+                Migration status of card. The platform does not consider
+                embossing on migrated cards since they are already issued.
+                Typically set to either `TO_MIGRATE` or `MIGRATING`.
+              enum:
+                - TO_MIGRATE
+                - MIGRATING
+                - MIGRATED
+                - NOT_MIGRATE
+    PostMerchantsV1Request:
+      title: Merchant migrations
+      type: object
+      required:
+        - migration
+      properties:
+        origin:
+          type: string
+          description: Migration source type
+          enum:
+            - FILE
+            - API
+          example: FILE
+        migration:
+          type: object
+          description: Additional migration details
+          required:
+            - id
+            - version_date
+          properties:
+            id:
+              type: string
+              description: >-
+                Unique external ID for the merchant. To ensure idempotency, when
+                you send two merchant records with the same ID, the system
+                rejects the second record **unless** you send a `version_date`
+                that is later than the first record's `version_date`.
+              maxLength: 255
+              example: 5a8ade4e-e89a-11eb-9dd1-4b56d86f7a21
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+        additional_area_code:
+          type: string
+          description: Area code for the merchant's `additional_phone` number
+          maxLength: 4
+          example: '763'
+        additional_phone:
+          type: string
+          description: Additional phone number of the merchant
+          maxLength: 25
+          example: 555-5678
+        address:
+          type: string
+          description: Merchant address
+          maxLength: 80
+          example: 1000 Main Street San Francisco, CA 94105
+        area_code:
+          type: string
+          description: |
+            Area code of the merchant's phone number.
+          maxLength: 4
+          example: '415'
+        brand_name:
+          type: string
+          description: Merchant's brand name
+          maxLength: 50
+          example: Merchant Brand
+        city:
+          type: string
+          description: Merchant city
+          maxLength: 60
+          example: San Francisco
+        city_code:
+          type: string
+          description: >-
+            Official seven-digit numeric code of the city according to the
+            [IBGE](https://www.ibge.gov.br/explica/codigos-dos-municipios.php)
+            (Brazilian Institute of Geography and Statistics) code table. Used
+            only for cities in Brazil; this code is unique per city.
+          maxLength: 50
+          example: '3550308'
+        complementary_address:
+          type: string
+          description: >-
+            Merchant's additional address details. Any additional information
+            that helps to identify the merchant's location such as building,
+            apartment, or floor
+          maxLength: 50
+          example: Suite 500
+        contact:
+          type: string
+          description: Name of a merchant representative
+          maxLength: 50
+          example: John Doe
+        country:
+          type: string
+          description: Merchant address country name
+          maxLength: 30
+          example: United States
+        document_number:
+          type: string
+          description: |
+            Merchant's <<glossary:document number>>
+          maxLength: 14
+          example: '54938832011'
+        email:
+          type: string
+          description: Merchant's email address
+          maxLength: 255
+          example: merchantbrand@gmail.com
+        external_code:
+          type: string
+          description: >
+            Merchant category code that indicates business type. Use the [Get
+            business category](ref:getbusinesscategory) endpoint to get a list
+            of business categories and their external codes.
+          maxLength: 45
+          example: '1234567890'
+        marketplace_id:
+          type: integer
+          format: int64
+          description: >-
+            Marketplace ID from [Pismo Control
+            Center](doc:pismo-control-center-overview)
+          example: 3213
+        municipal_registration:
+          type: string
+          description: >
+            Merchant's municipal registration number. In Brazil, this is the ID
+            number that a business receives when it registers with the municipal
+            tax department.
+          maxLength: 15
+          example: '347219312'
+        name:
+          type: string
+          description: Merchant's name
+          maxLength: 100
+          example: Lombard Street Coffee & Tea
+        neighborhood:
+          type: string
+          description: >-
+            Merchant's neighborhood details. In Brazil, addresses include the
+            neighborhood name, but in other countries, they might not.
+          maxLength: 50
+          example: Castle
+        number:
+          type: integer
+          format: int64
+          description: Merchant's address number
+          example: 312
+        phone:
+          type: string
+          description: Merchant's phone number. Parentheses and dashes are optional.
+          maxLength: 25
+          example: '99845767'
+        program_id:
+          type: integer
+          format: int64
+          description: Program ID for the merchant account
+        state:
+          type: string
+          description: >-
+            Abbreviation or full name of the merchant state, province, or
+            administrative division.
+          maxLength: 2
+          example: CA
+        zip_code:
+          type: string
+          description: >
+            Merchant's postal code. Postal codes are called zip codes in the
+            United States. You can also use other types of postal code here.
+          maxLength: 9
+          example: '94105'
+        creditor:
+          type: object
+          description: >
+            Response from merchant creditor. The merchant creditor is the entity
+            the merchant receives money from when settling a transaction. The
+            entity can be an external bank account or a Pismo account.
+          properties:
+            name:
+              type: string
+              description: Creditor name
+              maxLength: 100
+              example: Merchant name
+            advancement_fee:
+              type: number
+              description: Advancement fee for creditor
+              example: 15.4
+            discount_rate:
+              type: number
+              description: Discount rate for creditor
+              example: 11.5
+            maximum_advancement_percentage:
+              type: number
+              description: Maximum advancement percentage for the creditor
+              example: 10.5
+            crediting_method:
+              type: string
+              description: Crediting method
+              example: ACCOUNT
+        metadata:
+          type: object
+          description: Merchants's metadata
+          example:
+            merchant_form_on_us: false
+            key2: value2
+    PostMerchantTransactionsV1Request:
+      title: Merchant transaction migrations
+      type: object
+      required:
+        - migration
+      properties:
+        migration:
+          type: object
+          description: Applicant additional migration information
+          required:
+            - authorization_id
+            - id
+            - version_date
+          properties:
+            authorization_id:
+              type: string
+              description: >
+                Record identifier for the on-us authorization migration. All
+                transactions from the same contract must have the same
+                `authorization_id`. If an authorization ID does not exist when
+                you migrate a transaction record, Pismo creates one for
+                you.<br><br>
+
+                A contract comprises all transactions (or installments) in a
+                purchase. When you migrate a transaction record, make sure that
+                all transactions in a contract have the same `authorization_id`.
+              example: authorization-migration-id
+            id:
+              type: string
+              description: >
+                ID you generate for a merchant transaction. When you send two
+                merchant records with the same ID, the system rejects the second
+                record **unless** you send a later `version_date` than the first
+                record's `version_date` to ensure idempotency.
+              maxLength: 255
+              example: merchant-transaction-id
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+            merchant_id:
+              type: string
+              description: A record identifier for the merchant.
+              example: merchant-migration-id
+            original_authorization_id:
+              type: string
+              description: >-
+                Record identifier for the original authorization. You use this
+                field to cancel transactions.
+              example: original-authorization-migration-id
+        origin:
+          type: string
+          description: Migration source type
+          enum:
+            - FILE
+            - API
+          example: FILE
+        merchant_id:
+          type: integer
+          format: int64
+          description: >-
+            Merchant ID assigned by the Pismo platform. If you provide this ID,
+            the `migration.merchant_id` is not used.
+          example: 3213
+        marketplace_id:
+          type: integer
+          format: int64
+          description: Marketplace ID on the Pismo platform
+          example: 3213
+        terminal_id:
+          type: string
+          description: >
+            Merchant's external terminal ID previously saved on the Pismo
+            platform (the ID used during the marchant registration/setup
+            process).
+          maxLength: 50
+          example: '1234567890'
+        processing_code:
+          type: string
+          description: >
+            Pismo platform **processing code** (custom alphanumeric identifier
+            that defines how to handle a certain financial operation type).
+
+
+            Processing codes integrate with the transaction flow on the
+            platform. The platform uses predefined processing codes to evaluate
+            and process operations. For more information, refer to [Processing
+            codes and transaction
+            types](doc:processing-codes-and-transaction-types).
+          example: '00'
+        transaction_amount:
+          type: number
+          description: Transaction Amount
+          example: 56.78
+        mdr_amount:
+          type: number
+          description: >
+            Merchant Discount Rate (MDR) tax amount (Brazil only). Default is
+            `0`. For details about MDR, refer to the [Marketplace Creditor
+            Operation](doc:seller-management-overview#marketplace-creditor-operation)
+            section of the *Seller management overview* guide.
+          default: 0
+          example: 1.15
+        installment:
+          type: integer
+          description: Current installment
+          example: 1
+        number_of_installments:
+          type: integer
+          description: Total number of installments
+          example: 1
+        event_date:
+          type: string
+          description: Transaction creation date and time (UTC format)
+          format: datetime
+          example: '2021-09-21T12:00:00Z'
+        scheduled_payment_date:
+          type: string
+          description: >-
+            Scheduled date to settle the transaction. Setting a future date and
+            the status to `PENDING` schedules the transaction. For settlements
+            that already occurred, the status is `PAID`.
+          format: date
+          example: '2021-09-21'
+        transaction_status:
+          type: string
+          description: |
+            Transaction status.
+          enum:
+            - PENDING
+            - SCHEDULED
+            - SETTLED
+            - PAID
+            - CANCELED
+          default: PENDING
+        type:
+          type: string
+          description: Transaction type
+          enum:
+            - SALE
+            - CANCEL
+          example: SALE
+        transaction_fee:
+          type: number
+          description: |
+            Transaction fee
+          default: 0
+          example: 0.25
+        mdr_tax:
+          type: number
+          description: |
+            Additional MDR tax amount
+          default: 0
+          example: 0.25
+        metadata:
+          type: object
+          description: Merchant's metadata
+          example:
+            merchant_form_on_us: false
+            key2: value2
+    PostStatementsV1Request:
+      title: Statement migrations
+      type: object
+      properties:
+        migration:
+          type: object
+          description: Applicant additional migration information
+          required:
+            - id
+            - version_date
+          properties:
+            id:
+              type: string
+              description: ID that you generate for migration purposes
+              example: 5a8ade4e-e89a-11eb-9dd1-4b56d86f7a21
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+            account_id:
+              type: string
+              description: >-
+                Set to the value in `applicant.migration.id` from the [Migrate
+                accounts](ref:postaccountsv1) endpoint. This field links
+                statements to an account.
+              example: EXTID1001
+        cycle_closing_date:
+          type: string
+          description: Cycle closing date
+          format: date
+          example: '2018-03-15'
+        best_transaction_day:
+          type: string
+          description: >
+            Day of best transaction. This is the cycle closing date of a credit
+            card account. For purchases made after the cycle closes, payment is
+            due in the next statement.
+          format: Date
+          example: '2018-03-16'
+        due_date:
+          type: string
+          description: Due date
+          format: date
+          example: '2018-03-25'
+        real_due_date:
+          type: string
+          description: >
+            If a due date falls on a nonbusiness day, such as weekend or a
+            holiday, the actual due date is the next business day on which the
+            payment can be made. (Otherwise, it's the same as the due date.)
+            Interest isn't charged until the real due date.
+          format: date
+          example: '2018-03-25'
+        previous_balance:
+          type: number
+          description: Value of previous balance
+          example: 180.52
+        debits:
+          type: number
+          description: Total debits of statement
+          example: 50
+        credits:
+          type: number
+          description: Total credits of statement
+          example: 50
+        current_balance:
+          type: number
+          description: Current balance
+          example: 190.52
+        minimum_payment:
+          type: number
+          description: Minimun payment
+          example: 20
+        posted_date:
+          type: string
+          description: Posted date
+          format: datetime
+          example: '2021-10-25T19:54:41Z'
+        posted_fine:
+          type: boolean
+          description: Is fine posted?
+          example: false
+        metadata:
+          type: object
+          description: Statements metadata
+          example:
+            key1: value1
+            key2: value2
+    PostTransactionsV1Request:
+      title: Transaction migrations
+      type: object
+      required:
+        - migration
+        - principal_amount
+        - type
+        - soft_descriptor
+      properties:
+        migration:
+          type: object
+          description: Applicant additional migration information
+          required:
+            - account_id
+            - authorization_id
+            - id
+            - version_date
+          properties:
+            account_id:
+              type: string
+              description: >-
+                Account ID. This matches the applicant migration ID value from
+                the [Migrate accounts](ref:postaccountsv1) endpoint. This field
+                links transactions to an account.
+              example: account-migration-id
+            authorization_id:
+              type: string
+              description: >
+                Record identifier for migrating transaction authorizations. All
+                transactions from the same contract must have the same
+                `authorization_id`. If an authorization ID does not exist when
+                you migrate a transaction record, Pismo creates one for
+                you.<br><br>
+
+                A contract comprises all transactions (or installments) in a
+                purchase. When you migrate a transaction record, make sure that
+                all transactions in a contract have the same `authorization_id`.
+              example: 40e95789-e29f-4dea-a085-4468a19ad3cd
+            id:
+              type: string
+              description: >-
+                Record identifier for migration purposes. This is a unique ID
+                that you must generate.
+              example: 5a8ade4e-e89a-11eb-9dd1-4b56d86f7a21
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+            statement_id:
+              type: string
+              description: >-
+                ID for statement migration. Required for `BILLED` transactions
+                that are being migrated on `CREDIT` accounts. The `program_id`
+                attribute defines the account type. Do not use a `statement_id`
+                for `BILLED` transactions on `DEBIT` accounts. Do not use a
+                `statement_id` for transactions with `TO_BE_BILLED`,
+                `INSTALLMENTS`, or `STORED` type transactions since the Pismo
+                platform adds them to the corresponding current or future
+                statement automatically.
+              example: statement-migration-id
+            card_id:
+              type: string
+              description: >-
+                Unique key for card—the same used in card migration.
+                **REQUIRED** for `NETWORK` `authorization_type`.
+              example: card-migration-id
+            type:
+              type: string
+              description: >
+                An extension of `transaction_type` that affects the migration
+                and authorization flows. `INSTANT_PAYMENT` indicates the
+                transaction is an instant payment. This type requires an
+                `instant_payment_data` object with details of the transaction.
+
+
+                When the migration type is `INSTANT_PAYMENT`, the
+                `authorization_type` must be `BANKING`. Otherwise, the
+                `authorization_type` should be `PLATFORM`, `ON_US`, or
+                `NETWORK`.
+              enum:
+                - INSTANT_PAYMENT
+              example: INSTANT_PAYMENT
+        type:
+          type: string
+          description: >
+            Transaction types:
+
+            - `BILLED`—The customer has already been billed for the transaction.
+            Debit accounts and banking transactions typically use this type.
+
+            - `TO_BE_BILLED`—The transaction has not been billed according to
+            the platform records. That transaction will be added to the "opened
+            statement" of the account.
+
+            - `INSTALLMENTS`—Represents an entire installment contract with
+            pending future installments, including information for each
+            individual (past or future) installment. For contracts fully in the
+            past, it is sufficient to migrate past individual installments as
+            `BILLED` or `TO_BE_BILLED` transactions, and the `INSTALLMENTS` type
+            is not necessary.
+
+            - `INSTANT_PAYMENT`—The transaction is an instant payment, such as a
+            Pix payment in Brazil. This type requires an `instant_payment_data`
+            object with details of the transaction. Authorization type should be
+            `BANKING`.
+
+            - `STORED`—The transaction gets allocated to a future statement.
+          enum:
+            - BILLED
+            - TO_BE_BILLED
+            - ADJUSTMENT
+            - INSTALLMENTS
+            - INSTANT_PAYMENT
+            - STORED
+          example: BILLED
+        soft_descriptor:
+          type: string
+          description: >
+            Human-readable description that identifies the transaction. For an
+            installment purchase, this usually is the **merchant name**, the
+            **city/state**, and the **installment number**. For example, the
+            value `Wellmart NYC 2/4` indictes the merchant is `Wellmart`, the
+            transaction was made in `New York City`, and it is installment `2`
+            of `4`.
+          example: Wellmart NY 2/4
+        authorization_type:
+          type: string
+          description: >
+            Type of authorized transaction you want to migrate to Pismo:
+
+            - `NETWORK`—Network-authorized transaction, such as VISA or
+            Mastercard
+
+            - `PLATFORM`—Bank-authorized transaction, such as fines, fees, or
+            adjustments
+
+            - `ON_US`—Merchant-authorized transaction, such as private label
+            cards used in the marketplace
+
+            - `BANKING`—Instant-payment transaction, such as the Pix system in
+            Brazil
+
+
+            **Note:** This parameter is **REQUIRED** for the following
+            transaction types:
+
+            - `BILLED`
+
+            - `TO_BE_BILLED`
+
+            - `INSTALLMENTS`
+
+            - `STORED`
+          enum:
+            - NETWORK
+            - PLATFORM
+            - ON_US
+            - BANKING
+          example: NETWORK
+        processing_code:
+          type: string
+          description: >-
+            Pismo processing code. Requires previous configuration in Pismo
+            Control Center.
+          example: '00'
+        processing_descriptor:
+          type: string
+          description: >-
+            Pismo processing descriptor. Requires previous configuration in
+            Pismo Control Center.
+          example: purchase
+        transaction_type:
+          type: object
+          description: >-
+            Pismo transaction type ID. Requires previous configuration in Pismo
+            Control Center.
+          properties:
+            id:
+              type: integer
+              description: Pismo identifier (case available)
+              example: 314
+        network:
+          type: string
+          description: Card network name. Required for `NETWORK` authorization type.
+          enum:
+            - MASTER
+            - VISA
+            - ELO
+          example: VISA
+        network_transaction_identifier:
+          type: string
+          description: >
+            Card-network-provided original transaction ID (DE 63 for Mastercard,
+            DE 62.2 for Visa). The Pismo platform uses this field to retrieve
+            corresponding network authorization during migration process.
+
+
+            **Note**: This field is critical for performing network
+            reconciliations after migration. If you need to migrate pending
+            authorizations but you don't have this ID, contact your Pismo
+            representative for guidance.
+        merchant_id:
+          type: string
+          description: >-
+            ID of the merchant accepting the card for network authorization.
+            (Only for `NETWORK` authorization type.)
+          example: '000000079984185'
+        merchant_city:
+          type: string
+          maxLength: 15
+          description: Merchant city (DE 43 city field, maximum 15 characters)
+          example: San Diego
+        merchant_name:
+          type: string
+          description: Merchant name. (Only for `NETWORK` authorization type.)
+          example: RIO SUL IMPERADOR MAGE BRA
+        merchant_category_code:
+          type: integer
+          description: ID of merchant category. (Only for `NETWORK` authorization type.)
+          example: 742
+        merchant_state_or_country:
+          type: string
+          description: Merchant state or country. (Only for `NETWORK` authorization type.)
+          example: BR
+        retrieval_reference_number:
+          type: string
+          description: Retrieval reference number. (Only for `NETWORK` authorization type.)
+          example: '130720000148'
+        clearing_date:
+          type: string
+          description: >-
+            Confirmation date for clearing. Format = YYYY-MM-DD. (Only for
+            `NETWORK` authorization type.)
+          format: date
+          example: '2019-12-11'
+        number_of_installments:
+          type: integer
+          format: int32
+          description: Number of installments
+          minimum: 1
+          example: 5
+        is_installment:
+          type: boolean
+          description: >-
+            Is this transaction part of an installment contract? Set to `true`
+            only if transaction type is `BILLED` or `TO_BE_BILLED`.
+          example: true
+        has_interest:
+          type: boolean
+          description: >-
+            Is the transaction part of an installment contract and does it have
+            interest? Set to `true` only if the transaction type is `BILLED` or
+            `TO_BE_BILLED`.
+          example: true
+        installment_transaction_type_id:
+          type: integer
+          description: >-
+            ID of transaction type for managing installments with flexible
+            transaction types and processing codes
+          example: 8889
+        installment:
+          type: integer
+          description: >-
+            Installment number, starting with 1. Only for installment sent as
+            `BILLED` or `TO_BE_BILLED` type. Not necessary to send with
+            `INSTALLMENTS` type.  (First installment has installment number 1.)
+          example: 2
+        event_date_hour:
+          type: string
+          description: Original transaction date and hour. Format = YYYY-MM-DDTHH:mm:ssZ.
+          format: datetime
+          example: '2021-09-21T12:00:00Z'
+        due_date_hour:
+          type: string
+          description: Date and time when transaction is due
+          format: datetime
+          example: '2020-09-21T12:00:00Z'
+        accounting_date:
+          type: string
+          description: >-
+            Creation date of accounting record. Using the go-live date is
+            recommended. Format = YYYY-MM-DD.
+          format: date
+          example: '2019-12-11'
+        settlement_currency_rate:
+          type: number
+          description: Settlement currency rate. (Only for `NETWORK` authorization type.)
+          example: 12.55
+        cardholder_amount:
+          type: number
+          description: Transaction's cardholder amount
+          example: 171.42
+        cardholder_currency_code:
+          type: string
+          description: Transaction's cardholder currency code
+          example: '840'
+        cardholder_currency_rate:
+          type: number
+          description: >-
+            Conversion rate between local value and cardholder value. (Only for
+            `NETWORK` authorization type.)
+          example: 12.6
+        interest_rate:
+          type: number
+          description: >-
+            Interest rate. When using `INSTALLMENTS` transaction type, this sets
+            the interest rate for all installment contracts.
+          example: 12.31
+        interest_amount:
+          type: number
+          description: >-
+            Interest amount. When using `INSTALLMENTS` transaction type, sets
+            the interest amount for all installment contracts.
+          example: 12.42
+        iof_amount:
+          type: number
+          description: >
+            IOF amount (Brazil only). If the transaction did not take place in
+            Brazil, this should be left blank.
+          example: 1.55
+        authorization_code:
+          type: string
+          description: Authorization code
+          example: '444'
+        amounts:
+          type: array
+          description: List of amounts
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                description: >
+                  Amount type, where `LOCAL` refers to the amount the cardholder
+                  requested in the currency of the acquirer or source location
+                  of the transaction. `PRINCIPAL` refers to the transaction
+                  principal amount (without interest). `SETTLEMENT` refers to
+                  the amount transferred between the acquirer and the issuer in
+                  the settlement currency. Mastercard programs and services use
+                  U.S. dollars as the currency of settlement.
+                enum:
+                  - PRINCIPAL
+                  - LOCAL
+                  - SETTLEMENT
+                example: PRINCIPAL
+              currency:
+                type: integer
+                description: Settlement amount currency code, such as 840 for U.S. dollar
+                example: 986
+              value:
+                type: number
+                description: Amount value
+                example: 2.55
+        installments_type:
+          type: string
+          enum:
+            - WITHOUT_INTEREST
+            - WITH_INTEREST
+            - STATEMENT
+          description: >
+            Installment type (`WITHOUT_INTEREST`, `WITH_INTEREST`, or
+            `STATEMENT`). Note that you use `STATEMENT` to migrate
+            `payment_agreement` data.
+          example: WITHOUT_INTEREST
+        installments:
+          type: array
+          description: Installment list
+          items:
+            type: object
+            required:
+              - installment
+              - release_date
+            properties:
+              installment:
+                type: integer
+                description: Number of installments
+                example: 2
+              release_date:
+                type: string
+                format: date
+                description: Release date
+                example: '2022-02-01'
+              amount:
+                type: number
+                description: Installment amount
+                example: 56.78
+              interest_rate:
+                type: number
+                description: Installment interest rate
+                example: 0
+              interest_amount:
+                type: number
+                description: Installment interest amount
+                example: 0
+              interest_amount_pend_approp:
+                type: number
+                description: >
+                  Amount of pending interest in an installment transaction. When
+                  you migrate an installment transaction that still has pending
+                  interests to be charged, you must also provide the interest
+                  amount so that the Pismo platform can calculate the interest
+                  accruals for you.
+                example: 0
+              iof_amount:
+                type: number
+                description: Installment IOF amount
+                example: 0
+              status:
+                type: string
+                description: |
+                  Installment status:
+                  - `0`—Future installment
+                  - `1`—Advancement request
+                  - `2`—Posted installment, either `BILLED` or `TO_BE_BILLED`
+                  - `4`—Advanced installment
+                  - `6`—Canceled installment
+                enum:
+                  - '0'
+                  - '1'
+                  - '2'
+                  - '4'
+                  - '6'
+                example: '1'
+        interest_amount_pend_approp:
+          type: number
+          description: >
+            Amount of pending interest in an installment transaction. When you
+            migrate an installment transaction that still has pending interest,
+            you must provide the interest amount so that the Pismo platform can
+            calculate the accruals. This value must only be used on `BILLED` and
+            `TO_BE_BILLED` transactions when they are `WITH_INTEREST`.
+            Otherwise, the value must be zero or omitted.
+          example: 0
+        metadata:
+          type: object
+          description: Transaction metadata
+          example:
+            key1: value1
+            key2: value2
+        payment_agreement:
+          type: boolean
+          description: >
+            Is this an installment or a refinancing product? If `true`, the
+            Pismo platform creates the `payment_agreement` entity automatically,
+            so you do not have to call the [Create payment
+            agreement](ref:installmentpaymentsv4) endpoint separately after
+            transaction migration. This field only affects the `INSTALLMENTS`
+            type transaction.
+          example: true
+          default: false
+        payment_agreement_data:
+          type: object
+          description: >-
+            Payment agreement data. This object only affects `INSTALLMENTS` type
+            transactions and only when the `payment_agreement` attribute is set
+            to `true`.
+          required:
+            - compulsory
+            - settle_accrual
+            - split_iof
+            - statement_agreement
+            - use_original_rate
+          properties:
+            compulsory:
+              type: boolean
+              description: >
+                Is the transaction compulsory? If `true`, indicates transaction
+                is a statement agreement. When transaction is either a statement
+                agreement or an installment agreement, set to `false`.
+              example: true
+            settle_accrual:
+              type: boolean
+              description: >
+                Should the pending interest accrual be settled (forgiven) when
+                the agreement is created? Required when `payment_agreement` is
+                `true`.
+              example: true
+            split_iof:
+              type: boolean
+              description: >
+                (Brazil only) Generate transaction for IOF separately? Required
+                when `payment_agreement` is `true`.
+              example: true
+            statement_agreement:
+              type: boolean
+              description: >
+                Is transaction a payment agreement or a statement agreement?
+                When the transaction is either a compulsory or an installment
+                agreement, set to `false`.
+              example: true
+            use_original_rate:
+              type: boolean
+              description: >
+                Use value from the `interest_rate` field for accrued interest?
+                Required when `payment_agreement` is `true`.
+              example: false
+        instant_payment_data:
+          type: object
+          description: >-
+            Defines specific options for instant payment transactions.
+            **REQUIRED** when the `transaction_type` is `INSTANT_PAYMENT`.
+          properties:
+            internal_transaction:
+              type: boolean
+              description: >-
+                Did both transactions occur in the same <<glossary:Org>>? An
+                instant payment requires two transactions to be completed (such
+                as PIX-IN/PIX-OUT or PIX-IN-REVERSAL/PIX-OUT-REVERSAL).
+            external_id:
+              type: string
+              description: >-
+                Provider transaction ID. **REQUIRED** for Pix cancellation under
+                90 days when type is `PIX-IN`.
+              example: external-id
+            external_bank:
+              type: string
+              description: >-
+                Counterparty bank code (from payer or receiver). **REQUIRED**
+                when type is `PIX-IN` or `PIX-OUT`.
+              example: external-bank
+            external_document_number:
+              type: string
+              description: >-
+                Counterparty <<glossary:document number>> (from payer or
+                receiver). **REQUIRED** when type is `PIX-IN` or `PIX-OUT`.
+              example: external-document-number
+            external_name:
+              type: string
+              description: Counterparty name (from payer or receiver).
+              example: John Doe
+            key:
+              type: string
+              description: >
+                Pix key of the payee. **REQUIRED** when the `initiation_type` is
+                `DICT`, `STATIC_QRCODE`, or `DYNAMIC_QRCODE`.
+              example: 000.000.000-00
+            initiation_type:
+              type: string
+              description: >
+                Transaction initiation type:
+
+                - `MANUAL`—Manually initiated. Key is not used. Instead, bank
+                account, bank code, document number, and branch are used for
+                identification.
+
+                - `DICT`—Pix key is used for identification. (DICT is the
+                national Pix key registry and database.)
+
+                - `STATIC_QRCODE`—Reusable code that contains only the essential
+                data needed to complete a transaction. The transaction amount
+                must be entered manually.
+
+                - `DYNAMIC_QRCODE`—Reusable code that includes the transaction
+                amount and other details.
+
+                - `PAYMENT_INITIATOR`—Payment provider initiator. (A payment
+                initiator is a third party that is authorized by the Central
+                Bank and has an Open Finance certification.)
+              enum:
+                - MANUAL
+                - DICT
+                - STATIC_QRCODE
+                - DYNAMIC_QRCODE
+                - PAYMENT_INITIATOR
+              example: MANUAL
+            transaction_type:
+              type: string
+              description: >
+                Instant payment transaction type:
+
+                - `TRANSFER`—Simple transfer (purchase or cash only)
+
+                - `WITHDRAWAL`—Cash-only transaction (only when initiated by a
+                `WITHDRAWAL` type QR code)
+
+                - `CHANGE`—Transfer of cash in addition to purchase amount (only
+                when initiated by a `CHANGE` type QR code).
+              enum:
+                - TRANSFER
+                - WITHDRAWAL
+                - CHANGE
+              example: TRANSFER
+              default: TRANSFER
+    PostBalanceControlV1Request:
+      title: Balance control migrations
+      type: object
+      required:
+        - accrual_date_cutoff
+        - calculate_retroactive_accruals
+        - migration
+      properties:
+        migration:
+          type: object
+          description: Additional information for Balance control migration
+          required:
+            - account_id
+            - id
+            - version_date
+          properties:
+            account_id:
+              type: string
+              description: Account migration ID
+              example: account-migration-id
+            id:
+              type: string
+              description: Migration ID for a balance control
+              example: 5a8ade4e-e89a-11eb-9dd1-4b56d86f7a21
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+        accrual_date_cutoff:
+          type: string
+          format: date
+          description: >
+            Date up to which the Pismo platform should calculate accruals for a
+            migrated balance. Format = `yyyy-mm-dd`. This date should match the
+            Go-live date. The platform calculates accruals starting from the day
+            after the payment due date to the cut-off date.
+          example: '2024-02-22'
+        calculate_retroactive_accruals:
+          type: boolean
+          description: Calculate retroactive accruals on the Pismo platform?
+          default: false
+          example: true
+        balance_types:
+          type: array
+          description: A collection of balance type (accrual amount and type)
+          items:
+            type: object
+            properties:
+              balance_type:
+                type: string
+                description: >
+                  Customer's categorized balance (accruable and fineable) that
+                  needs to be retroactively calculated. Balance migration is
+                  necessary to set the initial balance of a migrated account on
+                  the Pismo platform. Optionally, you can split closed balances
+                  to indicate which ones are accruable (or not) and fineable (or
+                  not). To learn more about these calculations, refer to the
+                  [Migrations guide](doc:migrations-overview#balances).
+
+                  The values relate to the following transaction types (TT):
+
+                  - `ACCRUABLE_FINEABLE` (TT 6901)
+
+                  - `ACCRUABLE_NOTFINEABLE` (TT 6903)
+
+                  - `NOTACCRUABLE_FINEABLE` (TT 6902)
+
+                  - `NOTACCRUABLE_NOTFINEABLE` (TT 6904)
+
+                  - `CREDIT` (TT 6905)
+                enum:
+                  - ACCRUABLE_FINEABLE
+                  - ACCRUABLE_NOTFINEABLE
+                  - NOTACCRUABLE_FINEABLE
+                  - NOTACCRUABLE_NOTFINEABLE
+                  - CREDIT
+                example: CREDIT
+              balance_amount:
+                type: number
+                description: |
+                  The balance amount is defined as follows:
+                      - If the migration occurs between the due date and cycle closing date, the `balance_amount` should refer to the current balance of the last closed statement "M-1" where the open statement is "M".
+                      - If the migration occurs between the cycle closing date and due date, the `balance_amount` should refer to the current balance of the last closed statement "M-2" where the open statement is "M".
+                      - If the account only has one closed statement (one cycle), you can pass `0` for the `balance_amount`.
+                example: 255.96
+    TokensV1Request:
+      title: Token migrations
+      type: object
+      required:
+        - migration
+      properties:
+        line_number:
+          type: string
+          description: >-
+            File line number (when using batch file import migration) that
+            indicates the line number in the file of the migrating entity.
+          example: '232'
+        migration:
+          type: object
+          description: Applicant additional migration information
+          required:
+            - card_id
+            - id
+            - phase_id
+            - version_date
+          properties:
+            id:
+              type: string
+              description: Record identifier for migration purposes
+              minLength: 1
+              example: 5a8ade4e-e89a-11eb-9dd1-4b56d86f7a21
+            card_id:
+              type: string
+              description: Record identifier for card migration
+              minLength: 1
+              example: card-migration-id
+            phase_id:
+              type: string
+              description: >
+                Migration phase ID. Account migration usually is split into
+                multiple phases, where each phase has a unique ID. When
+                assigning a phase ID, you should use a name that is meaningful.
+                For example, `Feb2025_Phase_3_of_4`.
+
+
+                **Important:** The [Go-live](ref:postgolivev1) endpoint migrates
+                every account that has this phase ID. For each successfully
+                migrated account, the operation changes its status to
+                `MIGRATED`.
+              minLength: 1
+              maxLength: 60
+              example: Feb2025_Phase_3_of_4
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+        payment_application_instance_id:
+          type: string
+          description: Identifier of payment application installed on device
+          minLength: 48
+          maxLength: 48
+          example: MTUwMjIyMDEwNjAwMzA3MDUz00J1VKm8QDQ7esDjkz0dnu4i
+        card_holder_name:
+          type: string
+          description: >-
+            Identifies bearer name. In the wallet, the client is allowed to
+            change the name.
+          example: card_holder_name-value
+        token_type:
+          type: string
+          description: Identifies the token type
+          enum:
+            - HCE
+            - MASTERCARD_CLOUD_BASED_PAYMENTS
+            - CARD_ON_FILE
+            - ECOMMERCE
+            - SECURE_ELEMENT
+          example: ECOMMERCE
+        token:
+          type: string
+          description: Identifies card token generated by MASTERCARD/VISA
+          maxLength: 255
+          example: TOKEN-00000123123123123
+        tc_date_time:
+          type: string
+          format: datetime
+          description: Identifies date-time of token confirmation message (token creation)
+          example: '2022-01-06T18:00:00Z'
+        token_unique_ref:
+          type: string
+          description: Identifies unique token reference code (sent by flag)
+          maxLength: 255
+          example: DSAPMC0000128257301397f527cb486988267a975ec78d9m
+        pan_unique_ref:
+          type: string
+          description: Identifies unique PAN reference code (from-to by flag)
+          minLength: 1
+          maxLength: 255
+          example: FAKEPANUNIQUEREFERENCE123456789
+        expiry_date:
+          type: string
+          format: date
+          description: Identifies token expiration date
+          pattern: \d{4}
+          example: '2017-12-01'
+        status:
+          type: string
+          description: Identifies token status
+          enum:
+            - ACTIVE
+            - INACTIVE
+            - SUSPENDED
+            - DELETED
+          example: ACTIVE
+        wallet_identifier:
+          type: string
+          description: Digital wallet identifier (from-to flag requestor token)
+          minLength: 1
+          maxLength: 50
+          example: wallet_identifier-value
+        network:
+          type: string
+          description: Product code of tokenization of flag
+          minLength: 1
+          maxLength: 10
+          example: MDES
+        event_date_time:
+          type: string
+          description: Date-time of event
+          format: datetime
+          example: '2022-01-06T18:00:00Z'
+        metadata:
+          type: object
+          description: Token extra data
+          example:
+            key1: value1
+            key2: value2
+    PostDelinquencyBucketV1Request:
+      title: Delinquency Bucket Migration
+      type: object
+      required:
+        - migration
+      properties:
+        migration:
+          type: object
+          description: Migrated delinquency bucket's extra information
+          required:
+            - id
+            - account_id
+            - version_date
+          properties:
+            id:
+              type: string
+              description: ID of migrated delinquency bucket
+              example: unique-migration-uuid
+            account_id:
+              type: string
+              description: ID of the migrated account
+              example: account-migration-id
+            version_date:
+              $ref: '#/components/schemas/VersionDate'
+        due_date:
+          type: string
+          format: date
+          description: Cardholder statement due date
+          example: '2024-04-23'
+        overdue_amount:
+          type: number
+          description: >-
+            Outstanding balance after the due date, considering only the minimum
+            amount due of the statement
+          example: 50
+        bucket_amount:
+          type: number
+          description: Statement minimum amount due minus the previous bucket balance
+          example: 60
+        bucket_balance:
+          type: number
+          description: >
+            Current bucket balance. Begins as equal to the bucket amount, then
+            decreases whenever the account receives a credit
+          example: 60
+        metadata:
+          type: object
+          description: Delinquency bucket metadata
+          example:
+            key1: value1
+            key2: value2
+    VersionDate:
+      type: string
+      format: datetime
+      description: >
+        Date-time when the record was created or last updated. Format =
+        `yyyy-MM-ddTHH:mm:ss[.SSS][.SS][.S]Z`. Used together with the migration
+        ID to ensure idempotency when updating data.
+
+
+        When the Pismo platform receives a request with an existing migration
+        ID, it rejects the request **unless** the `version_date` is later than
+        the existing record's `version_date`.
+      example: '2021-09-13T19:54:41Z'
+    ErrorResponse:
+      title: ErrorResponse
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          description: Message describing the error
+          type: string
+          example: Internal error
+        code:
+          type: string
+          description: Payload validation error
+          example: MIGR00001
+      description: Standard error response
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  examples:
+    InternalServerError:
+      value:
+        code: MIGR00001
+        message: Something went wrong
+    PayloadValidationError:
+      value:
+        code: MIGR00002
+        field: field_path (the object that failed validation)
+        message: Field required
+paths:
+  /v1/migrations/fee-model-account:
+    post:
+      summary: Migrate account fee models
+      description: >
+        Start migration of **fee models** that are [linked to customer
+        accounts](ref:attachmentbyaccount). (A [fee model](doc:fee-model) links
+        a collection of fees to an account.)
+
+
+        This endpoint generates the following events:
+
+        - [Fee model account migration
+        started](https://developers.pismo.io/events/docs/migration-fee-model-account-incoming-1)
+
+        - [Fee model account migration
+        completed](https://developers.pismo.io/events/docs/migration-fee-model-account-outgoing-1)
+      operationId: PostFeeModelV1
+      tags:
+        - Fee model migration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeeModelAccountV1Request'
+      responses:
+        '200':
+          description: Successful migration initiation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: Migration initiated
+                  migration_id:
+                    type: string
+                    example: abc123
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid accountId or feeModelId
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Internal server error
+  /v2/migrations/accounts:
+    post:
+      description: >
+        Start accounts migration (v2).
+
+
+        **Note:** This endpoint replaces the Migrate accounts (v1) endpoint.
+
+
+
+        This endpoint generates the following events:
+
+        - [Account migration
+        started](https://developers.pismo.io/events/docs/migration-account-incoming-2)
+
+
+        - [Account migration completed
+        ](https://developers.pismo.io/events/docs/migration-account-outgoing-2)
+      summary: Migrate accounts
+      tags:
+        - Account migration
+      operationId: PostAccountsV2
+      parameters:
+        - $ref: '#/components/parameters/auth'
+      requestBody:
+        description: |
+          Start migration of accounts (v2).
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountsV2Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/go-live:
+    post:
+      description: >
+        **Go-live** is a process that happens at the end of a migration. After
+        migrating accounts, you must call the Go-live endpoint to mark all
+        migrated accounts active. The Pismo platform responds by changing the
+        migration status of each account to `MIGRATED`.
+
+
+        This endpoint generates an [Account go-live
+        completed](https://developers.pismo.io/events/docs/migration-account-go-live-outgoing-1)
+        event. Each unique go-live request generates _N_ events (one for each
+        account that has the specified migration phase ID) with a different
+        x-cid from the initial request.
+      summary: Migrate accounts Go-live
+      tags:
+        - Account migration
+      operationId: PostGoLiveV1
+      parameters:
+        - $ref: '#/components/parameters/auth'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostGoLiveV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/pre-go-live:
+    post:
+      description: >
+        Pre Go-live enables you to preview the results of the Go-live process
+        without actually implementing them. It performs a series of actions for
+        every account assigned to a specific phase ID. For more information,
+        refer to the [Migrations overview](doc:migrations-overview) guide.
+
+
+        **Note:** Pre Go-live is **REQUIRED** for migrating credit accounts but
+        optional for other account types.
+
+
+        This endpoint generates the following events (one for every migrated
+        account):
+
+        - [Pre Go-live migration
+        completed](https://developers.pismo.io/events/docs/migration-account-pre-go-live-outgoing-1)
+        &#8211; when the Pre Go-live process finishes and the result is reported
+        (SUCCESS or FAIL).
+
+
+        - [Pre-Go-live migration
+        error](https://developers.pismo.io/events/docs/migration-pre-go-live-outgoing-1)
+        &#8211; when the Pre Go-live process runs but errors occur before
+        dispatching the SUCCESS/FAIL event for each migrated account.
+      summary: Migrate accounts pre go-live
+      operationId: PostPreGoLiveV1
+      tags:
+        - Account migration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostPreGoLiveV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/accruals:
+    post:
+      summary: Migrate accruals
+      description: >
+        Start accruals migration.
+
+
+        This endpoint generates the following events:
+
+
+        - [Accrual migration
+        started](https://developers.pismo.io/events/docs/migration-accrual-incoming-1)
+
+
+        - [Accrual migration
+        completed](https://developers.pismo.io/events/docs/migration-accrual-outgoing-1)
+      tags:
+        - Accrual migration
+      operationId: PostAccrualsV1
+      requestBody:
+        description: Start an accruals migration
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostAccrualsV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/authorizations:
+    post:
+      description: >
+        Start authorizations migration.
+
+
+        This endpoint generates the following events:
+
+
+        - [Authorization migration
+        started](https://developers.pismo.io/events/docs/migration-authorization-incoming-1)
+
+
+        - [Authorization migration
+        completed](https://developers.pismo.io/events/docs/migration-authorization-outgoing-1)
+      summary: Migrate authorizations
+      tags:
+        - Authorization migration
+      operationId: PostAuthorizationsV1
+      requestBody:
+        description: Start migration of authorizations
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostAuthorizationsV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/balance-control:
+    post:
+      description: >
+        This endpoint enables you to migrate balances from your legacy platform
+        to the Pismo platform &#8212; after statement migration but only before
+        Go-live. This allows the platform to calculate retroactive accruals even
+        if you did not perform daily accruals on your legacy platform. You also
+        may split balances to indicate which ones are accruable and fineable.
+
+
+        This endpoint generates the following events:
+
+        - [Balance control migration
+        started](https://developers.pismo.io/events/docs/migration-balance-control-incoming-1)
+
+        - [Balance control migration
+        completed](https://developers.pismo.io/events/docs/migration-balance-control-outgoing-1)
+      summary: Migrate balances
+      operationId: PostBalanceControlV1
+      tags:
+        - Balance migration
+      requestBody:
+        description: Start migration of a Migration Balance Control
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostBalanceControlV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/cards:
+    post:
+      description: >
+        Start migration of non-PCI cards.
+
+
+        This endpoint generates the following events:
+
+
+        - [Card migration
+        started](https://developers.pismo.io/events/docs/migration-card-incoming-1)
+
+
+        - [Card migration
+        completed](https://developers.pismo.io/events/docs/migration-card-outgoing-1)
+
+
+        - For COMBO card migrations (that is, `mode = COMBO` and
+        `combo_account_id = NOT NULL`), a third event is also sent: [Combo card
+        mode migration
+        completed](https://developers.pismo.io/events/docs/migration-card-mode-outgoing-1).
+        This applies to the initial card migration only, but not to updates made
+        before Go-live.
+      summary: Migrate cards
+      tags:
+        - Card migration
+      operationId: PostCardsV1
+      parameters:
+        - $ref: '#/components/parameters/auth'
+      requestBody:
+        description: |
+          Start migration of non-PCI data for cards.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardsV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/cards-pci:
+    post:
+      description: >
+        Start migrations of PCI cards.
+
+
+        This endpoint generates the [PCI card migration
+        completed](https://developers.pismo.io/events/docs/migration-pci-card-outgoing-1)
+        event. The result is either `SUCCESS` or `FAIL`.
+
+
+        **Note:** This is a PCI endpoint. Use the <a
+        href="https://gw-pci.pismolabs.io">https://gw-pci.pismolabs.io</a>
+        environment.
+      summary: Migrate PCI cards
+      tags:
+        - Card migration
+      operationId: PostPciCardsV1
+      parameters:
+        - $ref: '#/components/parameters/auth'
+      requestBody:
+        description: Start migration of PCI cards
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PciCardsV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/customers:
+    post:
+      description: >
+        Start customer migration. Use this endpoint to migrate additional
+        customers after an account is migrated using the [Migrate accounts
+        endpoint](ref:postaccountsv2).
+
+
+        This endpoint produces the following events:
+          - [Customer migration started](https://developers.pismo.io/events/docs/migration-customer-incoming-1)
+
+          - [Customer migration completed](https://developers.pismo.io/events/docs/migration-customer-outgoing-1)
+      summary: Migrate customers
+      tags:
+        - Customer migration
+      operationId: PostCustomersV1
+      requestBody:
+        description: Start migration of customers
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCustomersV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/merchants:
+    post:
+      summary: Migrate merchants
+      description: >
+        Start migration of merchant details, such as marketplace ID, brand name,
+        contact and creditor information.
+
+
+        This endpoint generates the following events:
+
+
+        - [Merchant migration
+        started](https://developers.pismo.io/events/docs/migration-merchant-incoming-1)
+
+
+        - [Merchant migration
+        completed](https://developers.pismo.io/events/docs/migration-merchant-outgoing-1)
+      operationId: PostMerchantsV1
+      tags:
+        - Merchant migration
+      requestBody:
+        description: Start migration of Merchant details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostMerchantsV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/merchants/transactions:
+    post:
+      summary: Migrate merchant transactions
+      description: >
+        Start migration of Merchant transaction details such as authorization
+        ID, merchant ID, marketplace ID, and so on.
+
+
+        This endpoint generates the following events:
+
+
+        - [Merchant Transaction migration
+        started](https://developers.pismo.io/events/docs/migration-merchant-transaction-incoming-1)
+
+
+        - [Merchant transactions migration
+        completed](https://developers.pismo.io/events/docs/migration-merchant-transaction-outgoing-1)
+      operationId: PostMerchantTransactionsV1
+      tags:
+        - Merchant transaction migration
+      requestBody:
+        description: Start migration of Merchant transactions
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostMerchantTransactionsV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/recurring-charge-plans:
+    post:
+      summary: Migrate recurring charge plans
+      description: >
+        Start migration of **recurring charge plans**. (A recurring charge plan
+        defines a recurring charge such as an annual fee, which is applied on a
+        fixed schedule, and the number of installments [cycles] to which the
+        charge should be applied.)
+
+
+        This endpoint generates the following events:
+
+
+        - [Recurring Charge plan migration
+        started](https://developers.pismo.io/events/docs/migration-recurring-charge-plan-incoming-1)
+
+
+        - [Recurring charge plan migration
+        completed](https://developers.pismo.io/events/docs/migration-recurring-charge-plan-outgoing-1)
+      operationId: PostRecurringChargePlansV1
+      tags:
+        - Recurring charge plan migration
+      requestBody:
+        description: Migrates a recurring charge plan
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostRecurringChargePlansV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/recurring-charge-links:
+    post:
+      summary: Migrate recurring charge links
+      description: >
+        Start migration of **recurring charge links** for an account. (A
+        recurring charge link associates an active recurring charge plan with an
+        account, so that the charges defined for the plan are applied to the
+        account.)
+
+
+        This endpoint generates the following events:
+
+
+        - [Recurring Charge link migration
+        started](https://developers.pismo.io/events/docs/migration-recurring-charge-link-incoming-1)
+
+
+        - [Recurring charge link migration
+        completed](https://developers.pismo.io/events/docs/migration-recurring-charge-link-outgoing-1)
+        (one event for **each item** in the `links` array in the payload)
+      operationId: PostRecurringChargeLinksV1
+      tags:
+        - Recurring charge link migration
+      requestBody:
+        description: Migrates recurring charge links
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostRecurringChargeLinksV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/on-us-authorizations:
+    post:
+      summary: Migrate on-us authorizations
+      description: >
+        Start migration of **on-us authorizations** to the Pismo platform. (An
+        on-us authorization is one that Pismo processes without involving card
+        networks, such as Mastercard or Visa).
+
+
+        This endpoint generates the following events:
+
+
+        - [On-us authorization migration
+        started](https://developers.pismo.io/events/docs/migration-on-us-authorization-incoming-1)
+
+
+        - [On-us authorization migration
+        completed](https://developers.pismo.io/events/docs/migration-on-us-authorization-outgoing-1)
+      tags:
+        - On-us authorization migration
+      operationId: PostOnUsAuthorizationsV1
+      requestBody:
+        description: Start migration of on-us authorization data to the Pismo platform
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostOnUsAuthorizationsV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/statements:
+    post:
+      description: >
+        Start migration of statements.
+
+
+        This endpoint generates the following events:
+
+
+        - [Statement migration
+        started](https://developers.pismo.io/events/docs/migration-statement-incoming-1)
+
+
+        - [Statement migration
+        completed](https://developers.pismo.io/events/docs/migration-statement-outgoing-1)
+      summary: Migrate statements
+      tags:
+        - Statement migration
+      operationId: PostStatementsV1
+      parameters:
+        - $ref: '#/components/parameters/auth'
+      requestBody:
+        description: Start migration of statements
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostStatementsV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/tokens:
+    post:
+      description: >
+        Start migration of tokens.
+
+
+        This endpoint generates the following events:
+
+
+        - [Token migration
+        started](https://developers.pismo.io/events/docs/migration-token-incoming-1)
+
+
+        - [Token migration
+        completed](https://developers.pismo.io/events/docs/migration-token-outgoing-1)
+      summary: Migrate tokens
+      tags:
+        - Token migration
+      operationId: PostTokensV1
+      requestBody:
+        description: Start migration of tokens
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokensV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/transactions:
+    post:
+      description: >
+        Start migration of transactions.
+
+
+        This endpoint generates the following events:
+
+        - [Transaction migration
+        started](https://developers.pismo.io/events/docs/migration-transaction-incoming-1)
+
+        - [Transaction migration
+        completed](https://developers.pismo.io/events/docs/migration-transaction-outgoing-1)
+
+        - [Payment agreements migration
+        completed](https://developers.pismo.io/events/docs/migration-payment-agreements-outgoing-1)
+        (generated when the migration has the `payment_agreement` field set to
+        `true`)
+
+        - [Instant payment transaction migration
+        completed](https://developers.pismo.io/events/docs/migration-instant-payment-outgoing-1)
+        (generated when migration.type is `INSTANT_PAYMENT`)
+      summary: Migrate transactions
+      tags:
+        - Transaction migration
+      operationId: PostTransactionsV1
+      parameters:
+        - $ref: '#/components/parameters/auth'
+      requestBody:
+        description: Start migration of transactions
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostTransactionsV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/disputes:
+    post:
+      tags:
+        - Dispute migration
+      description: Starts the migration of a dispute
+      summary: Migrate disputes
+      operationId: PostDisputeV1
+      requestBody:
+        description: Migrate disputes
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostDisputeV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'
+  /v1/migrations/delinquency-bucket:
+    post:
+      tags:
+        - Delinquency bucket migration
+      description: Migrate delinquency buckets
+      summary: Start migration of delinquency buckets
+      operationId: PostDelinquencyBucketV1
+      requestBody:
+        description: Start migration of delinquency buckets
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostDelinquencyBucketV1Request'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Payload Validation Error:
+                  $ref: '#/components/examples/PayloadValidationError'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Internal Server Error:
+                  $ref: '#/components/examples/InternalServerError'

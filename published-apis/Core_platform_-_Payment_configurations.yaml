@@ -1,0 +1,2144 @@
+openapi: 3.1.0
+info:
+  title: Core platform - Payment configurations
+  version: 1.0.0
+  description: Endpoints to allow payment configuration management.
+  contact:
+    name: API Support
+    url: https://developers.pismolabs.io/pismo-docs/docs/support
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io
+    description: Sandbox API server for testing
+  - url: https://gw-pci.pismolabs.io
+    description: Sandbox PCI API server for testing
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account access token. Tokens can expire quickly, which can result in an
+        "Unauthorized" error.
+      bearerFormat: JWT
+  responses:
+    200Ok:
+      description: Ok
+    201Created:
+      description: Created
+    204NoContent:
+      description: Successfully processed
+    400BadRequest:
+      description: Bad request
+    401Unauthorized:
+      description: Access token is missing or invalid
+    403Forbidden:
+      description: The request has been lost
+    404NotFound:
+      description: The specified resource was not found
+    409Conflict:
+      description: Conflict
+    500InternalServer:
+      description: Internal server error
+  schemas:
+    ErrorModel:
+      title: ErrorModel
+      description: API generic returned error.
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code.
+        error:
+          type: string
+          description: Error message
+          deprecated: true
+        error_code:
+          type: string
+          description: Error code
+          deprecated: true
+        message:
+          type: string
+          description: Error description
+        violations:
+          type: object
+          description: List with error details
+          properties:
+            balance_impact:
+              type: string
+              description: Error related to the `balance_impact` field.
+              example: balance_impact must be a value between -1 and 1
+            processing_code:
+              type: string
+              description: Error related to the `processing_code` field.
+              example: processing_code must not be empty
+            undo_processing_code:
+              type: string
+              description: Error related to the `undo_processing_code` field.
+              example: undo_processing_code max length is 6
+    CreateProcessingCodeRequest:
+      type: object
+      description: Create a processing code that identifies a financial operation
+      required:
+        - processing_code
+        - description
+        - balance_impact
+      properties:
+        processing_code:
+          type: string
+          maximum: 6
+          description: >-
+            Unique alphanumeric identifier that defines how the Pismo platform
+            handles this financial operation type.
+          example: 00AB01
+        description:
+          type: string
+          maximum: 50
+          description: Processing code description.
+          example: Purchase
+        balance_impact:
+          type: integer
+          enum:
+            - -1
+            - 0
+            - 1
+          description: >-
+            Defines how the processing code impacts the balance: `-1` debits,
+            `1` credits, and `0` no impact.
+          example: -1
+        operation_type:
+          type: string
+          enum:
+            - NORMAL
+            - HOLD_FUNDS
+          maximum: 20
+          description: >-
+            Operation type of the `processing code`. When not provided, NORMAL
+            is the default value.
+        is_external:
+          type: boolean
+          description: >-
+            Indicate if the operation should be validated against an acquirer
+            external to the Pismo platform.
+          example: false
+        undo_processing_code:
+          type: string
+          maximum: 6
+          description: >
+            New unique alphanumeric value, used to create a new processing code
+            that reverses the original operation defined in the
+            `processing_code` field. This value cannot be an existing processing
+            code.
+
+
+            When you provide the `undo_processing_code` value in the request,
+            the value in the `undo_description` field is required also.
+        undo_description:
+          type: string
+          maximum: 50
+          description: >-
+            Description for the `undo_processing_code`. Required if
+            `undo_processing_code` is provided in the request.
+    CreateProcessingCodeResponse:
+      type: array
+      description: Create processing code configuration record response
+      items:
+        type: object
+        properties:
+          processing_code:
+            type: string
+            maximum: 6
+            description: >-
+              Unique alphanumeric identifier that defines how the Pismo platform
+              handles this financial operation type.
+          description:
+            type: string
+            maximum: 50
+            description: Processing code description.
+          balance_impact:
+            type: integer
+            enum:
+              - -1
+              - 0
+              - 1
+            description: >-
+              Defines how the processing code impacts the balance: `-1` debits,
+              `1` credits, and `0` no impact.
+          operation_type:
+            type: string
+            enum:
+              - NORMAL
+              - HOLD_FUNDS
+            maximum: 20
+            description: >-
+              Operation type of the `processing code`. When not provided, NORMAL
+              is the default value.
+          is_external:
+            type: boolean
+            description: >-
+              Indicate if the operation should be validate against an acquirer
+              external to Pismo platform.
+          undo_processing_code:
+            type: string
+            maximum: 6
+            description: >-
+              Processing code that will be used to undo the original processing
+              code operation.
+          undo_description:
+            type: string
+            maximum: 50
+            description: Undo processing code description.
+      example:
+        - processing_code: 00AB01
+          description: Purchase
+          balance_impact: -1
+          operation_type: NORMAL
+          is_external: false
+          undo_processing_code: 00AB02
+          undo_description: Refund purchase
+        - processing_code: 00AB02
+          description: Refund purchase
+          balance_impact: 1
+          operation_type: NORMAL
+          is_external: false
+    GetProcessingCodeResponse:
+      type: array
+      description: Get processing code configuration response
+      items:
+        type: object
+        properties:
+          org_operation_id:
+            type: integer
+            description: For Pismo internal processing only.
+            example: 123
+          processing_code:
+            type: string
+            maximum: 6
+            description: >-
+              Unique alphanumeric identifier that defines how the Pismo platform
+              handles this financial operation type.
+          description:
+            type: string
+            maximum: 50
+            description: Processing code description.
+          balance_impact:
+            type: integer
+            enum:
+              - -1
+              - 0
+              - 1
+            description: >-
+              Defines how the processing code impacts the balance: `-1` debits,
+              `1` credits, and `0` no impact.
+          balance_impact_id:
+            type: integer
+            enum:
+              - 1
+              - 4
+              - 5
+            description: For Pismo internal processing only.
+            example: 1
+          operation_type:
+            type: string
+            enum:
+              - NORMAL
+              - HOLD_FUNDS
+            maximum: 20
+            description: >-
+              Operation type of the `processing code`. When not provided, NORMAL
+              is the default value.
+          is_external:
+            type: boolean
+            description: >-
+              Indicate if the operation should be validate against an acquirer
+              external to Pismo platform.
+          undo_org_operation_id:
+            type: integer
+            description: For Pismo internal processing only.
+            example: 123
+          undo_processing_code:
+            type: string
+            maximum: 6
+            description: >-
+              Processing code that will be used to undo the original processing
+              code operation.
+          undo_description:
+            type: string
+            maximum: 50
+            description: Undo processing code description.
+          undo_balance_impact:
+            type: integer
+            enum:
+              - -1
+              - 0
+              - 1
+            description: >-
+              Defines how the undo processing code impacts the balance: `-1`
+              debits, `1` credits, and `0` no impact.
+            example: -1
+          undo_balance_impact_id:
+            type: integer
+            enum:
+              - 1
+              - 4
+              - 5
+            description: For Pismo internal processing only.
+            example: 4
+      example:
+        - org_operation_id: 124
+          processing_code: 00AB01
+          description: Purchase
+          balance_impact: -1
+          balance_impact_id: 1
+          operation_type: NORMAL
+          is_external: false
+          undo_org_operation_id: 123
+          undo_processing_code: 01AB02
+          undo_description: Refund purchase
+          undo_balance_impact: 1
+          undo_balance_impact_id: 4
+        - org_operation_id: 123
+          processing_code: 01AB02
+          description: Refund purchase
+          balance_impact: 1
+          balance_impact_id: 4
+          operation_type: NORMAL
+          is_external: false
+    GetProcessingCodePaginatedResponse:
+      type: object
+      properties:
+        total_items:
+          type: integer
+          description: Total number of items that match the provided filter.
+          example: 2
+        per_page:
+          type: integer
+          description: Number of items to return per page.
+          example: 10
+        current_page:
+          type: integer
+          description: Current page number.
+          example: 1
+        order:
+          type: string
+          description: Ascending or descending order of the result set.
+          example: desc
+        order_by:
+          type: string
+          description: Define sorted field
+          example: description
+        items:
+          $ref: '#/components/schemas/GetProcessingCodeResponse'
+    UpdateProcessingCodeRequest:
+      type: object
+      description: >-
+        Link a processing code to a undo processing code and/or updates its
+        description
+      properties:
+        undo_processing_code:
+          type: string
+          maximum: 6
+          description: Undo processing code to be linked.
+          example: 00AB02
+        description:
+          type: string
+          maximum: 50
+          description: New processing code description.
+          example: International purchase
+    UpdateProcessingCodeResponse:
+      type: object
+      description: Update processing code undo configuration record response
+      items:
+        type: object
+        properties:
+          processing_code:
+            type: string
+            maximum: 6
+            description: >-
+              Unique alphanumeric identifier that defines how the Pismo platform
+              handles this financial operation type.
+          description:
+            type: string
+            maximum: 50
+            description: Processing code description.
+          balance_impact:
+            type: integer
+            enum:
+              - -1
+              - 0
+              - 1
+            description: >-
+              Defines how the processing code impacts the balance: `-1` debits,
+              `1` credits, and `0` no impact.
+          undo_processing_code:
+            type: string
+            maximum: 6
+            description: >-
+              Processing code that will be used to undo the original processing
+              code operation.
+          undo_description:
+            type: string
+            maximum: 50
+            description: Undo processing code description.
+      example:
+        processing_code: 00AB01
+        description: International purchase
+        balance_impact: -1
+        undo_processing_code: 01AB02
+        undo_description: Refund purchase
+    AuthorizationConfig:
+      type: object
+      description: Group of configurations related to the authorization flow.
+      properties:
+        networks:
+          $ref: '#/components/schemas/Networks'
+        cancellation_threshold:
+          type: integer
+          description: >-
+            Time in minutes after which to cancel the operation that has been
+            approved but hasn't received a confirmation.
+          example: 1440
+          minimum: 30
+          maximum: 86400
+          default: 14400
+        confirmation_verification_endpoint:
+          type: string
+          description: >-
+            External endpoint to call to verify whether an authorization is
+            confirmed. If this endpoint is not configured, there is no external
+            verification and the payment method endpoint performs a direct
+            confirmation call.
+          example: https://yourverificationendpoint.com
+        confirmation_verification_mtls:
+          type: boolean
+          description: >-
+            Should the confirmation verification endpoint be called using Mutual
+            Transport Layer Security (mTLS)? This flag can only be true if
+            `confirmation_verification_endpoint` and
+            `confirmation_verification_mtls_prefix` are configured.
+          example: true
+          default: false
+        confirmation_verification_mtls_prefix:
+          type: string
+          description: >-
+            Prefix to be used when the verification endpoint is called using
+            mTLS. This prefix is appended to the host configured in the
+            confirmation verification endpoint when using mTLS. The prefix can
+            be set and is **REQUIRED**  only if `confirmation_verification_mtls`
+            is `true` and the `confirmation_verification_endpoint` is
+            configured.
+          example: url-prefix
+        confirmation_verification_rate:
+          type: integer
+          description: >
+            Time in minutes for the platform to call the external endpoint to
+            verify whether the authorization is confirmed. This verification
+            takes place until either the authorization is confirmed or until the
+            number of minutes specified in this field is reached. 
+
+            If this field is present, the `confirmation_verification_endpoint`
+            is required.
+          example: 30
+          minimum: 5
+          maximum: 1440
+          default: 60
+        allow_authorization_by_document_number:
+          type: boolean
+          description: >-
+            Flag to indicate whether this Org/program/account is allowed to
+            authorize using document number as the account holder verification
+            method.
+          example: true
+          default: false
+        require_external_authentication:
+          type: boolean
+          description: >-
+            Flag to indicate whether this Org/program/account requires a call to
+            an external authentication entity.
+          example: true
+          default: false
+        update_balance_after_discharge:
+          type: boolean
+          description: >-
+            If set to `true`, the platform updates account balances only after
+            the discharge process is completed. By default, this value is
+            `false`, and the platform updates account balances during the
+            authorization process. This field applies to credit authorizations
+            only.
+          example: true
+          default: false
+        rules:
+          $ref: '#/components/schemas/Rules'
+    DenialReasons:
+      type: object
+      description: Denial reasons linked to a rule.
+      additionalProperties:
+        $ref: '#/components/schemas/ReasonConfig'
+    Networks:
+      type: array
+      description: >-
+        List of configurations related to a network that is processed by the
+        Payment methods API.
+      items:
+        type: object
+        description: Configurations related to a network.
+        properties:
+          identifier:
+            type: string
+            description: >-
+              Network identifier. This field is used to find the configuration
+              based on the network name received in the payment methods
+              authorization call. This field is not case-sensitive.
+            example: Mastercard
+          hsm_keys_id:
+            type: string
+            description: >-
+              HSM keys ID. This field is used to find the HSM keys for
+              performing PIN validation. This value should be provided by the
+              Pismo representative during HSM keys creation.
+            example: '123456'
+    TransferConfig:
+      type: object
+      description: Group of configurations related to the transfer flow.
+      properties:
+        from:
+          type: object
+          description: Group of configurations related to the source account.
+          properties:
+            require_external_authentication:
+              type: boolean
+              description: >-
+                Flag to indicate whether this Org/program/account requires a
+                call to an external authentication entity.
+              example: true
+              default: false
+            rules:
+              $ref: '#/components/schemas/Rules'
+        to:
+          type: object
+          description: Group of configurations related to the target account.
+          properties:
+            require_external_authentication:
+              type: boolean
+              description: >-
+                Flag to indicate whether this Org/program/account requires a
+                call to an external authentication entity.
+              example: true
+              default: false
+            rules:
+              $ref: '#/components/schemas/Rules'
+    Rules:
+      type: object
+      description: Validation rules performed in the payment methods flow.
+      additionalProperties:
+        $ref: '#/components/schemas/RuleConfig'
+    RuleConfig:
+      type: object
+      description: Configurations related to a rule.
+      properties:
+        denial_reasons:
+          $ref: '#/components/schemas/DenialReasons'
+        disable:
+          type: boolean
+          description: >-
+            Flag to disable this rule throughout the payment methods validation
+            flow.
+          default: false
+        force:
+          type: boolean
+          description: >-
+            Flag to force this rule throughout the payment methods validation
+            flow.
+          default: false
+    ReasonConfig:
+      type: object
+      properties:
+        denial_code:
+          type: string
+          description: >-
+            Denial code to use when this denial reason is the one that caused
+            the request to be denied.
+          example: DAL
+        response_code:
+          type: string
+          description: >-
+            Response code to use when this denial reason is the one that caused
+            the request to be denied.
+          example: '57'
+        custom_message:
+          type: string
+          description: >-
+            Custom message to use when this denial reason is the one that caused
+            the request to be denied.
+    PaymentConfig:
+      type: object
+      description: Group of configurations related to the payment methods flow.
+      properties:
+        require_external_authentication:
+          type: boolean
+          description: >-
+            Flag to indicate whether this Org/program/account requires a call to
+            an external authentication entity.
+          example: true
+          default: false
+        update_balance_after_discharge:
+          type: boolean
+          description: >-
+            If set to `true`, the platform updates account balances only after
+            the discharge process is completed. By default, this value is
+            `false`, and the platform updates account balances during the
+            authorization process. This field applies to credit authorizations
+            only.
+          example: true
+          default: false
+        rules:
+          $ref: '#/components/schemas/Rules'
+    CreatePaymentMethodsConfigRequest:
+      type: object
+      description: Create payment methods configuration record request.
+      properties:
+        authorization:
+          $ref: '#/components/schemas/AuthorizationConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferConfig'
+    CreatePaymentMethodsResponse:
+      type: object
+      description: Create payment methods configuration record response.
+      properties:
+        authorization:
+          $ref: '#/components/schemas/AuthorizationConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferConfig'
+    GetPaymentMethodsResponse:
+      type: object
+      description: Get payment methods configuration record response
+      properties:
+        authorization:
+          $ref: '#/components/schemas/AuthorizationConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferConfig'
+    UpdatePaymentMethodsRequest:
+      type: object
+      description: Update payment methods configuration record request
+      properties:
+        authorization:
+          $ref: '#/components/schemas/AuthorizationConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferConfig'
+    UpdatePaymentMethodsResponse:
+      type: object
+      description: Update payment methods configuration record response
+      properties:
+        authorization:
+          $ref: '#/components/schemas/AuthorizationConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferConfig'
+    PatchPaymentMethodsRequest:
+      type: object
+      description: Patch payment methods configuration request
+      properties:
+        authorization:
+          $ref: '#/components/schemas/AuthorizationConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferConfig'
+    PatchPaymentMethodsResponse:
+      type: object
+      description: Patch payment methods configuration response
+      properties:
+        authorization:
+          $ref: '#/components/schemas/AuthorizationConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferConfig'
+    UpdateBalanceAfterDischarge:
+      type: boolean
+      description: >-
+        If set to `true`, the platform will update the account balances only
+        after the discharge process is completed. By default, this value is
+        `false`, and the platform updates the account balances during the
+        authorization process. This field applies to credit authorizations only.
+      example: true
+      default: false
+    RequireExternalAuthentication:
+      type: boolean
+      description: >-
+        Flag to indicate whether this Org/Program/Account requires a call to an
+        external authentication entity.
+      example: true
+      default: false
+    CancellationThreshold:
+      type: integer
+      description: >-
+        Time in minutes this operation should be canceled after being approved
+        and not receiving any confirmation.
+      example: 1440
+      minimum: 30
+      maximum: 86400
+      default: 14400
+    ConfirmationVerificationEndpoint:
+      type: string
+      description: >-
+        Endpoint that is called to verify whether an authorization was confirmed
+        or not. If this endpoint is not configured, no external verification is
+        made and a direct confirmation call should be performed on the payment
+        methods endpoint.
+      example: https://yourverificationendpoint.com
+    ConfirmationVerificationMTLS:
+      type: boolean
+      description: >-
+        Should the confirmation verification endpoint be called using mTLS? This
+        flag can only be true if `confirmation_verification_endpoint` and
+        `confirmation_verification_mtls_prefix` are configured.
+      example: true
+      default: false
+    ConfirmationVerificationMTLSPrefix:
+      type: string
+      description: >-
+        Prefix to be used when the verification endpoint is called using mTLS.
+        This prefix is appended to the host configured in the confirmation
+        verification endpoint when using mTLS. The prefix can be set and is
+        **REQUIRED**  only if `confirmation_verification_mtls` is `true` and the
+        `confirmation_verification_endpoint` is configured.
+    ConfirmationVerificationRate:
+      type: integer
+      description: >
+        Time in minutes the platform should call external endpoint to verify
+        whether the authorization was captured and confirmed or not. 
+
+        If this field is present, the verification endpoint is required to be
+        configured.
+
+        This verification happens until either the authorization is confirmed or
+        the cancel after N minutes threshold is reached.
+      example: 30
+      minimum: 5
+      maximum: 1440
+      default: 60
+    AllowAuthorizationByDocumentNumber:
+      type: boolean
+      description: >-
+        Flag to indicate whether this Org/Program/Account is allowed to
+        authorize using Document Number as account holder verification method.
+      example: true
+      default: false
+    RetroactivePaymentTimeRestriction:
+      type: integer
+      description: The number of days allowed for this operation be backdated.
+      example: 5
+      default: 7
+    PaymentAcceptanceConfig:
+      type: object
+      description: Group of acceptances related to the payments flow.
+      properties:
+        retroactive_payment_time_restriction:
+          $ref: '#/components/schemas/RetroactivePaymentTimeRestriction'
+        require_external_authentication:
+          $ref: '#/components/schemas/RequireExternalAuthentication'
+        update_balance_after_discharge:
+          $ref: '#/components/schemas/UpdateBalanceAfterDischarge'
+        rules:
+          $ref: '#/components/schemas/Rules'
+    AuthorizationAcceptanceConfig:
+      type: object
+      description: Group of acceptances related to the authorization flow.
+      properties:
+        external_calculation_endpoint:
+          type: string
+          description: >-
+            Endpoint that is called when there is an external integration to
+            simulate and calculate purchases.
+          example: https://yourendpoint.com
+        cancellation_threshold:
+          $ref: '#/components/schemas/CancellationThreshold'
+        confirmation_verification_endpoint:
+          $ref: '#/components/schemas/ConfirmationVerificationEndpoint'
+        confirmation_verification_mtls:
+          $ref: '#/components/schemas/ConfirmationVerificationMTLS'
+        confirmation_verification_mtls_prefix:
+          $ref: '#/components/schemas/ConfirmationVerificationMTLSPrefix'
+        confirmation_verification_rate:
+          $ref: '#/components/schemas/ConfirmationVerificationRate'
+        require_external_authentication:
+          $ref: '#/components/schemas/RequireExternalAuthentication'
+        update_balance_after_discharge:
+          $ref: '#/components/schemas/UpdateBalanceAfterDischarge'
+        rules:
+          $ref: '#/components/schemas/Rules'
+    TransferAcceptanceConfig:
+      type: object
+      description: Group of acceptances related to the transfer flow.
+      properties:
+        from:
+          type: object
+          description: Group of acceptances related to the source account.
+          properties:
+            retroactive_payment_time_restriction:
+              $ref: '#/components/schemas/RetroactivePaymentTimeRestriction'
+            require_external_authentication:
+              $ref: '#/components/schemas/RequireExternalAuthentication'
+            rules:
+              $ref: '#/components/schemas/Rules'
+        to:
+          type: object
+          description: Group of acceptances related to the target account.
+          properties:
+            retroactive_payment_time_restriction:
+              $ref: '#/components/schemas/RetroactivePaymentTimeRestriction'
+            require_external_authentication:
+              $ref: '#/components/schemas/RequireExternalAuthentication'
+            rules:
+              $ref: '#/components/schemas/Rules'
+    CreateAcceptanceRequest:
+      type: object
+      description: Create an acceptance configuration record
+      properties:
+        authorization:
+          $ref: '#/components/schemas/AuthorizationAcceptanceConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentAcceptanceConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferAcceptanceConfig'
+    CreateAcceptanceResponse:
+      type: object
+      description: Create acceptance configuration record response
+      properties:
+        authorization:
+          $ref: '#/components/schemas/AuthorizationAcceptanceConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentAcceptanceConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferAcceptanceConfig'
+    UpdateAcceptanceRequest:
+      type: object
+      description: Update an acceptance configuration record
+      properties:
+        authorization:
+          $ref: '#/components/schemas/AuthorizationAcceptanceConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentAcceptanceConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferAcceptanceConfig'
+    UpdateAcceptanceResponse:
+      type: object
+      description: Update acceptance configuration record response
+      properties:
+        authorization:
+          $ref: '#/components/schemas/AuthorizationAcceptanceConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentAcceptanceConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferAcceptanceConfig'
+    PatchAcceptanceRequest:
+      type: object
+      description: Update acceptance configuration request
+      properties:
+        authorization:
+          $ref: '#/components/schemas/AuthorizationAcceptanceConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentAcceptanceConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferAcceptanceConfig'
+    PatchAcceptanceResponse:
+      type: object
+      description: Update acceptance configuration response
+      properties:
+        authorization:
+          $ref: '#/components/schemas/AuthorizationAcceptanceConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentAcceptanceConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferAcceptanceConfig'
+    GetAcceptanceResponse:
+      type: object
+      description: Get acceptance configuration record response
+      properties:
+        processing_code:
+          type: string
+          description: >-
+            Processing code that defines the operation related to this
+            acceptance configuration.
+        authorization:
+          $ref: '#/components/schemas/AuthorizationAcceptanceConfig'
+        payment:
+          $ref: '#/components/schemas/PaymentAcceptanceConfig'
+        transfer:
+          $ref: '#/components/schemas/TransferAcceptanceConfig'
+    GetAcceptancePriorityResponse:
+      type: object
+      description: Get acceptance configuration record response
+      properties:
+        processing_code:
+          type: string
+          description: >-
+            Processing code that defines the operation related to this
+            acceptance configuration.
+        authorization:
+          $ref: '#/components/schemas/AuthorizationAcceptanceConfig'
+        config:
+          type: object
+          description: Get Authorization configuration record response
+          properties:
+            authorization:
+              $ref: '#/components/schemas/AuthorizationConfig'
+security:
+  - BearerAuth: []
+tags:
+  - name: Payment method configs
+    description: Payment methods configurations endpoints.
+  - name: Payment method acceptances
+    description: Payment methods acceptances endpoints.
+  - name: Processing codes
+    description: Processing code configurations endpoints.
+paths:
+  /payment-methods-configs/v1/configs:
+    post:
+      summary: Create configuration by Org
+      description: >
+        Create a payment methods configuration for an authorization at the
+        organization (Org) level. This level can be used as a default
+        configuration for all programs and accounts in this Org. There can be
+        only one configuration by Org. New creation attempts for the same Org
+        receive a conflict response.
+
+
+        **Note:** This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: post-config-by-tenant
+      tags:
+        - Payment method configs
+      requestBody:
+        description: Create payment methods configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentMethodsConfigRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentMethodsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: Get configuration by Org
+      description: >-
+        Get a payment methods configuration at the Org level. Note that the
+        organization and account information is pulled from the access token.
+      operationId: get-config-by-tenant
+      tags:
+        - Payment method configs
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPaymentMethodsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    put:
+      summary: Replace configuration by Org
+      description: >-
+        Update a payment methods configuration at the organization (Org) level.
+        This operation updates the entire configuration, so all fields must be
+        sent to avoid data loss.
+      operationId: put-config-by-tenant
+      tags:
+        - Payment method configs
+      requestBody:
+        description: Create Payment methods configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePaymentMethodsRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdatePaymentMethodsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    patch:
+      summary: Update configuration by Org
+      description: >-
+        Update a payment methods configuration at the organization (Org) level.
+        This operation updates only the fields with the provided values.
+      operationId: patch-config-by-tenant
+      tags:
+        - Payment method configs
+      requestBody:
+        description: Update payment methods configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchPaymentMethodsRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatchPaymentMethodsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      summary: Delete configuration by Org
+      description: Delete a payment methods configuration at the organization (Org) level.
+      operationId: delete-config-by-tenant
+      tags:
+        - Payment method configs
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /payment-methods-configs/v1/configs/programs/{programId}:
+    parameters:
+      - name: programId
+        schema:
+          type: integer
+        in: path
+        required: true
+        description: ID of program to which to apply this configuration.
+    post:
+      summary: Create configuration by program
+      description: >
+        Create a payment methods configuration at the program level. This level
+        can be used as a default configuration for all accounts in this program
+        and at a more granular level than Org. There can be only one
+        configuration by program. New creation attempts for the same program
+        receive a conflict response.
+
+
+        **Note:** This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.      
+      operationId: post-config-by-program
+      tags:
+        - Payment method configs
+      requestBody:
+        description: Create Payment methods configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentMethodsConfigRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentMethodsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: Get configuration by program
+      description: Get the Payment methods configuration on the program level.
+      operationId: get-config-by-program
+      tags:
+        - Payment method configs
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPaymentMethodsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    put:
+      summary: Replace configuration by program
+      description: >-
+        Update a payment methods configuration at the program level. This
+        operation updates the entire configuration, so all fields must be sent
+        to avoid data loss.
+      operationId: put-config-by-program
+      tags:
+        - Payment method configs
+      requestBody:
+        description: Update payment methods configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePaymentMethodsRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdatePaymentMethodsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    patch:
+      summary: Update configuration by program
+      description: >-
+        Update a payment methods configuration at the program level. This
+        operation updates only the fields with the provided values.
+      operationId: patch-config-by-program
+      tags:
+        - Payment method configs
+      requestBody:
+        description: Update payment methods configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchPaymentMethodsRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatchPaymentMethodsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      summary: Delete configuration by program
+      description: Delete a payment methods configuration at the program level.
+      operationId: delete-config-by-program
+      tags:
+        - Payment method configs
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /payment-methods-configs/v1/configs/accounts/{accountId}:
+    parameters:
+      - name: accountId
+        schema:
+          type: integer
+        in: path
+        required: true
+        description: ID of account to which to apply the configuration.
+    post:
+      summary: Create configuration by account
+      description: >
+        Create a payment methods configuration at the account level. This is the
+        most granular level allowed and can be used to customize a specific
+        account. There can be only one configuration by account. New creation
+        attempts for the same account receive a conflict response.
+
+
+        **Note:** This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: post-config-by-account
+      tags:
+        - Payment method configs
+      requestBody:
+        description: Create Payment methods configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentMethodsConfigRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentMethodsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: Get configuration by account
+      description: Get a payment methods configuration at the account level.
+      operationId: get-config-by-account
+      tags:
+        - Payment method configs
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPaymentMethodsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    put:
+      summary: Replace configuration by account
+      description: >-
+        Update a payment methods configuration at the account level. This
+        operation updates the entire configuration, so all fields must be sent
+        to avoid data loss.
+      operationId: put-config-by-account
+      tags:
+        - Payment method configs
+      requestBody:
+        description: Update Payment methods configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePaymentMethodsRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdatePaymentMethodsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    patch:
+      summary: Update configuration by account
+      description: >-
+        Update a payment methods configuration at the account level. This
+        operation updates only the fields with the provided values.
+      operationId: patch-config-by-account
+      tags:
+        - Payment method configs
+      requestBody:
+        description: Update payment methods configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchPaymentMethodsRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatchPaymentMethodsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      summary: Delete configuration by account
+      description: Delete a payment methods configuration at the account level.
+      operationId: delete-config-by-account
+      tags:
+        - Payment method configs
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /payment-methods-configs/v1/configs/priority-configs:
+    get:
+      summary: Get configuration by hierarchy
+      description: >
+        Get a payment methods configuration based on the hierarchy from the most
+        granular to the least granular (account > program > Org).
+
+
+        **Note:** This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment. 
+      operationId: get-config-by-priority
+      tags:
+        - Payment method configs
+      parameters:
+        - name: program_id
+          schema:
+            type: integer
+          in: query
+          required: true
+          description: >-
+            ID of program that the retrieved configuration is applied to. You
+            may skip this parameter if the account ID parameter is present in
+            the query.
+        - name: account_id
+          schema:
+            type: integer
+          in: query
+          required: true
+          description: >-
+            ID of account that the retrieved configuration is applied to. You
+            may skip this parameter if the program ID parameter is present in
+            the query.
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPaymentMethodsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /payment-methods-configs/v1/acceptances/processing-codes/{processingCode}:
+    parameters:
+      - name: processingCode
+        schema:
+          type: string
+        in: path
+        required: true
+        description: >-
+          Processing code that defines the operation related to this acceptance
+          configuration.
+    post:
+      summary: Create acceptance configuration by Org
+      description: >
+        Create acceptance configuration for a processing code operation on the
+        organization (Org) level. This level can be used as a default
+        configuration for all programs and accounts in this Org. There is always
+        only one configuration by operation by Org. New creation attempts for
+        the same operation receive a conflict response.
+
+
+        **Note:** This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: post-acceptance-by-tenant
+      tags:
+        - Payment method acceptances
+      requestBody:
+        description: Create acceptance configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAcceptanceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    put:
+      summary: Replace acceptance configuration by Org
+      description: >-
+        Update acceptance configuration for a processing code operation on the
+        Org level. This operation updates the entire configuration, so all
+        fields must be sent to avoid data loss.
+      operationId: put-acceptance-by-tenant
+      tags:
+        - Payment method acceptances
+      requestBody:
+        description: Create acceptance configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAcceptanceRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateAcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    patch:
+      summary: Update acceptance configuration by Org
+      description: >-
+        Update acceptance configuration for a processing code operation on the
+        Org level. This operation updates only the fields with the provided
+        values.
+      operationId: patch-acceptance-by-tenant
+      tags:
+        - Payment method acceptances
+      requestBody:
+        description: Update acceptance configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchAcceptanceRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatchAcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: Get acceptance configuration by Org
+      description: >-
+        Get acceptance configuration for a processing code operation on the Org
+        level.
+      operationId: get-acceptance-by-tenant
+      tags:
+        - Payment method acceptances
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      summary: Delete acceptance configuration by Org
+      description: >-
+        Delete acceptance configuration for a processing code operation on the
+        Org level.
+      operationId: delete-acceptance-config-by-tenant
+      tags:
+        - Payment method acceptances
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /payment-methods-configs/v1/acceptances/processing-codes/{processingCode}/programs/{programId}:
+    parameters:
+      - name: processingCode
+        schema:
+          type: string
+        in: path
+        required: true
+        description: >-
+          Processing code that defines the operation related to this acceptance
+          configuration.
+      - name: programId
+        schema:
+          type: integer
+        in: path
+        required: true
+        description: Program ID to which to apply this configuration.
+    post:
+      summary: Create acceptance configuration by program
+      description: >
+        Create acceptance configuration for a processing code operation on the
+        program level. This level can be used as a default configuration for all
+        accounts in this program and at a more granular level than Org. There is
+        always only one configuration by operation by program. New creation
+        attempts for the same operation receive a conflict response.
+
+
+        **Note:** This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: post-acceptance-by-program
+      tags:
+        - Payment method acceptances
+      requestBody:
+        description: Create acceptance configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAcceptanceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    put:
+      summary: Replace acceptance configuration by program
+      description: >-
+        Update acceptance configuration for a processing code operation on the
+        program level. This operation updates the entire configuration, so all
+        fields must be sent to avoid data loss.
+      operationId: put-acceptance-by-program
+      tags:
+        - Payment method acceptances
+      requestBody:
+        description: Update acceptance configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAcceptanceRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateAcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    patch:
+      summary: Update acceptance configuration by program
+      description: >-
+        Update acceptance configuration for a processing code operation on the
+        program level. This operation updates only the fields with the provided
+        values.
+      operationId: patch-acceptance-by-program
+      tags:
+        - Payment method acceptances
+      requestBody:
+        description: Patch acceptance configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchAcceptanceRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatchAcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: Get acceptance configuration by program
+      description: >-
+        Get acceptance configuration for a processing code operation on the
+        program level.
+      operationId: get-acceptance-by-program
+      tags:
+        - Payment method acceptances
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      summary: Delete acceptance configuration by program
+      description: >-
+        Delete acceptance configuration for a processing code operation on the
+        program level.
+      operationId: delete-acceptance-config-by-program
+      tags:
+        - Payment method acceptances
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /payment-methods-configs/v1/acceptances/processing-codes/{processingCode}/accounts/{accountId}:
+    parameters:
+      - name: processingCode
+        schema:
+          type: string
+        in: path
+        required: true
+        description: >-
+          Processing code that defines the operation related to this acceptance
+          configuration.
+      - name: accountId
+        schema:
+          type: integer
+        in: path
+        required: true
+        description: ID of account to which to apply the configuration.
+    post:
+      summary: Create acceptance configuration by account
+      description: >
+        Create acceptance configuration for a processing code operation on the
+        account level. This is the most granular level allowed and can be used
+        to customize a specific account. There is always only one configuration
+        by operation by account. New creation attempts for the same operation
+        receive a conflict response.
+
+
+        **Note:** This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: post-acceptance-by-account
+      tags:
+        - Payment method acceptances
+      requestBody:
+        description: Create acceptance configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAcceptanceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    put:
+      summary: Replace acceptance configuration by account
+      description: >-
+        Update acceptance configuration for a processing code operation on the
+        account level. This operation updates the entire configuration, so all
+        fields must be sent to avoid data loss.
+      operationId: put-acceptance-by-account
+      tags:
+        - Payment method acceptances
+      requestBody:
+        description: Update acceptance configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAcceptanceRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateAcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    patch:
+      summary: Update acceptance configuration by account
+      description: >-
+        Update acceptance configuration for a processing code operation on the
+        account level. This operation updates only the fields with the provided
+        values.
+      operationId: patch-acceptance-by-account
+      tags:
+        - Payment method acceptances
+      requestBody:
+        description: Update acceptance configuration request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchAcceptanceRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatchAcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: Get acceptance configuration by account
+      description: >-
+        Get acceptance configuration for a processing code operation on the
+        account level.
+      operationId: get-acceptance-by-account
+      tags:
+        - Payment method acceptances
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      summary: Delete acceptance configuration by account
+      description: >-
+        Delete acceptance configuration for a processing code operation on the
+        account level.
+      operationId: delete-acceptance-config-by-account
+      tags:
+        - Payment method acceptances
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /payment-methods-configs/v1/acceptances/processing-codes/{processing_code}/priority-configs:
+    get:
+      summary: Get acceptance configuration by hierarchy
+      description: >
+        Get acceptance configuration for a processing code operation based on
+        the hierarchy from the most granular to the least granular (account >
+        program > Org).
+
+
+        **Note:** This is a PCI endpoint, use the https://gw-pci.pismolabs.io
+        environment.
+      operationId: get-acceptance-by-priority
+      tags:
+        - Payment method acceptances
+      parameters:
+        - name: processing_code
+          schema:
+            type: string
+          in: path
+          required: true
+          description: >-
+            Processing code that defines the operation related to the acceptance
+            configuration that is being retrieved.
+        - name: program_id
+          schema:
+            type: integer
+          in: query
+          required: true
+          description: >-
+            ID of program that the retrived configuration is applied to. You may
+            skip this parameter if the account id parameter is present in the
+            query.
+        - name: account_id
+          schema:
+            type: integer
+          in: query
+          required: true
+          description: >-
+            ID of account that the retrieved configuration is applied to. You
+            may skip this parameter if the program id parameter is present in
+            the query.
+        - name: fetch_config
+          schema:
+            type: boolean
+          in: query
+          required: false
+          description: >-
+            Flag to identify whether the Authorization configurations should be
+            retrieved along with the acceptances or not.
+      responses:
+        '200':
+          description: Retrieved Successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAcceptancePriorityResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /payments-config/v1/processing-codes:
+    post:
+      summary: Create processing code (deprecated)
+      deprecated: true
+      description: >
+        This endpoint is **deprecated**. Use the [Create processing
+        code](ref:createprocessingcode) endpoint instead. 
+
+
+        Create a processing code that identifies a financial operation for the
+        organization and defines how the Pismo platform handles this operation
+        type.
+
+
+        If you provide the required fields only, the platform creates and
+        returns only one `processing_code` for the operation.
+
+
+        If you provide all available fields, the platform creates and returns
+        two processing codes: `processing_code` for the operation and
+        `undo_processing_code` for its reversal.
+
+
+        See the [Payments configuration](doc:payments-configurations) guide for
+        more information.
+      operationId: post-processing-code-by-tenant
+      tags:
+        - Processing codes
+      requestBody:
+        description: Create processing code configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProcessingCodeRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateProcessingCodeResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                Fields violations:
+                  value:
+                    code: FIELDS-VIOLATIONS
+                    error_code: FIELDS-VIOLATIONS
+                    message: One or more fields are invalid.
+                    error: >-
+                      processing_code must be an alphanumeric
+                      value;undo_processing_code must be an alphanumeric value
+                    violations:
+                      processing_code: processing_code must be an alphanumeric value
+                      undo_processing_code: undo_processing_code must be an alphanumeric value
+                Invalid payload:
+                  value:
+                    code: PC-INVALID-SAVE-PAYLOAD
+                    error_code: PC-INVALID-SAVE-PAYLOAD
+                    message: Save payload is invalid. It must be a valid JSON.
+                Invalid Undo Information Payload:
+                  value:
+                    code: PC-INVALID-UNDO-INFORMATION-PAYLOAD
+                    error_code: PC-INVALID-UNDO-INFORMATION-PAYLOAD
+                    message: >-
+                      Undo information in payload is invalid. All fields must be
+                      present.
+                Invalid Same Code And UndoCode:
+                  value:
+                    code: PC-INVALID-UNDO-EQUALS-CODE
+                    error_code: PC-INVALID-UNDO-EQUALS-CODE
+                    message: undo_processing_code cannot be equal to processing_code.
+                InvalidPatchInformationPayload:
+                  value:
+                    code: PC-INVALID-PATCH-INFORMATION-PAYLOAD
+                    error_code: PC-INVALID-PATCH-INFORMATION-PAYLOAD
+                    message: >-
+                      Patch information in payload is invalid. All fields must
+                      be present.
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: List processing codes (deprecated)
+      deprecated: true
+      description: >
+        This endpoint is **deprecated**. Use the [List processing
+        codes](ref:processingcodelist) endpoint instead. 
+
+
+        List processing codes, which you can filter by code or description.
+
+
+        If you don't specify any query parameters, then the response lists all
+        processing codes defined for the organization.
+      operationId: get-processing-code-by-tenant
+      parameters:
+        - in: query
+          name: processingCode
+          schema:
+            type: string
+          description: >-
+            Unique alphanumeric identifier that defines how the Pismo platform
+            handles this financial operation type.
+        - in: query
+          name: description
+          schema:
+            type: string
+          description: Processing code description.
+      tags:
+        - Processing codes
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProcessingCodeResponse'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /payments-config/v1/processing-codes/{processing_code}:
+    parameters:
+      - schema:
+          type: string
+        name: processing_code
+        in: path
+        required: true
+        description: Processing code to update.
+    patch:
+      summary: Update processing code (deprecated)
+      deprecated: true
+      description: >
+        This endpoint is **deprecated**. Use the [Update processing
+        code](ref:processingcodeupdate) endpoint instead. 
+
+
+        Update description of this processing code or provide the
+        `undo_processing_code` field that links to the existing processing code
+        that reverses this operation.
+      operationId: patch-undo-processing-code-by-tenant
+      tags:
+        - Processing codes
+      requestBody:
+        description: Patch undo processing code configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProcessingCodeRequest'
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateProcessingCodeResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'

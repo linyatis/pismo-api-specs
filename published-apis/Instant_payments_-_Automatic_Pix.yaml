@@ -1,0 +1,1605 @@
+openapi: 3.0.1
+info:
+  title: Instant payments - Automatic Pix
+  description: API to handle Automatic Pix transactions
+  termsOfService: https://developers.pismo.io/terms/
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+    email: support@pismo.com.br
+  license:
+    name: Copyright Pismo
+    url: https://developers.pismo.io/licenses/
+  version: '1.0'
+servers:
+  - url: https://sandbox-cdn.pismolabs.io
+    description: Ext API server for testing
+  - url: https://sandbox-cdn.pismolabs.io/inst-pull-pay
+    description: Ext API server for testing Automatic Pix
+tags:
+  - name: Automatic Pix
+    description: Automatic Pix endpoints.
+components:
+  parameters:
+    AccountIdHeader:
+      name: x-account
+      in: header
+      schema:
+        type: integer
+      description: Pismo account ID.
+      required: true
+      example: 5869300
+    AfterIdQuery:
+      in: query
+      name: afterId
+      description: >-
+        Last returned item ID from response. Use this field to return more
+        results.
+      required: false
+      schema:
+        type: string
+    AuthHeader:
+      in: header
+      name: Authorization
+      required: true
+      description: >-
+        Account token - an access token encoded with a Pismo account ID. Tokens
+        can expire quickly, which can result in a <b>401 Unauthorized</b>
+        message.
+      schema:
+        type: string
+        example: Bearer eyJhbGci...IUzUx
+    AutomaticPixExecutionStatusQuery:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - CREATED
+          - PENDING
+          - EXPIRED
+          - ACCEPTED
+          - REJECTED
+          - IN_PROGRESS
+          - FINISHED
+          - CANCELLED
+          - RECEIVED
+          - CONFIRMED
+          - WAITING_CUSTOMER
+      description: Execution status filter
+      example: CREATED
+    AutomaticPixExecutionStatusOptionalQuery:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - CREATED
+          - PENDING
+          - EXPIRED
+          - ACCEPTED
+          - REJECTED
+          - IN_PROGRESS
+          - FINISHED
+          - CANCELLED
+          - RECEIVED
+          - CONFIRMED
+          - WAITING_CUSTOMER
+      description: Execution status filter
+      example: CREATED
+    BeginDateQueryOptional:
+      name: beginDate
+      in: query
+      description: |
+        RFC 3339 begin date filter. For example: `2023-04-12T23:20:50.52Z`. 
+
+        Maximum days allowed between `beginDate` and `endDate` is 30.
+      required: false
+      schema:
+        type: string
+      example: '2023-04-12T23:20:50.52Z'
+    EndDateQueryOptional:
+      name: endDate
+      in: query
+      description: |
+        RFC 3339 end date filter. For example: `2023-04-12T23:20:50.52Z`. 
+
+        Maximum days allowed between `beginDate` and `endDate` is 30.
+      required: false
+      schema:
+        type: string
+      example: '2023-04-12T23:20:50.52Z'
+    EndToEndIDpath:
+      name: end_to_end_id
+      in: path
+      description: >-
+        Transaction end-to-end ID. This field is a Brazil Central Bank (BCB)
+        requirement to track all Pix transaction steps.
+      required: true
+      schema:
+        type: string
+    IdempotencyKeyHeader:
+      name: Idempotency-Key
+      in: header
+      description: >
+        A unique ID to ensure the operation remains idempotent, allowing for
+        operation repitition without causing unintended effects or duplication.
+        An idempotent operation is one that can be applied multiple times, yet
+        the outcome remains the same. it ensures that network errors, retries,
+        or failures can occur without introducing inconsistencies.
+      required: true
+      schema:
+        type: string
+    OrgIdHeader:
+      name: x-tenant
+      in: header
+      description: |
+        Organization ID
+      schema:
+        type: string
+    PaymentOrderStatusQuery:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - PENDING
+          - WAITING_CUSTOMER
+          - REGISTERED
+          - ACTIVE
+          - CANCELLED
+          - CANCELLING
+          - EXPIRED
+          - REJECTED
+          - CONCLUDED
+      description: Payment order status filter
+      example: PENDING
+    PerPageQuery:
+      name: perPage
+      in: query
+      description: Per page amount (min=1, max=100). Default is `20`.
+      required: false
+      schema:
+        type: string
+    RecurrenceIdPath:
+      name: recurrence_id
+      in: path
+      description: BACEN (Brazil Central Bank) recurrence ID
+      required: true
+      schema:
+        type: string
+    RecurrenceIdQuery:
+      name: recurrenceId
+      in: query
+      description: BACEN (Brazil Central Bank) recurrence ID filter
+      required: false
+      schema:
+        type: string
+    RoleTypeQuery:
+      name: roleType
+      in: query
+      required: true
+      schema:
+        type: string
+        enum:
+          - PAYEE
+          - PAYER
+      description: Role type filter.
+  schemas:
+    AccountID:
+      type: integer
+      description: Pismo account ID.
+      example: 5869300
+    AccountNumber2:
+      type: string
+      description: Payer's account number.
+      maxLength: 20
+      example: '98765432'
+    AccountType:
+      type: string
+      enum:
+        - CACC
+        - SLRY
+        - SVGS
+        - TRAN
+      maxLength: 4
+      description: |
+        Account type:  
+          `CACC` - Checking account
+          `SVGS` - Savings account
+          `TRAN` - Transactional account (Brazil only). Also known as "conta corrente" in Portuguese, this is a bank account type designed for everyday financial transactions and is the most common type individuals and businesses use for day-to-day banking. 
+          `SLRY` - Salary account. Employer deposits a fixed amount every month.
+      example: TRAN
+    AdditionalInformation:
+      type: string
+      description: Additional information
+      maxLength: 105
+    AllowAttemptsAfterExpiration:
+      type: boolean
+      description: Will charge continue after due date?
+    Amount:
+      type: number
+      description: Amount to be transferred.
+      example: 1050.44
+    ApproveAuthorizationStatus:
+      type: string
+      description: Authorization status
+      enum:
+        - ACCEPTED
+        - REJECTED
+      example: REJECTED
+    Authorization:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/AuthorizationID'
+        role_type:
+          $ref: '#/components/schemas/RoleType'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        recurrence_id:
+          $ref: '#/components/schemas/RecurrenceID'
+        expiration_date:
+          $ref: '#/components/schemas/ExpirationDate'
+        provider_created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        provider_updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
+        maximum_debit_allowed:
+          oneOf:
+            - $ref: '#/components/schemas/MaximumDebitAllowed'
+            - $ref: '#/components/schemas/NullType'
+        reason_code:
+          $ref: '#/components/schemas/AuthorizationReasonCode'
+        payer:
+          oneOf:
+            - $ref: '#/components/schemas/Payer'
+            - $ref: '#/components/schemas/NullType'
+        rec_payload:
+          oneOf:
+            - $ref: '#/components/schemas/RecurrenceDetails'
+            - $ref: '#/components/schemas/NullType'
+    AuthorizationID:
+      type: string
+      description: >-
+        Authorization ID the same as BACEN (Brazil Central Bank) IdSoliReq
+        (request identification code)
+      example: IS0435879820240605bcdb1fhn43a
+    AuthorizationReasonCode:
+      type: string
+      description: >
+        Authorization reason code. 
+
+
+        **Note:** "pain.009" is a message sent to the payer when the payee
+        starts a #1 journey (`AUT1`) Automatic Pix recurrence
+
+
+        * `AC01` - Account not found or not belonging to the paying user
+
+        * `AC04` - Paying user's transactional account is closed
+
+        * `AC06` - Paying user's transactional account is blocked
+
+        * `AP01` - Discrepancy in the field for updating periodic payments
+        recurrence data and the periodic payments recurrence status - lack of
+        synchronization
+
+        * `AP02` - Paying user's CPF/CNPJ  not found or different from the one
+        in the original pain.009. Or, in the case of cancellation, the paying
+        user's CPF/CNPJ does not match the one contained in the perioduc
+        payments recurrence data.
+
+        * `AP03` - Paying user's branch not found
+
+        * `AP04` - Invalid recurrence ID or does not match the original
+
+        * `AP05` - Inconsistent recurrence status for periodic payments
+
+        * `AP06` - Receiving user's CPF/CNPJ is different from the one in the
+        pain.009 or the payload. Or, in the case of cancellation, the receiving
+        user's CPF/CNPJ does not match the one contained in the periodic
+        payments recurrence data.
+
+        * `AP07` - Paying user's recurrence confirmation performed after the
+        confirmation request's expiration or cancellation (pain.009)
+
+        * `AP08` - First immediate payment associated with the recurrence was
+        not identified. (Valid only for Authorization Journey 3 (`AUT3`))
+
+        * `AP09` - Recurrence confirmation request for periodic payments was not
+        identified to enable its cancellation
+
+        * `AP10` - Cancellation requestor's CPF/CNPJ does not match the the
+        paying/receiving user's or the paying/receiving PSP's identification
+        contained in the periodic payments recurrence data.
+
+        * `AP11` - Paying PSP's ISPB diverges from the information contained in
+        the recurrence for periodic payments
+
+        * `AP12` - Receiving PSP's ISPB diverges from the information contained
+        in the recurrence for periodic payments
+
+        * `AP13` = Paying user rejects periodic payments recurrence confirmation
+        request due to receiving user non-recognition
+
+        * `AP14` - Paying user rejects periodic payments recurrence confirmation
+        request due to receiving user's lack of interest in using Pix Automatic
+
+        * `AP15` - Paying user's participant rejects recurrence confirmation
+        request for periodic payments as they chose not to offer Pix Automatic
+        usage for corporate clients
+
+        * `CH16` - Incorrect or incompatible message content with business rules
+
+        * `MD01` - Cancellation request's recurrence object does not exist.
+        Should not be used for cancellation requests of pain.009 with status =
+        `PDNG`. That is, a recurrence with status = `PDNG` should be considered
+        as an existing recurrence.
+
+        * `MD20` - Cancellation request's recurrence object has already expired.
+      enum:
+        - AC01
+        - AC04
+        - AC06
+        - AP01
+        - AP02
+        - AP03
+        - AP04
+        - AP05
+        - AP06
+        - AP07
+        - AP08
+        - AP09
+        - AP10
+        - AP11
+        - AP12
+        - AP13
+        - AP14
+        - AP15
+        - CH16
+        - MD01
+        - MD20
+      example: AC01
+    AuthorizationRejectedReasonCodeRequest:
+      type: string
+      description: >
+        Rejected authorizations reason code 
+
+        * `AP13` - Paying user rejects recurrence confirmation for periodic
+        payments due to receiving user not recognized
+
+        * `AP14` - Paying user rejects recurrence confirmation for periodic
+        payments due to receiving user not interested in using Automatic Pix
+      enum:
+        - AP13
+        - AP14
+      example: AP14
+    AuthorizationRequest:
+      type: object
+      description: Authorization request
+      required:
+        - id
+        - status
+      properties:
+        recurrence_id:
+          $ref: '#/components/schemas/RecurrenceID'
+        status:
+          $ref: '#/components/schemas/ApproveAuthorizationStatus'
+        reason_code:
+          $ref: '#/components/schemas/AuthorizationRejectedReasonCodeRequest'
+        max_payment_amount:
+          $ref: '#/components/schemas/MaxPaymentAmount'
+        journey_type:
+          $ref: '#/components/schemas/JourneyType'
+        payment_date_time:
+          $ref: '#/components/schemas/PaymentDateTime'
+        transaction_identification:
+          $ref: '#/components/schemas/TransactionIdentification'
+    AuthorizationResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/AuthorizationID'
+        expiration_date:
+          $ref: '#/components/schemas/ExpirationDate'
+        creted_at:
+          $ref: '#/components/schemas/CreatedAt'
+        updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
+        reason_code:
+          $ref: '#/components/schemas/AuthorizationReasonCode'
+        status:
+          type: string
+          description: Authorization status
+          enum:
+            - CREATED
+            - RECEIVED
+            - ACCEPTED
+            - REJECTED
+            - EXPIRED
+            - CANCELLED
+          example: ACCEPTED
+        payer:
+          $ref: '#/components/schemas/Payer'
+    BacenReasonCode:
+      type: string
+      description: >
+        Cancellation reason code:   
+
+
+        * `ACCL` - Paying receiving user's account cancelled
+
+        * `CPCL` - Receiving company closure
+
+        * `DCSD` - Paying user death 
+
+        * `ERSL` - Receiving user, or their participant, request cancelled due
+        to confirmation request error
+
+        * `FRUD` - Fraud
+
+        * `PCFD` - Receiving user participant request because the same
+        recurrence was confirmed another way, for example, via QR code
+
+        * `SLCR` - Receiving user request
+
+        * `SLDB` - Paying user request
+
+        * `NRES` - Receiving PSP request due to lack of response to pain.009
+        within the regulatory period
+      enum:
+        - ACCL
+        - CPCL
+        - DCSD
+        - ERSL
+        - FRUD
+        - PCFD
+        - SLCR
+        - SLDB
+        - NRES
+      example: ACCL
+    Bank:
+      type: string
+      description: >-
+        <a
+        href="https://bank.codes/numero-do-banco/bank/banco-central-do-brasil/"
+        target="_blank">ISPB (Identifcador do Sistema de Pagamento Brazil)</a> -
+        the Brazilian Payment System ID for the receiving bank, an 8-digit
+        value.
+      maxLength: 8
+      example: '237'
+    Branch:
+      type: string
+      description: This could be a bank-assigned branch ID or the branch's ISPB number.
+      maxLength: 4
+      example: '011'
+    CancelRecurrenceRequest:
+      type: object
+      description: Cancel recurrence request
+      required:
+        - recurrence_id
+        - reason_code
+      properties:
+        recurrence_id:
+          $ref: '#/components/schemas/RecurrenceID'
+        reason_code:
+          $ref: '#/components/schemas/BacenReasonCode'
+    CityCode:
+      type: string
+      description: >-
+        The <a href='https://www.ibge.gov.br/explica/codigos-dos-municipios.php'
+        target="_blank">IBGE</a> (Instituto Brasileiro de Geografia e
+        Estatística) city code.
+      example: '3550308'
+    CancellatedAt:
+      type: string
+      description: 'Cancellation date time, RFC 3339 format: YYYY-MM-DDThh:mm:ssZ.'
+      example: '2024-11-14T17:54:40Z'
+    CalendarDueDate:
+      type: string
+      description: Calendar due date
+      example: '2030-10-10'
+    CalendarWorkingDay:
+      type: boolean
+      description: Calendar working day?
+      example: false
+    CancelPaymentOrderRequest:
+      type: object
+      description: Cancel payment order request
+      required:
+        - end_to_end_id
+        - reason
+      properties:
+        end_to_end_id:
+          $ref: '#/components/schemas/EndToEndID'
+        reason:
+          $ref: '#/components/schemas/PaymentOrderReason'
+    CancelPaymentOrderResponse:
+      type: object
+      description: Cancel payment order request
+      required:
+        - end_to_end_id
+        - reason
+        - cancelled_at
+      properties:
+        end_to_end_id:
+          $ref: '#/components/schemas/EndToEndID'
+        reason:
+          $ref: '#/components/schemas/PaymentOrderReason'
+        cancelled_at:
+          $ref: '#/components/schemas/CancellatedAt'
+    ContractID:
+      type: string
+      description: |
+        Payee-created external ID for their reference.
+      maxLength: 35
+      example: 5509-uroo-78944-9987
+    CreatedAt:
+      type: string
+      format: datetime
+      description: |
+        Created at datetime. RFC 3339 format 
+      example: '2025-11-14T17:54:40Z'
+    customer.DetailMessage:
+      type: object
+      properties:
+        external:
+          type: array
+          items:
+            $ref: '#/components/schemas/customer.ExternalMessage'
+        parameters:
+          type: array
+          items:
+            $ref: '#/components/schemas/customer.ParameterMessage'
+        payload:
+          type: array
+          items:
+            $ref: '#/components/schemas/customer.PayloadMessage'
+    customer.Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error's code.
+          example: EPT0001
+        details:
+          $ref: '#/components/schemas/customer.DetailMessage'
+        message:
+          type: string
+          description: Error's message.
+          example: User not found
+    customer.ExternalMessage:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code.
+          example: PBE315
+        message:
+          type: string
+          description: Error message.
+          example: Generic error
+    customer.ParameterMessage:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Parameter field
+          example: Query parameter
+        message:
+          type: string
+          description: Message about parameter
+          example: Generic error
+    customer.PayloadMessage:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Payload parameter
+          example: Entity.field
+        message:
+          type: string
+          description: Message about error
+          example: Generic error
+    Debtor:
+      type: object
+      required:
+        - document_number
+        - document_type
+        - name
+      properties:
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        document_type:
+          $ref: '#/components/schemas/PersonType'
+        name:
+          $ref: '#/components/schemas/Name'
+    DocumentNumber:
+      type: string
+      description: >
+        A government document number, such as a Social Security number (US) or
+        Cadastro de Pessoas Físicas number (Brazil). Must be numeric with 11-14
+        digits.
+      minLength: 1
+      maxLength: 14
+      example: '123412341234'
+    DynamicAmount:
+      type: boolean
+      description: |
+        Does recurrence have a dynamic amount? 
+
+        If `true`, `min_payment_amount` is **REQUIRED**. 
+
+        If `false`, `amount` is **REQUIRED**. Default is `false`.
+      default: false
+      example: false
+    EndToEndID:
+      type: string
+      description: >
+        This field is a Brazil Central Bank (BCB) requirement to track all steps
+        of Pix transactions. 
+
+        Basically, there are two steps to a Pix transaction:
+            1. Initialize a transaction 
+            2. Confirm a transaction
+        The `end_to_end_id` is sent to the BCB in both steps in order to
+        identify all transaction information. 
+      example: E3030629420200808195101608910248
+    ExpirationDate:
+      type: string
+      format: datetime
+      description: >-
+        Authorization expiration date. RFC 3339 value. Format =
+        YYYY-MM-DDThh:mm:ss.SSSZ
+      example: '2020-08-13T13:49:03.000Z'
+    ExpirationDateCreateRecRequest:
+      type: string
+      format: datetime
+      description: >
+        Authorization expiration date, must be at least 2 days before the
+        `first_payment_date`. 
+
+
+        RFC 3339 value. Format = YYYY-MM-DDThh:mm:ss.SSSZ
+
+
+        If not passed,  the `expiration_date` is automatically generated, up to
+        2 days before the `first_payment_date`, or a maximum of 30 days from the
+        current date, whichever is due first
+      example: '2020-08-13T13:49:03.000Z'
+    FirstPaymentDate:
+      type: string
+      format: datetime
+      description: First charge/payment date. Format = yyyy-mm-dd
+      example: '2025-04-25'
+    FirstPaymentDateCreateRecRequest:
+      type: string
+      format: datetime
+      description: >-
+        First charge/payment date, must be more than 2 days ahead the recurrence
+        creation date. Format = yyyy-mm-dd
+      example: '2025-04-25'
+    FrequencyType:
+      type: string
+      description: Recurrence payment type
+      enum:
+        - WEEK
+        - MONTH
+        - QUARTER
+        - SEMESTER
+        - YEAR
+      example: MONTH
+    IsWorkingDays:
+      type: boolean
+      description: If the recurrence will only execute on working days
+      example: false
+    JourneyType:
+      type: string
+      description: |
+        Recurrence payment type: 
+         `AUT1` - Bank notification. If the merchant has the payer's banking information, a push notification can be sent directly to the payer's bank app, prompting them to authorize the recurring payment.
+         
+         `AUT2` - Authorization via QR code. Payer scans a merchant provided QR code to authorize recurring payments. This method does not initiate an immediate payment, allowing the first payment to be scheduled for a later date.
+         
+         `AUT3` - Authorization via QR code with first payment.  Similar to the second method, but the QR code includes information for both the authorization and the initial payment, enabling the payer to authorize the recurring payment and make the first payment in a single step.
+         
+         `AUT4` - Post-payment sign-up path. After completing a one-time payment via QR code, the payer is offered the option to authorize recurring payments for future transactions
+      enum:
+        - AUT1
+        - AUT2
+        - AUT3
+        - AUT4
+      example: AUT1
+    LastID:
+      type: integer
+      description: Last returned item ID. Use this ID to get more results.
+      example: 1602619
+    LastPaymentDate:
+      type: string
+      format: datetime
+      description: Last charge/payment date. Format = yyyy-mm-dd
+      example: '2026-06-10'
+    MaximumDebitAllowed:
+      type: number
+      description: Maximum debit allowed in recurrence authorization.
+      example: 86753.09
+    MaxPaymentAmount:
+      type: number
+      description: Maximum payment amount for dynamic amount recurrences, defined by payer.
+      example: 86753.09
+    MinPaymentAmount:
+      type: number
+      description: Minimum payment amount for dynamic amount recurrences, defined by payee.
+      example: 10.09
+    Name:
+      type: string
+      description: Name
+      maxLength: 200
+      example: Walter Melon
+    NextPage:
+      type: boolean
+      description: Are tbere more results?
+      example: false
+    NullType:
+      title: Null type reference
+      description: Used to add nullability to a ref
+      enum:
+        - null
+    NumberElements:
+      type: number
+      description: Total items returned in query
+    PageSize:
+      type: number
+      description: Maximum elements returned per query.
+    PatchRecurrenceRequest:
+      type: object
+      description: Payload with available fields to update a recurrence.
+      properties:
+        max_payment_amount:
+          $ref: '#/components/schemas/MaxPaymentAmount'
+    Payee:
+      type: object
+      required:
+        - document_number
+        - document_type
+        - name
+        - bank
+        - branch
+        - account_number
+        - account_type
+      properties:
+        name:
+          $ref: '#/components/schemas/Name'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        document_type:
+          $ref: '#/components/schemas/PersonType'
+        bank:
+          $ref: '#/components/schemas/Bank'
+        branch:
+          $ref: '#/components/schemas/Branch'
+        account_number:
+          $ref: '#/components/schemas/AccountNumber2'
+        account_type:
+          $ref: '#/components/schemas/AccountType'
+    Payer:
+      type: object
+      required:
+        - document_number
+        - document_type
+        - name
+        - bank
+        - branch
+        - account_number
+      properties:
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        document_type:
+          $ref: '#/components/schemas/PersonType'
+        name:
+          $ref: '#/components/schemas/Name'
+        bank:
+          $ref: '#/components/schemas/Bank'
+        branch:
+          $ref: '#/components/schemas/Branch'
+        account_number:
+          $ref: '#/components/schemas/AccountNumber2'
+        account_type:
+          $ref: '#/components/schemas/AccountType'
+        city_code:
+          $ref: '#/components/schemas/CityCode'
+    PaymentDateTime:
+      type: string
+      format: datetime
+      description: >
+        Date time from a successful payment. Mandatory for the `AUT3` journey.
+        RFC 3339 value. Format: YYYY-MM-DDThh:mm:ss.SSSZ.
+      example: '2020-08-13T13:49:03.000Z'
+    PersonType:
+      type: string
+      description: |
+        Person type:  
+        * `LEGAL_PERSON` - An actual person with legal rights.
+        * `NATURAL_PERSON` - An entity, such as an organization or company.
+      enum:
+        - LEGAL_PERSON
+        - NATURAL_PERSON
+      example: NATURAL_PERSON
+    PaymentOrderReason:
+      description: >
+        Payment order cancellation reason: 
+
+
+        * `ACCT` - Paying or receiving user's transactional account closed
+
+        * `BLCK` - Paying or receiving user's transactional account blocked
+
+        * `CCLD` - Recurring payments authorization cancelled
+
+        * `FAIL` - Settlement process failure or error
+
+        * `OTHR` - Paying or receiving user requested cancellation for other
+        reasons
+
+        * `SLBD` - Paying user request
+
+        * `SLCR` - Receiving user request
+      type: string
+      enum:
+        - ACCT
+        - BLCK
+        - CCLD
+        - FAIL
+        - OTHR
+        - SLBD
+        - SLCR
+      example: ACCT
+    PaymentOrderReasonDescription:
+      description: |
+        Payment order cancellation reason desciption
+      type: string
+      example: Paying user's account has been closed.
+    PaymentOrderStatus:
+      description: >
+        Payment order status: 
+
+
+        * `PENDING` - Payment order exists in the database.
+
+        * `WAITING_CUSTOMER`- Waiting on the payee to update the payment order
+        amount. Refer to the [Update order](ref:update-order-automatic-pix)
+        endpoint.
+
+        * `REGISTERED` - Payment order was registered to SPI instant payment
+        system. 
+
+        * `ACTIVE` - Payer PSP accepted payment order.
+
+        * `REJECTED` - Payer PSP rejected payment order. Check `reason.code` and
+        `reason.description`.
+
+        * `CANCELLING` - Payment order was previously accepted, cancel process
+        has begun. and it's waiting on counterparty acknowledgement.
+
+        * `CANCELLED` - Payment order was previously accepted and then
+        cancelled. Check `reason.code` and `reason.description`.
+
+        * `EXPIRED` - Pix transaction was not found by the due date. Will
+        trigger retry if applicable to the recurrence.
+
+        * `CONCLUDED` - Pix transaction was found and payment order is
+        concluded.
+      type: string
+      enum:
+        - PENDING
+        - WAITING_CUSTOMER
+        - REGISTERED
+        - ACTIVE
+        - CANCELLED
+        - CANCELLING
+        - EXPIRED
+        - REJECTED
+        - CONCLUDED
+      example: PENDING
+    PismoRecurrenceID:
+      type: string
+      description: Pismo recurrence ID.
+      example: 49940-9995-u88
+    PaymentOrderResponse:
+      type: object
+      properties:
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        recurrence_id:
+          $ref: '#/components/schemas/RecurrenceID'
+        end_to_end_id:
+          $ref: '#/components/schemas/EndToEndID'
+        status:
+          $ref: '#/components/schemas/PaymentOrderStatus'
+        transaction_identification:
+          $ref: '#/components/schemas/TransactionIdentification'
+        calendar:
+          type: object
+          properties:
+            due_date:
+              $ref: '#/components/schemas/CalendarDueDate'
+            working_day:
+              $ref: '#/components/schemas/CalendarWorkingDay'
+        amount:
+          $ref: '#/components/schemas/Amount'
+        dynamic_amount:
+          $ref: '#/components/schemas/DynamicAmount'
+        additional_information:
+          $ref: '#/components/schemas/AdditionalInformation'
+        max_payment_amount:
+          $ref: '#/components/schemas/MaxPaymentAmount'
+        min_amount_allowed:
+          $ref: '#/components/schemas/MinPaymentAmount'
+        reason:
+          type: object
+          properties:
+            code:
+              $ref: '#/components/schemas/PaymentOrderReason'
+            description:
+              $ref: '#/components/schemas/PaymentOrderReasonDescription'
+        payer:
+          oneOf:
+            - $ref: '#/components/schemas/Payer'
+            - $ref: '#/components/schemas/NullType'
+        payee:
+          $ref: '#/components/schemas/Payee'
+        debtor:
+          $ref: '#/components/schemas/Debtor'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
+    QueryFilters:
+      type: object
+      properties:
+        label:
+          type: string
+          description: Filter label
+        value:
+          type: string
+          description: Filter value
+        operator:
+          type: string
+          description: Filter operator
+      description: Filters used in  query
+      example:
+        label: status
+        value: CREATED
+    Recurrence:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/PismoRecurrenceID'
+        role_type:
+          $ref: '#/components/schemas/RoleType'
+        details:
+          $ref: '#/components/schemas/RecurrenceDetails'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
+        status:
+          $ref: '#/components/schemas/RecurrenceStatus'
+    RecurrenceDescription:
+      type: string
+      description: Recurrence payment description
+      maxLength: 35
+      example: Gym membership
+    RecurrenceDetails:
+      type: object
+      properties:
+        recurrence_id:
+          $ref: '#/components/schemas/RecurrenceID'
+        journey_type:
+          $ref: '#/components/schemas/JourneyType'
+        contract_id:
+          $ref: '#/components/schemas/ContractID'
+        description:
+          $ref: '#/components/schemas/RecurrenceDescription'
+        amount:
+          $ref: '#/components/schemas/Amount'
+        maximum_debit_allowed:
+          $ref: '#/components/schemas/MaxPaymentAmount'
+        minimum_debit_allowed:
+          $ref: '#/components/schemas/MinPaymentAmount'
+        frequency_type:
+          $ref: '#/components/schemas/FrequencyType'
+        allow_attempts_after_expiration:
+          $ref: '#/components/schemas/AllowAttemptsAfterExpiration'
+        first_payment_date:
+          $ref: '#/components/schemas/FirstPaymentDate'
+        payee:
+          $ref: '#/components/schemas/Payee'
+        payer:
+          $ref: '#/components/schemas/Payer'
+        debtor:
+          $ref: '#/components/schemas/Debtor'
+    RecurrenceID:
+      type: string
+      description: BACEN recurrence ID
+      example: RN000000012025050500012345678
+    RecurrenceRequest:
+      type: object
+      description: Recurrence request
+      required:
+        - contract_id
+        - description
+        - frequency_type
+        - allow_attempts_after_expiration
+        - first_payment_date
+        - debtor
+        - payer
+      properties:
+        contract_id:
+          $ref: '#/components/schemas/ContractID'
+        description:
+          $ref: '#/components/schemas/RecurrenceDescription'
+        frequency_type:
+          $ref: '#/components/schemas/FrequencyType'
+        allow_attempts_after_expiration:
+          $ref: '#/components/schemas/AllowAttemptsAfterExpiration'
+        first_payment_date:
+          $ref: '#/components/schemas/FirstPaymentDateCreateRecRequest'
+        debtor:
+          $ref: '#/components/schemas/Debtor'
+        payer:
+          $ref: '#/components/schemas/Payer'
+        dynamic_amount:
+          $ref: '#/components/schemas/DynamicAmount'
+        amount:
+          $ref: '#/components/schemas/Amount'
+        min_payment_amount:
+          $ref: '#/components/schemas/MinPaymentAmount'
+        last_payment_date:
+          $ref: '#/components/schemas/LastPaymentDate'
+        expiration_date:
+          $ref: '#/components/schemas/ExpirationDateCreateRecRequest'
+    RecurrenceResponse:
+      type: object
+      description: Recurrence response
+      properties:
+        recurrence_id:
+          $ref: '#/components/schemas/RecurrenceID'
+        journey_type:
+          $ref: '#/components/schemas/JourneyType'
+        contract_id:
+          $ref: '#/components/schemas/ContractID'
+        description:
+          $ref: '#/components/schemas/RecurrenceDescription'
+        amount:
+          $ref: '#/components/schemas/Amount'
+        min_payment_amount:
+          $ref: '#/components/schemas/MinPaymentAmount'
+        max_payment_amount:
+          $ref: '#/components/schemas/MaxPaymentAmount'
+        dynamic_amount:
+          $ref: '#/components/schemas/DynamicAmount'
+        frequency_type:
+          $ref: '#/components/schemas/FrequencyType'
+        allow_attempts_after_expiration:
+          $ref: '#/components/schemas/AllowAttemptsAfterExpiration'
+        is_working_days:
+          $ref: '#/components/schemas/IsWorkingDays'
+        expiration_date:
+          $ref: '#/components/schemas/ExpirationDate'
+        first_payment_date:
+          $ref: '#/components/schemas/FirstPaymentDate'
+        last_payment_date:
+          $ref: '#/components/schemas/LastPaymentDate'
+        payee:
+          $ref: '#/components/schemas/Payee'
+        payer:
+          $ref: '#/components/schemas/Payer'
+        debtor:
+          $ref: '#/components/schemas/Debtor'
+        status:
+          $ref: '#/components/schemas/RecurrenceStatus'
+        reason_code:
+          $ref: '#/components/schemas/BacenReasonCode'
+        transaction_identification:
+          $ref: '#/components/schemas/RecurrencTransactionIdentification'
+        authorizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationResponse'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
+    RecurrenceStatus:
+      type: string
+      description: Recurrence status
+      enum:
+        - CREATED
+        - ACCEPTED
+        - APPROVED
+        - REJECTED
+        - FINISHED
+        - EXPIRED
+        - CANCELLED
+      example: CREATED
+    RecurrencTransactionIdentification:
+      type: string
+      description: |
+        Recurrence transaction ID. 
+      example: 1a84daf6-a61b-4aba-919a-a9943db7102e
+    RoleType:
+      type: string
+      description: Role type
+      enum:
+        - PAYEE
+        - PAYER
+    TransactionIdentification:
+      type: string
+      description: >-
+        Transaction ID from a successful payment. Mandatory for the `AUT3`
+        journey.
+      maxLength: 35
+      example: ttx2020010300000000000000000000001
+    UpdatedAt:
+      type: string
+      description: Scheduled item last updated time, RFC 3339 format
+      example: '2024-11-14T17:54:40Z'
+    UpdatePaymentOrderRequest:
+      type: object
+      description: Update payment order
+      properties:
+        amount:
+          description: >-
+            New amount value, can be filled when recurrence has a dynamic
+            amount. Defined by the payee.
+          example: 101.11
+          type: number
+  responses:
+    400BadRequest:
+      description: Bad request
+      headers:
+        x-cid:
+          description: Request tracking ID.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/customer.Error'
+    401Unauthorized:
+      description: Unauthorized. Missing or invalid authentication token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/customer.Error'
+    404NotFound:
+      description: Not found
+      headers:
+        x-cid:
+          description: Request tracking ID.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/customer.Error'
+    500InternalServer:
+      description: Internal Server Error
+      headers:
+        x-cid:
+          description: Request tracking ID.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/customer.Error'
+paths:
+  /inst-pull-pay/v1/pix/automatic:
+    post:
+      summary: Create recurrence
+      description: >
+        Initiate a payment request to create a Pix Automatic recurrence payment
+        authorization. 
+
+
+        The Central Bank of Brazil (BACEN) created Pix Automatic - a feature
+        that allows for scheduled and automatic recurring transfers.  
+
+
+        For more information, refer to [Pix
+        Automatic](https://developers.pismo.io/pismo-docs/docs/pix-automatic) 
+      operationId: post-recurrence-automatic
+      tags:
+        - Automatic Pix
+      parameters:
+        - $ref: '#/components/parameters/AccountIdHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+        - $ref: '#/components/parameters/OrgIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecurrenceRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurrenceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: List recurrences
+      description: |
+        List Pix Automatic recurrences
+      operationId: list-recurrence-automatic
+      tags:
+        - Automatic Pix
+      parameters:
+        - $ref: '#/components/parameters/RoleTypeQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/AfterIdQuery'
+        - $ref: '#/components/parameters/BeginDateQueryOptional'
+        - $ref: '#/components/parameters/EndDateQueryOptional'
+        - $ref: '#/components/parameters/AutomaticPixExecutionStatusOptionalQuery'
+        - $ref: '#/components/parameters/AuthHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Recurrence'
+                  page_size:
+                    $ref: '#/components/schemas/PageSize'
+                  number_elements:
+                    $ref: '#/components/schemas/NumberElements'
+                  next_page:
+                    $ref: '#/components/schemas/NextPage'
+                  last_id:
+                    $ref: '#/components/schemas/LastID'
+                  filters:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/QueryFilters'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /inst-pull-pay/v1/pix/automatic/{recurrence_id}:
+    get:
+      summary: Get recurrence
+      description: |
+        Get Pix Automatic recurrence
+      operationId: get-recurrence-automatic
+      tags:
+        - Automatic Pix
+      parameters:
+        - $ref: '#/components/parameters/RecurrenceIdPath'
+        - $ref: '#/components/parameters/AuthHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurrenceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    patch:
+      summary: Update automatic recurrence
+      description: |
+        Update automatic recurrence.
+      operationId: update-recurrence-automatic
+      tags:
+        - Automatic Pix
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/AccountIdHeader'
+        - $ref: '#/components/parameters/RecurrenceIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchRecurrenceRequest'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /inst-pull-pay/v1/pix/automatic/cancel:
+    post:
+      summary: Cancel recurrence
+      description: |
+        Cancel Pix Automatic recurrence
+      operationId: cancel-recurrence-automatic
+      tags:
+        - Automatic Pix
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRecurrenceRequest'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /inst-pull-pay/v1/pix/automatic/payer/authorization:
+    post:
+      summary: Accept/reject recurrence authorization
+      description: >
+        Pix Automatic payee recurrence payment authorization acceptance or
+        rejection
+      operationId: accept-reject-authorization
+      tags:
+        - Automatic Pix
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizationRequest'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /inst-pull-pay/v1/pix/automatic/authorizations:
+    get:
+      summary: List recurrence authorizations
+      description: |
+        List Pix Automatic recurrence authorizations.
+      operationId: list-authorizations
+      tags:
+        - Automatic Pix
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/AutomaticPixExecutionStatusQuery'
+        - $ref: '#/components/parameters/RoleTypeQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/AfterIdQuery'
+        - $ref: '#/components/parameters/BeginDateQueryOptional'
+        - $ref: '#/components/parameters/EndDateQueryOptional'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Authorization'
+                  page_size:
+                    $ref: '#/components/schemas/PageSize'
+                  number_elements:
+                    $ref: '#/components/schemas/NumberElements'
+                  next_page:
+                    $ref: '#/components/schemas/NextPage'
+                  last_id:
+                    $ref: '#/components/schemas/LastID'
+                  filters:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/QueryFilters'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /inst-pull-pay/v1/pix/automatic/payment/order:
+    get:
+      summary: List payment orders
+      description: |
+        List payment orders.
+      operationId: list-payment-orders
+      tags:
+        - Automatic Pix
+      parameters:
+        - $ref: '#/components/parameters/RecurrenceIdQuery'
+        - $ref: '#/components/parameters/RoleTypeQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/PaymentOrderStatusQuery'
+        - $ref: '#/components/parameters/AfterIdQuery'
+        - $ref: '#/components/parameters/BeginDateQueryOptional'
+        - $ref: '#/components/parameters/EndDateQueryOptional'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PaymentOrderResponse'
+                  page_size:
+                    $ref: '#/components/schemas/PageSize'
+                  number_elements:
+                    $ref: '#/components/schemas/NumberElements'
+                  next_page:
+                    $ref: '#/components/schemas/NextPage'
+                  last_id:
+                    $ref: '#/components/schemas/LastID'
+                  filters:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/QueryFilters'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /inst-pull-pay/v1/pix/automatic/payment/order/{end_to_end_id}:
+    patch:
+      summary: Update payment order amount
+      description: |
+        Update payment order amount.
+      operationId: update-order-automatic-pix
+      tags:
+        - Automatic Pix
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+        - $ref: '#/components/parameters/AccountIdHeader'
+        - $ref: '#/components/parameters/EndToEndIDpath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePaymentOrderRequest'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: Get payment order
+      description: >
+        Get payment order information with end-to-end ID, the Pix transaction
+        identifier from the Central Bank of Brazil (BACEN)
+      operationId: get-automatic-pix-payment-order
+      tags:
+        - Automatic Pix
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/EndToEndIDpath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrderResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /inst-pull-pay/v1/pix/automatic/payment/order/cancel:
+    post:
+      summary: Cancel payment order
+      description: |
+        Cancel the payment order in the provider.
+      operationId: cancel-automatic-pix-payment-order
+      tags:
+        - Automatic Pix
+      parameters:
+        - $ref: '#/components/parameters/AuthHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+        - $ref: '#/components/parameters/AccountIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelPaymentOrderRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelPaymentOrderResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'

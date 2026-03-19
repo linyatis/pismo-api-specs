@@ -1,0 +1,2162 @@
+openapi: 3.1.0
+info:
+  title: Seller management - Marketplace
+  version: 1.0.0
+  description: >
+    The Marketplace API offers clients a range of functions for managing both
+    sellers and marketplace operations.
+
+    For information about Marketplace, refer to the [Seller management
+    overview](doc:seller-management-overview) guide.
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/marketplace
+    description: Sandbox API server for testing
+tags:
+  - name: Marketplace
+    description: >-
+      Endpoints for marketplaces and operations including split transaction
+      scheduler
+  - name: Marketplace creditor operations
+    description: Endpoints for creditors operations associated with the marketplace
+  - name: Marketplace MDR tax
+    description: Endpoints for Merchant Discount Rate (MDR) tax
+  - name: Marketplace merchants links
+    description: Endpoints for linking merchants to marketplaces
+components:
+  schemas:
+    AdditionalPhoneNumber:
+      type: string
+      description: Additional phone number. Dashes and parentheses are optional.
+      minLength: 1
+      maxLength: 25
+      example: '5558739453'
+    CardNotPresentAllowed:
+      description: >-
+        Indicates whether a card-not-present (CNP) transaction is allowed. A CNP
+        transaction is a purchase made virtually, without processing a physical
+        card via a card reader or terminal (and without manually entering a
+        PIN).
+      type: boolean
+      example: true
+      default: false
+    City:
+      type: string
+      description: Name of the city or municipality
+      minLength: 1
+      maxLength: 60
+      example: San Diego
+    ComplementaryAddress:
+      description: >-
+        Additional address details that help pinpoint the exact location, such
+        as building, apartment, or floor
+      type: string
+      example: Suite 2
+      minLength: 1
+      maxLength: 50
+    ContactName:
+      type: string
+      description: Contact name
+      minLength: 1
+      maxLength: 50
+      example: Jane Doe
+    ContactObject:
+      required:
+        - email
+      properties:
+        email:
+          $ref: '#/components/schemas/EmailAddress'
+        name:
+          description: Contact name
+          type: string
+          example: John Doe
+          minLength: 1
+          maxLength: 50
+        phone_number:
+          $ref: '#/components/schemas/PhoneNumber'
+        additional_phone_number:
+          $ref: '#/components/schemas/AdditionalPhoneNumber'
+    Country:
+      type: string
+      description: >-
+        Full name of the country according to international standards or local
+        registry
+      minLength: 1
+      maxLength: 30
+      example: United States
+    CreditorID:
+      description: Creditor ID. This represents the owner of a business.
+      type: integer
+      format: int64
+      example: 12345
+    CreditorName:
+      description: Creditor name
+      type: string
+      example: Joe's Bakery LTDA
+      minLength: 1
+      maxLength: 100
+    CreditorOperationID:
+      type: integer
+      format: int64
+      description: Creditor operation ID
+      example: 128427
+    CurrentPage:
+      type: integer
+      format: int32
+      description: Current page number
+      example: 2
+      default: 1
+    DocNumberAllowed:
+      description: Indicates whether document number is allowed.
+      type: boolean
+      example: true
+      default: false
+    DocumentNumber:
+      description: >-
+        Marketplace document number. This is the government document code, such
+        as a government-issued tax ID
+      type: string
+      minLength: 1
+      maxLength: 14
+      example: '20166135000139'
+    EmailAddress:
+      type: string
+      description: >-
+        Marketplace contact e-mail address. Its format must be a valid email
+        address
+      minLength: 1
+      maxLength: 255
+      example: email@email.com
+    ExternalMarketplaceID:
+      type: string
+      description: Marketplace ID used on client's system
+      minLength: 1
+      maxLength: 50
+      example: '1123'
+    FirstInstallmentDaysToPayment:
+      description: Number of days before first installment is due
+      type: integer
+      format: int32
+      example: 2
+      minimum: 1
+    FixedTax:
+      description: Fixed tax
+      type: number
+      format: float
+      example: 1.5
+    GETCreditorsOperationsResponse:
+      properties:
+        card_not_present_allowed:
+          $ref: '#/components/schemas/CardNotPresentAllowed'
+        creditor_id:
+          $ref: '#/components/schemas/CreditorID'
+        creditor_name:
+          $ref: '#/components/schemas/CreditorName'
+        doc_number_allowed:
+          $ref: '#/components/schemas/DocNumberAllowed'
+        first_installment_days_to_payment:
+          $ref: '#/components/schemas/FirstInstallmentDaysToPayment'
+        id:
+          $ref: '#/components/schemas/CreditorOperationID'
+        installments:
+          $ref: '#/components/schemas/Installments'
+        marketplace_creditors_operations_id:
+          $ref: '#/components/schemas/MarketplaceCreditorsOperationsID'
+        matched_mdr:
+          $ref: '#/components/schemas/MatchedMdr'
+        matched_settlement:
+          $ref: '#/components/schemas/MatchedSettlement'
+        mdr:
+          $ref: '#/components/schemas/Mdr'
+        n_installment_days_to_payment:
+          $ref: '#/components/schemas/NthInstallmentDaysToPayment'
+        network:
+          $ref: '#/components/schemas/Network'
+        operation_type_description:
+          $ref: '#/components/schemas/OperationTypeDescription'
+        operation_type_id:
+          $ref: '#/components/schemas/OperationTypeID'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        start_date:
+          $ref: '#/components/schemas/StartDate'
+        transaction_fee:
+          $ref: '#/components/schemas/TransactionFee'
+        work_days:
+          $ref: '#/components/schemas/WorkDays'
+    GETCreditorsOperationsWithFeesResponse:
+      properties:
+        card_not_present_allowed:
+          $ref: '#/components/schemas/CardNotPresentAllowed'
+        creditor_id:
+          $ref: '#/components/schemas/CreditorID'
+        creditor_name:
+          $ref: '#/components/schemas/CreditorName'
+        doc_number_allowed:
+          $ref: '#/components/schemas/DocNumberAllowed'
+        fees:
+          $ref: '#/components/schemas/FeeModelsWithValues'
+        first_installment_days_to_payment:
+          $ref: '#/components/schemas/FirstInstallmentDaysToPayment'
+        id:
+          $ref: '#/components/schemas/CreditorOperationID'
+        installments:
+          $ref: '#/components/schemas/Installments'
+        marketplace_creditors_operations_id:
+          $ref: '#/components/schemas/MarketplaceCreditorsOperationsID'
+        matched_mdr:
+          $ref: '#/components/schemas/MatchedMdr'
+        matched_settlement:
+          $ref: '#/components/schemas/MatchedSettlement'
+        mdr:
+          $ref: '#/components/schemas/Mdr'
+        n_installment_days_to_payment:
+          $ref: '#/components/schemas/NthInstallmentDaysToPayment'
+        network:
+          $ref: '#/components/schemas/Network'
+        operation_type_description:
+          $ref: '#/components/schemas/OperationTypeDescription'
+        operation_type_id:
+          $ref: '#/components/schemas/OperationTypeID'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        start_date:
+          $ref: '#/components/schemas/StartDate'
+        transaction_fee:
+          $ref: '#/components/schemas/TransactionFee'
+        work_days:
+          $ref: '#/components/schemas/WorkDays'
+    GETMarketplaceMerchants:
+      properties:
+        merchants:
+          type: array
+          items:
+            type: object
+            properties:
+              document_number:
+                $ref: '#/components/schemas/DocumentNumber'
+              merchant_id:
+                $ref: '#/components/schemas/MerchantID'
+              merchant_name:
+                $ref: '#/components/schemas/MerchantName'
+    GETMarketplaceMerchantsRelationsV2Response:
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              document_number:
+                $ref: '#/components/schemas/DocumentNumber'
+              merchant_id:
+                $ref: '#/components/schemas/MerchantID'
+              merchant_name:
+                $ref: '#/components/schemas/MerchantName'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        has_next:
+          $ref: '#/components/schemas/HasNext'
+    GETMarketplacesResponse:
+      type: object
+      properties:
+        pages:
+          $ref: '#/components/schemas/TotalPages'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        total_items:
+          $ref: '#/components/schemas/TotalItems'
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        items:
+          type: array
+          description: Found marketplaces
+          items:
+            type: object
+            properties:
+              id:
+                $ref: '#/components/schemas/MarketplaceID'
+              name:
+                $ref: '#/components/schemas/MarketplaceName'
+              brand_name:
+                $ref: '#/components/schemas/MarketplaceBrandName'
+              document_number:
+                $ref: '#/components/schemas/DocumentNumber'
+      example:
+        pages: 1
+        per_page: 10
+        total_items: 2
+        current_page: 1
+        items:
+          - id: 1
+            name: Marketplace
+            brand_name: Marketplace
+            document_number: '0123456789'
+          - id: 2
+            name: Marketplace 2
+            brand_name: Marketplace 2
+            document_number: '0123456788'
+    GETMarketplaceResponseV2:
+      type: object
+      properties:
+        address:
+          $ref: '#/components/schemas/MarketplaceAddress'
+        brand_name:
+          $ref: '#/components/schemas/MarketplaceBrandName'
+        contact:
+          $ref: '#/components/schemas/ContactObject'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        external_id:
+          $ref: '#/components/schemas/ExternalMarketplaceID'
+        id:
+          $ref: '#/components/schemas/MarketplaceID'
+        marketplace_name:
+          $ref: '#/components/schemas/MarketplaceName'
+        registration:
+          $ref: '#/components/schemas/Registration'
+        registration2:
+          $ref: '#/components/schemas/Registration2'
+        schedule_id:
+          $ref: '#/components/schemas/ScheduleID'
+      example:
+        id: 1
+        schedule_id: 9
+        document_number: '0123456789'
+        registration: 123.456.789
+        registration2: 123.456.790
+        brand_name: Acme Market
+        marketplace_name: Acme Market, LLC
+        external_id: '1123'
+        address:
+          street: Maple Avenue
+          number: 22
+          complementary_address: Suite 2
+          neighborhood: West End
+          zip_code: 12345-678
+          city: San Francisco
+          state: CA
+          country: United States
+        contact:
+          name: John Doe
+          email: email@email.com
+          phone_number: '5558739452'
+          additional_phone_number: '5558739453'
+    GETMDRTaxResponse:
+      properties:
+        items:
+          description: Merchant Discount Rate (MDR) tax List
+          type: array
+          items:
+            type: object
+            properties:
+              fixed_tax:
+                $ref: '#/components/schemas/FixedTax'
+              maximum_transaction_amount:
+                $ref: '#/components/schemas/MaximumTransactionAmount'
+              minimum_transaction_amount:
+                $ref: '#/components/schemas/MinimumTransactionAmount'
+              percentage_tax:
+                $ref: '#/components/schemas/PercentageTax'
+    GETMerchantCreditorsResponse:
+      properties:
+        items:
+          description: List of creditors
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                $ref: '#/components/schemas/CreditorID'
+              name:
+                $ref: '#/components/schemas/CreditorName'
+    HasNext:
+      description: Indicates whether there are more results pages after the current one.
+      type: boolean
+      example: false
+    Installments:
+      description: Number of installments
+      type: integer
+      format: int32
+      example: 3
+      minimum: 1
+    MarketplaceAddress:
+      properties:
+        number:
+          $ref: '#/components/schemas/StreetNumber'
+        street:
+          $ref: '#/components/schemas/Street'
+        complementary_address:
+          $ref: '#/components/schemas/ComplementaryAddress'
+        neighborhood:
+          $ref: '#/components/schemas/Neighborhood'
+        city:
+          $ref: '#/components/schemas/City'
+        state:
+          $ref: '#/components/schemas/State'
+        zip_code:
+          $ref: '#/components/schemas/ZipCode'
+        country:
+          $ref: '#/components/schemas/Country'
+    MarketplaceBrandName:
+      description: >
+        Marketplace brand name. A secondary name for the marketplace that is
+        <b>not</b> the legal registered name.
+      type: string
+      example: Acme
+      minLength: 1
+      maxLength: 50
+    MarketplaceCreditorsOperationsID:
+      description: >-
+        Operations ID for marketplace creditors. This is the same as the `id`
+        field. This field might be removed in the future.
+      type: number
+      example: 59532
+    MarketplaceID:
+      description: |
+        Marketplace ID
+      type: integer
+      format: int64
+      example: 20
+    MarketplaceName:
+      type: string
+      description: Registered, legal marketplace name.
+      minLength: 1
+      maxLength: 100
+      example: Acme Products, LLC
+    MarketplaceResponse:
+      type: object
+      properties:
+        additional_phone_number:
+          $ref: '#/components/schemas/AdditionalPhoneNumber'
+        address:
+          $ref: '#/components/schemas/Street'
+        brand_name:
+          $ref: '#/components/schemas/MarketplaceBrandName'
+        city:
+          $ref: '#/components/schemas/City'
+        complementary_address:
+          $ref: '#/components/schemas/ComplementaryAddress'
+        contact:
+          $ref: '#/components/schemas/ContactName'
+        country:
+          $ref: '#/components/schemas/Country'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        email:
+          $ref: '#/components/schemas/EmailAddress'
+        external_id:
+          $ref: '#/components/schemas/ExternalMarketplaceID'
+        id:
+          $ref: '#/components/schemas/MarketplaceID'
+        marketplace_name:
+          $ref: '#/components/schemas/MarketplaceName'
+        neighborhood:
+          $ref: '#/components/schemas/Neighborhood'
+        number:
+          $ref: '#/components/schemas/StreetNumber'
+        phone_number:
+          $ref: '#/components/schemas/PhoneNumber'
+        registration:
+          $ref: '#/components/schemas/Registration'
+        registration2:
+          $ref: '#/components/schemas/Registration2'
+        state:
+          $ref: '#/components/schemas/State'
+        zip_code:
+          $ref: '#/components/schemas/ZipCode'
+      example:
+        id: 1
+        document_number: '0123456789'
+        registration: 123.456.789
+        registration2: 123.456.790
+        brand_name: Acme Market
+        marketplace_name: Acme Market, LLC
+        address: Maple Avenue
+        number: 22
+        complementary_address: Suite 2
+        neighborhood: West End
+        zip_code: 12345-678
+        city: San Francisco
+        state: CA
+        country: United States
+        contact: John Doe
+        email: email@email.com
+        phone_number: '5558739452'
+        additional_phone_number: '5558739453'
+        external_id: '1123'
+    MarketplaceRequest:
+      type: object
+      properties:
+        additional_phone_number:
+          $ref: '#/components/schemas/AdditionalPhoneNumber'
+        address:
+          $ref: '#/components/schemas/Street'
+        brand_name:
+          $ref: '#/components/schemas/MarketplaceBrandName'
+        city:
+          $ref: '#/components/schemas/City'
+        contact:
+          $ref: '#/components/schemas/ContactName'
+        country:
+          $ref: '#/components/schemas/Country'
+        complementary_address:
+          $ref: '#/components/schemas/ComplementaryAddress'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        email:
+          $ref: '#/components/schemas/EmailAddress'
+        marketplace_name:
+          $ref: '#/components/schemas/MarketplaceName'
+        neighborhood:
+          $ref: '#/components/schemas/Neighborhood'
+        number:
+          $ref: '#/components/schemas/StreetNumber'
+        phone_number:
+          $ref: '#/components/schemas/PhoneNumber'
+        registration:
+          $ref: '#/components/schemas/Registration'
+        registration2:
+          $ref: '#/components/schemas/Registration2'
+        state:
+          $ref: '#/components/schemas/State'
+        zip_code:
+          $ref: '#/components/schemas/ZipCode'
+      example:
+        document_number: '0123456789'
+        registration: 123.456.789
+        registration2: 123.456.790
+        brand_name: Acme Market
+        marketplace_name: Acme Market, LLC
+        address: Maple Avenue
+        number: 22
+        complementary_address: Suite 2
+        neighborhood: West End
+        zip_code: 12345-678
+        city: San Francisco
+        state: CA
+        country: United States
+        contact: John Doe
+        email: email@email.com
+        phone_number: '5558739452'
+        additional_phone_number: '5558739453'
+    MatchedMdr:
+      description: >
+        Indicates whether this is a matched Merchant Discount Rate (MDR). If
+        `false`, the fixed transaction fee and the MDR amount is applied only to
+        the first installment. The default value is `false`.
+      type: boolean
+      example: true
+      default: false
+    MatchedSettlement:
+      description: >-
+        Indicates whether this is a matched settlement. A matched settlement
+        means the settlement is paid in several batches, whereas `false`
+        indicates the full amount is paid in one single payment. The default
+        value is `false`.
+      type: boolean
+      example: true
+      default: false
+    MaximumTransactionAmount:
+      description: Maximum transaction amount
+      type: number
+      format: float
+      example: 1.5
+    Mdr:
+      description: >
+        MDR fee. The Merchant Discount Rate (MDR) is the rate charged to a
+        merchant for payment processing services on debit and credit card
+        transactions.
+
+        The merchant must set up this service and agree to the rate before
+        accepting debit and credit cards as payment.
+      type: number
+      format: float
+      example: 0.01
+      default: 0
+    MerchantHQid:
+      type: integer
+      format: int64
+      example: 23
+      description: ID of merchant that is set as headquarters.
+    MerchantID:
+      description: Merchant ID
+      type: integer
+      format: int64
+      example: 5
+    MerchantName:
+      description: Merchant name
+      type: string
+      example: Joe's Produce
+      minLength: 1
+      maxLength: 100
+    MinimumTransactionAmount:
+      description: Minimum transaction amount
+      type: number
+      format: float
+      example: 1.5
+    Neighborhood:
+      type: string
+      description: >-
+        Name of the neighborhood or administrative region where the address is
+        located
+      minLength: 1
+      maxLength: 50
+      example: West End
+    Network:
+      description: Card network
+      type: string
+      example: Visa
+    NthInstallmentDaysToPayment:
+      description: >
+        Number of days before each subsequent installment is due.
+
+        The customer has `first_installment_days_to_payment` days to pay the
+        first installment.
+
+        They have `n_installment_days_to_payment` days to pay each installment
+        after that.
+      type: integer
+      format: int32
+      example: 2
+      minimum: 1
+    OperationTypeDescription:
+      description: Operation type description
+      type: string
+      minLength: 1
+      maxLength: 50
+      example: In one lump sum
+    OperationTypeID:
+      deprecated: true
+      description: >
+        Operation type ID defined by the Pismo platform.<br>
+
+        An operation type ID is an operation type processing code, which is a
+        custom alphanumeric identifier that defines how the Pismo platform
+        handles a certain financial operation type. See [Processing codes and
+        transaction
+        types](https://developers.pismo.io/pismo-docs/docs/processing-codes-and-transaction-types)
+        for more information.<br>
+
+        <b>Note:</b> Either `operation_type_id` or `processing_code` is
+        **required**. Using `processing_code` is recommended as
+        `operation_type_id` is deprecated and scheduled for removal.
+      type: integer
+      format: int64
+      example: 4
+    PercentageTax:
+      description: Tax rate (percentage)
+      type: number
+      format: float
+      example: 0.05
+    PerPage:
+      type: integer
+      format: int32
+      description: Number of result items per page
+      example: 50
+      default: 10
+    PhoneNumber:
+      type: string
+      description: Phone number. Dashes and parentheses are optional.
+      example: '5558739452'
+      minLength: 1
+      maxLength: 25
+    PostCreditorOperation:
+      type: object
+      required:
+        - creditor_id
+        - first_installment_days_to_payment
+        - installments
+        - n_installment_days_to_payment
+      properties:
+        creditor_id:
+          $ref: '#/components/schemas/CreditorID'
+        first_installment_days_to_payment:
+          $ref: '#/components/schemas/FirstInstallmentDaysToPayment'
+        installments:
+          $ref: '#/components/schemas/Installments'
+        n_installment_days_to_payment:
+          $ref: '#/components/schemas/NthInstallmentDaysToPayment'
+        card_not_present_allowed:
+          $ref: '#/components/schemas/CardNotPresentAllowed'
+        doc_number_allowed:
+          $ref: '#/components/schemas/DocNumberAllowed'
+        matched_mdr:
+          $ref: '#/components/schemas/MatchedMdr'
+        matched_settlement:
+          $ref: '#/components/schemas/MatchedSettlement'
+        mdr:
+          $ref: '#/components/schemas/Mdr'
+        network:
+          $ref: '#/components/schemas/Network'
+        operation_type_id:
+          $ref: '#/components/schemas/OperationTypeID'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        start_date:
+          $ref: '#/components/schemas/StartDate'
+        transaction_fee:
+          $ref: '#/components/schemas/TransactionFee'
+        work_days:
+          $ref: '#/components/schemas/WorkDays'
+    PatchCreditorOperation:
+      type: object
+      properties:
+        creditor_id:
+          $ref: '#/components/schemas/CreditorID'
+        first_installment_days_to_payment:
+          $ref: '#/components/schemas/FirstInstallmentDaysToPayment'
+        installments:
+          $ref: '#/components/schemas/Installments'
+        n_installment_days_to_payment:
+          $ref: '#/components/schemas/NthInstallmentDaysToPayment'
+        card_not_present_allowed:
+          $ref: '#/components/schemas/CardNotPresentAllowed'
+        doc_number_allowed:
+          $ref: '#/components/schemas/DocNumberAllowed'
+        matched_mdr:
+          $ref: '#/components/schemas/MatchedMdr'
+        matched_settlement:
+          $ref: '#/components/schemas/MatchedSettlement'
+        mdr:
+          $ref: '#/components/schemas/Mdr'
+        network:
+          $ref: '#/components/schemas/Network'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        start_date:
+          $ref: '#/components/schemas/StartDate'
+        transaction_fee:
+          $ref: '#/components/schemas/TransactionFee'
+        work_days:
+          $ref: '#/components/schemas/WorkDays'
+        fees:
+          $ref: '#/components/schemas/Fees'
+    Fees:
+      type: array
+      description: Additional creditor operation fees
+      items:
+        $ref: '#/components/schemas/Fee'
+      example:
+        - name: EMISSION_FEE
+          value: 1.5
+        - name: MAINTENANCE_FEE
+          value: 0.01
+    Fee:
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+          description: Fee model name
+          maxLength: 25
+          example: MAINTENANCE_FEE
+        value:
+          type: number
+          format: float
+          description: >-
+            Fee value; Dependent on the fee model. Usually a percentage (for
+            example, `0.05` for 5%) or fixed amount (for example, `1.5` for a
+            fixed fee of 1.5 currency units).
+          example: 0.01
+    PostCreditorOperationV2:
+      type: object
+      required:
+        - merchant_ids
+        - creditor_operation
+      properties:
+        merchant_ids:
+          description: List of merchants that this creditor operation applies to
+          type: array
+          maxItems: 1000
+          items:
+            type: integer
+            format: int64
+        creditor_operation:
+          type: object
+          required:
+            - processing_code
+            - start_date
+            - installments
+          description: Creditor operation information
+          properties:
+            processing_code:
+              $ref: '#/components/schemas/ProcessingCode'
+            start_date:
+              $ref: '#/components/schemas/StartDate'
+            installments:
+              description: Configuration for each installment
+              type: array
+              maxItems: 12
+              items:
+                type: object
+                required:
+                  - installment
+                properties:
+                  installment:
+                    description: Installment number
+                    type: number
+                  first_installment_days_to_payment:
+                    $ref: '#/components/schemas/FirstInstallmentDaysToPayment'
+                  n_installment_days_to_payment:
+                    $ref: '#/components/schemas/NthInstallmentDaysToPayment'
+                  transaction_fee:
+                    $ref: '#/components/schemas/TransactionFee'
+                  mdr:
+                    $ref: '#/components/schemas/Mdr'
+                  matched_mdr:
+                    $ref: '#/components/schemas/MatchedMdr'
+                  matched_settlement:
+                    $ref: '#/components/schemas/MatchedSettlement'
+                  work_days:
+                    $ref: '#/components/schemas/WorkDays'
+                  fees:
+                    $ref: '#/components/schemas/Fees'
+      example:
+        merchant_ids:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+        creditor_operation:
+          processing_code: '700203'
+          start_date: '2022-12-21'
+          installments:
+            - installment: 1
+              first_installment_days_to_payment: 30
+              n_installment_days_to_payment: 30
+              transaction_fee: 0
+              mdr: 0.01
+              matched_mdr: true
+              matched_settlement: true
+              work_days: false
+              fees:
+                - name: EMISSION_FEE
+                  value: 1.5
+                - name: MAINTENANCE_FEE
+                  value: 0.01
+            - installment: 2
+              first_installment_days_to_payment: 30
+              n_installment_days_to_payment: 30
+              transaction_fee: 0.5
+              mdr: 0.01
+              matched_mdr: true
+              matched_settlement: true
+              work_days: false
+              fees:
+                - name: EMISSION_FEE
+                  value: 1.7
+                - name: MAINTENANCE_FEE
+                  value: 0.02
+    PutCreditorOperationV2:
+      type: object
+      properties:
+        merchant_ids:
+          description: List of merchants that this creditor operation applies to
+          type: array
+          maxItems: 1000
+          items:
+            type: integer
+            format: int64
+        filter:
+          description: Filter to select the creditor operation to update
+          type: object
+          properties:
+            installments:
+              $ref: '#/components/schemas/Installments'
+            processing_code:
+              $ref: '#/components/schemas/ProcessingCode'
+            start_date:
+              $ref: '#/components/schemas/StartDate'
+        creditor_operation:
+          type: object
+          description: Creditor operation configuration
+          properties:
+            first_installment_days_to_payment:
+              $ref: '#/components/schemas/FirstInstallmentDaysToPayment'
+            n_installment_days_to_payment:
+              $ref: '#/components/schemas/NthInstallmentDaysToPayment'
+            mdr:
+              $ref: '#/components/schemas/Mdr'
+            transaction_fee:
+              $ref: '#/components/schemas/TransactionFee'
+            matched_mdr:
+              $ref: '#/components/schemas/MatchedMdr'
+            matched_settlement:
+              $ref: '#/components/schemas/MatchedSettlement'
+            work_days:
+              $ref: '#/components/schemas/WorkDays'
+            fees:
+              $ref: '#/components/schemas/Fees'
+      example:
+        merchant_ids:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+        filter:
+          installments: 3
+          processing_code: '700203'
+          start_date: '2022-12-21'
+        creditor_operation:
+          first_installment_days_to_payment: 30
+          n_installment_days_to_payment: 30
+          mdr: 0.01
+          transaction_fee: 0
+          matched_mdr: true
+          matched_settlement: true
+          work_days: false
+          fees:
+            - name: EMISSION_FEE
+              value: 1.5
+            - name: MAINTENANCE_FEE
+              value: 0.01
+    POSTMarketplaceRequestV2:
+      type: object
+      required:
+        - marketplace_name
+        - brand_name
+        - document_number
+      properties:
+        marketplace_name:
+          $ref: '#/components/schemas/MarketplaceName'
+        brand_name:
+          $ref: '#/components/schemas/MarketplaceBrandName'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        id:
+          $ref: '#/components/schemas/MarketplaceID'
+        registration:
+          $ref: '#/components/schemas/Registration'
+        registration2:
+          $ref: '#/components/schemas/Registration2'
+        external_id:
+          $ref: '#/components/schemas/ExternalMarketplaceID'
+        address:
+          $ref: '#/components/schemas/MarketplaceAddress'
+        contact:
+          $ref: '#/components/schemas/ContactObject'
+      example:
+        id: 1
+        document_number: '0123456789'
+        registration: 123.456.789
+        registration2: 123.456.790
+        brand_name: Acme Market
+        marketplace_name: Acme Market, LLC
+        address:
+          street: Maple Avenue
+          number: 22
+          complementary_address: Suite 2
+          neighborhood: West End
+          zip_code: 12345-678
+          city: San Francisco
+          state: CA
+          country: United States
+        contact:
+          name: John Doe
+          email: email@email.com
+          phone_number: '5558739452'
+          additional_phone_number: '5558739453'
+        external_id: '1123'
+    POSTMDRTaxRequest:
+      properties:
+        ranges:
+          type: array
+          items:
+            type: object
+            description: Merchant Discount Rate (MDR) tax info
+            properties:
+              fixed_tax:
+                $ref: '#/components/schemas/FixedTax'
+              maximum_transaction_amount:
+                $ref: '#/components/schemas/MaximumTransactionAmount'
+              minimum_transaction_amount:
+                $ref: '#/components/schemas/MinimumTransactionAmount'
+              percentage_tax:
+                $ref: '#/components/schemas/PercentageTax'
+    POSTMerchantHeadquartersBranchRelationResponse:
+      properties:
+        marketplace_id:
+          $ref: '#/components/schemas/MarketplaceID'
+        merchant_hq_id:
+          $ref: '#/components/schemas/MerchantHQid'
+        branches_ids:
+          $ref: '#/components/schemas/POSTMerchantHeadquartersBranchRelation'
+    POSTMerchantHeadquartersBranchRelation:
+      properties:
+        branches:
+          type: array
+          description: List of merchant IDs that represent branches.
+          items:
+            type: integer
+            format: int64
+          example:
+            - 1
+            - 2
+            - 3
+    ProcessingCode:
+      description: >
+        A processing code is a custom alphanumeric identifier that defines the
+        type of financial operation that the Pismo platform handles.<br>
+
+        For more information, refer to [Processing
+        codes](doc:processing-codes-and-transaction-types).
+      type: string
+      example: '700203'
+    PUTMarketplaceRequest:
+      type: object
+      properties:
+        additional_phone_number:
+          $ref: '#/components/schemas/AdditionalPhoneNumber'
+        address:
+          $ref: '#/components/schemas/Street'
+        brand_name:
+          $ref: '#/components/schemas/MarketplaceBrandName'
+        city:
+          $ref: '#/components/schemas/City'
+        complementary_address:
+          $ref: '#/components/schemas/ComplementaryAddress'
+        contact:
+          $ref: '#/components/schemas/ContactName'
+        country:
+          $ref: '#/components/schemas/Country'
+        document_number:
+          $ref: '#/components/schemas/DocumentNumber'
+        email:
+          $ref: '#/components/schemas/EmailAddress'
+        external_id:
+          $ref: '#/components/schemas/ExternalMarketplaceID'
+        marketplace_name:
+          $ref: '#/components/schemas/MarketplaceName'
+        neighborhood:
+          $ref: '#/components/schemas/Neighborhood'
+        number:
+          $ref: '#/components/schemas/StreetNumber'
+        phone_number:
+          $ref: '#/components/schemas/PhoneNumber'
+        registration:
+          $ref: '#/components/schemas/Registration'
+        registration2:
+          $ref: '#/components/schemas/Registration2'
+        state:
+          $ref: '#/components/schemas/State'
+        zip_code:
+          $ref: '#/components/schemas/ZipCode'
+      example:
+        external_id: '1123'
+        document_number: '0123456789'
+        registration: 123.456.789
+        registration2: 123.456.790
+        brand_name: Acme Market
+        marketplace_name: Acme Market, LLC
+        address: Maple Avenue
+        number: 22
+        complementary_address: Suite 2
+        neighborhood: West End
+        zip_code: 12345-678
+        city: San Francisco
+        state: CA
+        country: United States
+        contact: John Doe
+        email: email@email.com
+        phone_number: '5558739452'
+        additional_phone_number: '5558739453'
+    FeeModelsWithValues:
+      description: Fee models for a marketplace
+      type: array
+      items:
+        type: object
+        description: Fee model details
+        properties:
+          name:
+            type: string
+            description: Fee model name
+            maxLength: 25
+            example: F_CUSTOM
+          type:
+            type: string
+            description: Type of rate
+            enum:
+              - FIXED
+              - PERCENTAGE
+            maxLength: 25
+            example: FIXED
+          value:
+            type: number
+            format: double
+            description: Value of the rate
+            example: 10.99
+    FeeModel:
+      type: object
+      description: Fee model details
+      properties:
+        name:
+          type: string
+          description: Fee model name
+          maxLength: 25
+          example: F_CUSTOM
+        type:
+          type: string
+          description: Type of rate
+          enum:
+            - FIXED
+            - PERCENTAGE
+          maxLength: 25
+          example: FIXED
+    FeeModelWithID:
+      allOf:
+        - $ref: '#/components/schemas/FeeModel'
+        - type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+              description: Fee model ID
+              example: 1
+    POSTFeeModelRequest:
+      description: Request to create fee models for a marketplace
+      type: object
+      required:
+        - models
+      properties:
+        models:
+          type: array
+          description: List of fee models to create
+          items:
+            $ref: '#/components/schemas/FeeModel'
+      example:
+        models:
+          - name: F_CUSTOM
+            type: FIXED
+          - name: F_TAX
+            type: PERCENTAGE
+    GETFeeModelResponse:
+      description: Response containing fee models for a marketplace
+      type: object
+      properties:
+        models:
+          type: array
+          description: List of fee models
+          items:
+            $ref: '#/components/schemas/FeeModelWithID'
+      example:
+        models:
+          - name: F_CUSTOM
+            id: 1
+            type: FIXED
+          - name: F_TAX
+            id: 2
+            type: PERCENTAGE
+    Registration:
+      type: string
+      description: >-
+        Municipal registration number. In some countries the municipal
+        registration is called a business license.
+      minLength: 1
+      maxLength: 15
+      example: 123.456.789
+    Registration2:
+      type: string
+      description: >-
+        Additional municipal registration number. In some countries, two munipal
+        registration numbers are required — one for the country and another for
+        the state.
+      minLength: 1
+      maxLength: 15
+      example: 123.456.790
+    ScheduleID:
+      type: integer
+      format: int64
+      description: Schedule ID for marketplace
+      example: 9
+    StartDate:
+      description: >-
+        Date from which this operation is considered active. Format =
+        yyyy-mm-dd.
+      type: string
+      format: date
+      example: '2022-12-21'
+    State:
+      type: string
+      description: >-
+        Abbreviation or full name of the state, province, or administrative
+        division
+      minLength: 2
+      maxLength: 2
+      example: CA
+    Street:
+      type: string
+      description: Name of the street, avenue, or primary thoroughfare of the address
+      minLength: 1
+      maxLength: 80
+      example: Maple Avenue
+    StreetNumber:
+      type: integer
+      format: int32
+      description: Numerical identifier for the specific location within a street or avenue
+      example: 22
+      minimum: 0
+      maximum: 2147483647
+    TotalItems:
+      description: Total number of items
+      type: integer
+      format: int32
+      example: 24
+    TotalPages:
+      description: Total number of pages
+      type: integer
+      format: int32
+      example: 2
+    TransactionFee:
+      description: Transaction fee
+      type: number
+      example: 5
+      default: 0
+    WorkDays:
+      description: >
+        If `true`, only business days are used to calculate the date of the next
+        payment.
+      type: boolean
+      example: false
+      default: false
+    ZipCode:
+      description: >-
+        Postal code. This is called a zip code in the United States, but you can
+        use other types of postal codes.
+      type: string
+      minLength: 1
+      maxLength: 9
+      example: '91941'
+  parameters:
+    AuthorizationHeader:
+      name: Authorization
+      in: header
+      description: >-
+        Authorization token. This is a regular access token, which does not need
+        to include an account ID.
+      schema:
+        type: string
+      example: Bearer 1JI12J39182H39182JDIOAWJ%=
+    ContentTypeHeader:
+      name: Content-Type
+      in: header
+      description: Content type
+      schema:
+        type: string
+      example: application/json
+    CreditorOperationIdPath:
+      name: creditorOperationId
+      in: path
+      description: Creditor operation ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+      example: 128427
+    CreditorSearchQuery:
+      name: search
+      in: query
+      description: Search by creditor's name
+      schema:
+        type: string
+      example: Acme, Inc.
+    ForceDeleteQuery:
+      name: forceDelete
+      in: query
+      required: true
+      description: >
+        Deletion confirmed? This is a check to avoid accidental deletions. If
+        `forceDelete` is not sent, the request returns an error with status code
+        400 and the message: Missing confirmation parameter.
+      schema:
+        type: boolean
+      example: true
+    MarketplaceIdPath:
+      name: marketplaceId
+      in: path
+      required: true
+      description: Marketplace ID
+      schema:
+        type: integer
+        format: int64
+      example: 1
+    FeeModelIdPath:
+      name: feeModelId
+      in: path
+      required: true
+      description: Fee Model ID
+      schema:
+        type: integer
+        format: int64
+      example: 1
+    MarketplaceSearchQuery:
+      name: search
+      in: query
+      description: >
+        If a value is provided for this field, the Pismo platform searches for
+        that value in the `document_number`, `registration`, `brand_name`, and
+        `marketplace_name` fields of the marketplace records. It also searches
+        for it in the `name` and `email` fields of the `contact` object for each
+        record.
+
+
+        For example, if the value provided is "acme", and a marketplace has
+        `marketplace_name` = "The Acme Market", that record is returned. If
+        another record has "acme" in the `email` field in it's `contact` object,
+        that record is also returned.
+      schema:
+        type: string
+      example: acme
+    MerchantBranchIdRequiredPath:
+      name: merchantBranchId
+      in: path
+      required: true
+      description: Branch merchant ID
+      schema:
+        type: number
+      example: 1
+    MerchantBranchIdSubnetQuery:
+      name: merchantBranchId
+      in: query
+      required: false
+      description: >
+        Merchant ID. <b>Note:</b> When you specify `branch` in `subnet`, the
+        platform retrieves data from a specific branch.
+      schema:
+        type: number
+      example: 1
+    MerchantIdPath:
+      name: merchantId
+      in: path
+      required: true
+      description: Merchant ID
+      schema:
+        type: number
+      example: 1
+    MerchantHqIdQuery:
+      name: merchantHqId
+      in: query
+      required: false
+      description: >
+        Merchant ID. <b>Notes:</b> When `subnet` is set to `hq`, the platform
+        retrieves data from a specific merchant that has branches. When `subnet`
+        is set to `branch`, all branches for this merchant ID are listed.
+      schema:
+        type: number
+      example: 1
+    MerchantQuery:
+      name: merchant
+      in: query
+      description: Merchant ID. List all the marketplaces the merchant belongs to.
+      schema:
+        type: number
+        format: int64
+      example: 54
+    PageQuery:
+      name: page
+      in: query
+      description: Current page number
+      schema:
+        type: number
+        format: int64
+      example: 2
+    PerPageQuery:
+      name: perPage
+      in: query
+      description: Number of items per page
+      schema:
+        type: number
+        format: int64
+      example: 10
+    SubnetQuery:
+      name: subnet
+      in: query
+      required: false
+      description: >
+        Filter by relation type<br>
+
+        - `branch`: List merchants that are branches.<br>
+
+        - `hq`: List merchants that are headquarters.<br>
+
+        - `individual`: Lists merchant that have no relations with any other
+        merchants.
+      schema:
+        type: string
+        enum:
+          - branch
+          - hq
+          - individual
+      example: individual
+  responses:
+    204NoContent:
+      description: No Content
+    400BadRequest:
+      description: Bad Request
+    401Unauthorized:
+      description: Access token is missing or invalid
+    404NotFound:
+      description: The specified resource was not found
+    500InternalServer:
+      description: Internal server error
+    502BadGateway:
+      description: Bad gateway (unexpected internal error)
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - BearerAuth: []
+paths:
+  /v2/marketplaces:
+    post:
+      summary: Create marketplace
+      description: >
+        This endpoint creates a marketplace asynchronously, which means that you
+        need to wait for the [Marketplace
+        created](https://developers.pismo.io/events/docs/marketplace-marketplace-created-1)
+        event before calling other endpoints that reference the new marketplace.
+        Use this endpoint to create marketplaces that will later be linked to
+        merchants created with the [Create merchant](ref:createmerchant)
+        endpoint. For more information about marketplaces, refer to the [Seller
+        management overview](doc:seller-management-overview) guide.
+
+        This endpoint generates a [Marketplace
+        created](https://developers.pismo.io/events/docs/marketplace-marketplace-created-1)
+        event.
+
+        This endpoint creates a merchant asynchronously [Merchant
+        Creation](https://developers.pismo.io/pismo-docs/reference/createmerchant).
+
+        <b>Note</b>: It is mandatory to use this endpoint to create marketplaces
+        instead of using the already deprecated [Create
+        marketplaces](https://developers.pismo.io/pismo-docs/reference/postmarketplacesv1)
+        endpoint.
+      tags:
+        - Marketplace
+      operationId: PostMarketplacesV2
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/ContentTypeHeader'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/POSTMarketplaceRequestV2'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Cid:
+                    type: string
+                    description: Correlation ID
+                example:
+                  Cid: 5308a2de-24c4-47fd-b976-1d96dcd3d812
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+  /v2/marketplaces/{marketplaceId}:
+    get:
+      summary: Get marketplace
+      description: Get marketplace given its ID in the path.
+      tags:
+        - Marketplace
+      operationId: GetMarketPlaceByIdV2
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/ContentTypeHeader'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETMarketplaceResponseV2'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+  /v1/marketplaces/{marketplaceId}:
+    put:
+      summary: Update marketplace
+      description: >
+        Update a marketplace given its ID in the path.
+
+
+        This endpoint generates a [Marketplace
+        updated](https://developers.pismo.io/events/docs/marketplace-marketplace-updated-1)
+        event.
+      tags:
+        - Marketplace
+      operationId: PutUpdateMarketplaceV1
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/ContentTypeHeader'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PUTMarketplaceRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketplaceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+    get:
+      summary: Get marketplace
+      description: >
+        This endpoint gets a marketplace by ID.
+
+        (<strong>Outdated:</strong> For an updated version of the marketplace
+        endpoint refer to [Get MarketplaceById
+        V2](https://developers.pismo.io/pismo-docs/reference/getmarketplacebyidv2).)
+      tags:
+        - Marketplace
+      operationId: GetMarketplaceByIdV1
+      deprecated: true
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/ContentTypeHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketplaceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+  /v1/marketplaces:
+    post:
+      summary: Create marketplace
+      description: >
+        This endpoint creates a marketplace.
+
+        (<strong>Outdated:</strong> For an updated version of the marketplace
+        endpoint refer to [Post Marketplace
+        V2](https://developers.pismo.io/pismo-docs/reference/postmarketplacesv2).)
+      tags:
+        - Marketplace
+      operationId: PostMarketplacesV1
+      deprecated: true
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/ContentTypeHeader'
+      requestBody:
+        description: Body of request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarketplaceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketplaceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+    get:
+      summary: List marketplaces
+      description: List marketplaces using query parameters.
+      tags:
+        - Marketplace
+      operationId: GetMarketplacesV1
+      parameters:
+        - $ref: '#/components/parameters/MerchantQuery'
+        - $ref: '#/components/parameters/MarketplaceSearchQuery'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/ContentTypeHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETMarketplacesResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+  /v2/marketplaces/{marketplaceId}/merchants:
+    get:
+      summary: List marketplace merchants
+      description: List merchants linked to the specified marketplace.
+      tags:
+        - Marketplace merchants links
+      operationId: GetMerchantsByMarketplaceIdV2
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/SubnetQuery'
+        - $ref: '#/components/parameters/MerchantHqIdQuery'
+        - $ref: '#/components/parameters/MerchantBranchIdSubnetQuery'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/GETMarketplaceMerchantsRelationsV2Response
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+  /marketplaces/v1/{marketplaceId}/merchants:
+    get:
+      summary: List marketplace merchants
+      description: List merchants for specified marketplace.
+      tags:
+        - Marketplace merchants links
+      operationId: GetMerchantsByMarketplaceIdV1
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETMarketplaceMerchants'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+        '502':
+          $ref: '#/components/responses/502BadGateway'
+  /marketplaces/v1/{marketplaceId}/merchants/{merchantId}:
+    post:
+      summary: Link merchant and marketplace
+      description: Link merchant to marketplace.
+      tags:
+        - Marketplace merchants links
+      operationId: PostLinkMerchantToMarketplaceV1
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/MerchantIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/ContentTypeHeader'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      summary: Delete merchant and marketplace link
+      description: Unlink merchant and marketplace.
+      tags:
+        - Marketplace merchants links
+      operationId: DeleteLinkBetweenMerchantAndMarketplaceV1
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/MerchantIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/ContentTypeHeader'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v2/marketplaces/{marketplaceId}/creditors-operations:
+    get:
+      summary: List marketplace creditor operations
+      description: List creditor operations for the specified marketplace.
+      tags:
+        - Marketplace creditor operations
+      operationId: GetCreditorsOperationsV2
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  current_page:
+                    $ref: '#/components/schemas/CurrentPage'
+                  per_page:
+                    $ref: '#/components/schemas/PerPage'
+                  has_next:
+                    $ref: '#/components/schemas/HasNext'
+                  items:
+                    type: array
+                    items:
+                      $ref: >-
+                        #/components/schemas/GETCreditorsOperationsWithFeesResponse
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    post:
+      summary: Create marketplace creditor operations
+      description: >
+        Create multiple creditor operations for the specified marketplace.
+
+
+        This endpoint creates one creditor operation for each merchant ID and
+        each installment in the request body. The values of `processing_code`
+        and `start_date` are replicated to each creditor operation created based
+        on the installments configuration.
+
+
+        This endpoint generates [Marketplace creditor operation
+        created](https://developers.pismo.io/events/docs/marketplace-marketplace-creditor-operation-created-1)
+        events.
+      tags:
+        - Marketplace creditor operations
+      operationId: PostCreditorsOperationsV2
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreditorOperationV2'
+      responses:
+        '201':
+          description: Created
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    put:
+      summary: Update creditor operations
+      description: >
+        Update fields for all creditor operations that match a provided filter
+        criteria: `processing_code`, `start_date`, or `installments`.
+
+
+        This endpoint generates [Marketplace creditor operation
+        updated](https://developers.pismo.io/events/docs/marketplace-marketplace-creditor-operation-updated-1)
+        events.
+      tags:
+        - Marketplace creditor operations
+      operationId: PutCreditorsOperationsV2
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutCreditorOperationV2'
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /marketplaces/{marketplaceId}/creditors-operations:
+    post:
+      summary: Create creditor operation
+      description: >
+        Create a creditor operation.
+
+
+        This endpoint generates a [Marketplace creditor operation
+        created](https://developers.pismo.io/events/docs/marketplace-marketplace-creditor-operation-created-1)
+        event.
+      tags:
+        - Marketplace creditor operations
+      operationId: PostCreditorsOperations
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/ContentTypeHeader'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreditorOperation'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  id:
+                    $ref: '#/components/schemas/CreditorOperationID'
+                  success:
+                    description: Indicates whether the creditor was successfully created.
+                    type: string
+                    example: 'true'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/marketplaces/{marketplaceId}/creditors-operations/{creditorOperationId}:
+    patch:
+      summary: Patch creditor operation
+      description: >
+        Update creditor operation fields using marketplace and creditor IDs.
+
+
+        This endpoint generates a [Marketplace creditor operation
+        updated](https://developers.pismo.io/events/docs/marketplace-marketplace-creditor-operation-updated-1)
+        event.
+      tags:
+        - Marketplace creditor operations
+      operationId: PatchCreditorOperationByIdV1
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/CreditorOperationIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchCreditorOperation'
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /marketplaces/{marketplaceId}/creditors-operations/{creditorOperationId}:
+    get:
+      summary: Get creditor operation
+      description: Get creditor operation information using marketplace and creditor IDs.
+      tags:
+        - Marketplace creditor operations
+      operationId: GetCreditorOperationById
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/CreditorOperationIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETCreditorsOperationsWithFeesResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    put:
+      summary: Update creditor operation
+      description: >
+        Update creditor operation information using marketplace and creditor
+        IDs.
+
+
+        This endpoint generates a [Marketplace creditor operation
+        updated](https://developers.pismo.io/events/docs/marketplace-marketplace-creditor-operation-updated-1)
+        event.
+      tags:
+        - Marketplace creditor operations
+      operationId: PutUpdateCreditorOperationById
+      parameters:
+        - $ref: '#/components/parameters/CreditorOperationIdPath'
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/ContentTypeHeader'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreditorOperation'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  success:
+                    description: Indicates if the update was successful.
+                    type: boolean
+                    example: true
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      summary: Delete creditor operation
+      description: >
+        Delete creditor operation by ID.
+
+
+        This endpoint generates a [Marketplace creditor operation
+        deleted](https://developers.pismo.io/events/docs/marketplace-marketplace-creditor-operation-deleted-1)
+        event.
+      tags:
+        - Marketplace creditor operations
+      operationId: DeleteCreditorOperationById
+      parameters:
+        - $ref: '#/components/parameters/CreditorOperationIdPath'
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /marketplaces/{marketplaceId}/merchants/{merchantId}/creditors-operations:
+    get:
+      summary: List creditor operations for marketplace and merchant
+      description: List creditor operations using marketplace and merchant IDs.
+      tags:
+        - Marketplace creditor operations
+      operationId: GetCreditorOperationsByMerchantIDAndMarketplaceID
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/MerchantIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GETCreditorsOperationsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /marketplaces/v1/{marketplaceId}/merchants-creditors:
+    get:
+      summary: List merchant creditors
+      description: List creditors for the merchants in a marketplace.
+      tags:
+        - Marketplace creditor operations
+      operationId: GetMerchantsCreditorsV1
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/CreditorSearchQuery'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETMerchantCreditorsResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/marketplaces/{marketplaceId}/mdrtax:
+    post:
+      summary: Create MDR tax information
+      description: >
+        Store information about Merchant Discount Rate (MDR) tax using
+        marketplace ID. The MDR is the rate charged to a merchant for payment
+        processing services on debit and credit card transactions. The merchant
+        must set up this service and agree to the rate before accepting debit
+        and credit cards as payment.
+
+
+        For information about MDR, refer to the <a
+        href="https://www.investopedia.com/terms/m/merchant-discount-rate.asp"
+        target="_blank">Merchant Discount Rate</a>.
+      tags:
+        - Marketplace MDR tax
+      operationId: PostMdrTaxV1
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - $ref: '#/components/parameters/ContentTypeHeader'
+      requestBody:
+        description: Request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/POSTMDRTaxRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  success:
+                    description: >-
+                      Indicates whether the MDR tax information was successfully
+                      stored.
+                    type: boolean
+                    example: true
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: Get MDR tax information
+      description: |
+        Get Merchant Discount Rate (MDR) tax information using marketplace ID.
+      tags:
+        - Marketplace MDR tax
+      operationId: GetMdrTaxByIdV1
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GETMDRTaxResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      summary: Delete MDR tax information
+      description: >-
+        Delete Merchant Discount Rate (MDR) tax information using marketplace
+        ID.
+      tags:
+        - Marketplace MDR tax
+      operationId: DeleteMdrTaxV1
+      parameters:
+        - $ref: '#/components/parameters/MarketplaceIdPath'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  success:
+                    description: >-
+                      Indicates whether MDR tax information was successfully
+                      deleted.
+                    type: boolean
+                    example: true
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServer'

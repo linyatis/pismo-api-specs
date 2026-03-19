@@ -1,0 +1,1202 @@
+openapi: 3.1.0
+info:
+  title: Revolving credit - Recurring charges
+  version: 1.0.0
+  description: Recurring charges API
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/recurring-charge
+    description: Sandbox API server for testing
+security:
+  - BearerAuth: []
+tags:
+  - name: Recurring charge plans
+    description: Endpoints to manage the recurring charge plans.
+  - name: Recurring charge links
+    description: Endpoints to manage the link between recurring charge plans and accounts.
+  - name: Recurring scheduled charges
+    description: >-
+      Endpoints to manage the recurring scheduled charges generated from the
+      links between recurring charge plans and account events.
+components:
+  parameters:
+    ActiveQuery:
+      name: active
+      in: query
+      description: Return only active plans?
+      required: false
+      style: form
+      schema:
+        default: false
+        type: boolean
+        example: true
+    AuthorizationIdQuery:
+      name: authorizationId
+      in: query
+      description: >-
+        Authorization ID. Only scheduled charges with this authorization ID are
+        returned.
+      required: false
+      style: form
+      schema:
+        type: integer
+        example: 300123
+    CorrelationIdHeader:
+      in: header
+      name: x-cid
+      schema:
+        type: string
+      description: >
+        The Correlation IDentifier field is used to link related API requests
+        and events. The x-cid can help the Pismo engineering team track
+        everything related to a call. You can find the x-cid field in the
+        response header from an API endpoint call.
+
+
+        If this field isn't passed, one is automatically generated.
+      example: 5bb05174-4e80-11ea-b77f-2e728ce88125
+    PageQuery:
+      name: page
+      in: query
+      description: Page number
+      required: false
+      style: form
+      schema:
+        default: 1
+        type: integer
+        example: 3
+    AccountIdPath:
+      name: account_id
+      in: path
+      description: Account ID
+      required: true
+      style: simple
+      schema:
+        type: integer
+        example: 6912345
+    PerPageQuery:
+      name: perPage
+      in: query
+      description: Maximum number of items per page
+      required: false
+      style: form
+      schema:
+        default: 100
+        type: integer
+        example: 10
+    RecurringChargePlanIdPath:
+      name: recurring_charge_plan_id
+      in: path
+      description: ID of the recurring charge plan
+      required: true
+      style: simple
+      schema:
+        type: integer
+        example: 98660282
+    RecurringChargeLinkIdPath:
+      name: recurring_charge_link_id
+      in: path
+      description: ID of the link between a plan and an account
+      required: true
+      style: simple
+      schema:
+        type: integer
+        example: 98660282
+    RecurringChargeLinkIDQuery:
+      name: recurringChargeLinkId
+      in: query
+      description: >-
+        Link ID. If provided, the request only returns link-generated scheduled
+        charges.
+      required: false
+      style: form
+      schema:
+        type: integer
+        example: 100123
+    RecurringScheduledChargeIdPath:
+      name: recurring_scheduled_charge_id
+      in: path
+      description: ID of the recurring scheduled charge
+      required: true
+      style: simple
+      schema:
+        type: integer
+        example: 100123
+    StatementIdQuery:
+      name: statementId
+      in: query
+      description: >-
+        Statement ID. Only scheduled charges that appear on the given statement
+        are returned.
+      required: false
+      style: form
+      schema:
+        type: integer
+        example: 200123
+    StatusQuery:
+      name: status
+      in: query
+      description: Charge status
+      required: false
+      style: form
+      schema:
+        type: string
+        example: PROCESSED
+        enum:
+          - PENDING
+          - PROCESSING
+          - PROCESSED
+          - SETTLED
+          - CANCELLED
+  schemas:
+    AccountID:
+      type: integer
+      description: Account ID
+      format: int64
+      example: 6912345
+    AuthorizationID:
+      description: |
+        Authorization ID of the debit transaction for `installment_amount`.
+      type: integer
+      example: 1099901
+    AuthorizationTrackingID:
+      type: string
+      description: Tracking ID for the debit transaction for `installment_amount`.
+      example: 3ea22692-a209-11eb-89a2-f73e179dcbc2
+    CanceledAt:
+      type: string
+      description: Date/time (GMT-3) that link was canceled
+      example: '2023-03-30T12:26:41'
+    CancellationCID:
+      type: string
+      description: CID for the cancellation event
+      example: 3ea22692-a209-11eb-89a2-f73e179dcbc2
+    CID:
+      type: string
+      description: >-
+        The Correlation IDentifier field is used to link related API requests
+        and events. The x-cid can help the Pismo engineering team track
+        everything related to a call.
+      example: 3ea22692-a209-11eb-89a2-f73e179dcbc2
+    ChargeCycleNumber:
+      type: integer
+      format: int32
+      description: >
+        Charge cycle number. For example, if the plan has 6 installments, and
+        this charge is for the third installment, then the charge cycle number
+        is 3.
+      example: 4
+    CreatedAt:
+      type: string
+      description: Date/time (GMT-3) that asset was registered on Pismo platform
+      example: '2023-03-30T12:26:41'
+    CreationCID:
+      type: string
+      description: CID for the creation event
+      example: 3ea22692-a209-11eb-89a2-f73e179dcbc2
+    CurrentPage:
+      type: integer
+      format: int32
+      description: Current page
+      example: 1
+    DiscountPercentage:
+      type: number
+      format: double
+      description: >-
+        Percentage value to be discounted if `first_cycles_to_discount` is
+        configured. Range: 0 to 100. 
+      example: 50
+    EndDate:
+      type: string
+      format: date-time
+      description: >-
+        End date for link (GMT-3). When the final charge for a link is made,
+        `end_date` gets populated.
+      example: '2023-03-30T12:26:41'
+    FirstCyclesToDiscount:
+      type: integer
+      format: int32
+      description: >
+        The number of cycles the discount (defined by `discount_percentage`)
+        should be applied to before reverting to the full charge.
+
+        For example, if `number_of_cycles` is 6 and `first_cycles_to_discount`
+        is 2, then the discount is applied to cycles 1 and 2. The full charge is
+        applied to cycles 3 through 6.
+
+        If present, `first_cycles_to_discount` must be positive and less than
+        `number_of_cycles`."
+      example: 3
+    InstallmentAmount:
+      type: number
+      format: double
+      description: >
+        `installment_amount` is the full amount of an installment before any
+        discount is applied.
+      example: 10.9
+    IsLastPage:
+      type: boolean
+      description: Set to `true` if this is the last page.
+      example: false
+    MinimumSpendToCharge:
+      type: number
+      format: double
+      example: 100
+      description: >-
+        Minimum debit amount on statement to enable cycle charging. If
+        `minimum_spend_to_charge` is not configured, the charge plan does not
+        check the debit statement amount.
+    NumberOfCycles:
+      type: integer
+      format: int32
+      description: >
+        Number of cycles to apply the charge plan. In other words, this is the
+        number of installments.
+
+        Must be greater than `first_cycles_to_discount` if used. Otherwise, it
+        must be greater than 0.
+      example: 12
+    Pages:
+      type: integer
+      description: Number of pages
+      example: 10
+    PerPage:
+      type: integer
+      description: Number of items per page
+      example: 1
+    PreviousRecurringChargeLinkID:
+      type: integer
+      description: ID of previous recurring charge link
+      format: int64
+    ProcessingCode:
+      type: string
+      description: >
+        Processing code for the debit transaction.
+
+
+        If `split_transaction` is `false` (the default), each installment
+        payment is recorded as one debit transaction equal to the installment
+        amount minus the discount, and `processing_code` is the processing code
+        for that transaction.
+
+
+        If `split_transaction` is `true`, each installment payment is recorded
+        as two transactions: a debit transaction for the installment amount and
+        a credit transaction for the discount. In this case, `processing_code`
+        is the processsing code for the debit transaction, and
+        `second_processing_code` is the processing code for the credit
+        transaction.
+      example: '99066'
+    OrgID:
+      type: string
+      description: Organization ID
+      example: TN-cc8f8b89-233a-4582-9f36-63ee85278d6d
+    RecurringChargeLinkID:
+      type: integer
+      description: ID of recurring charge link
+      format: int64
+      example: 98660282
+    RecurringChargePlanID:
+      type: integer
+      description: ID of recurring charge plan
+      format: int64
+      example: 115563
+    RecurringScheduledChargeID:
+      type: integer
+      description: ID of recurring scheduled charge
+      format: int64
+      example: 880077
+    RenewMethod:
+      type: string
+      example: WITH_DISCOUNT
+      description: >
+        NO_RENEW: The link does not renew at the end of the cycle.
+
+        WITHOUT_DISCOUNT: The link is renewed at the end of the cycle, but the
+        discounts registered in the plan are not applied.
+
+        WITH_DISCOUNT: The link is renewed at the end of the cycle, and the
+        discounts registered in the plan are applied."
+      enum:
+        - NO_RENEW
+        - WITHOUT_DISCOUNT
+        - WITH_DISCOUNT
+    SecondaryAuthorizationID:
+      description: >
+        Authorization ID of the credit transaction for
+        `secondary_installment_amount`.
+      type: integer
+      example: 1099901
+    SecondaryAuthorizationTrackingID:
+      type: string
+      description: >-
+        Tracking ID for the credit transaction for
+        `secondary_installment_amount`.
+      example: 3ea22692-a209-11eb-89a2-f73e179dcbc2
+    SecondaryInstallmentAmount:
+      type: number
+      description: >
+        If `split_transaction` is true, then `secondary_installment_amount` is
+        the discount (`installment_amount` * `discount_percentage`) that is
+        subtracted from 
+
+        `installment_amount` to calculate the amount that the customer owes on
+        the installment.
+
+        If `split_transaction` is false, then `secondary_installment_amount` is
+        0, and the actual amount that the customer owes goes in
+        `installment_amount`."
+
+        In the first case, two transactions are generated — a debit transaction
+        for `installment_amount` and a credit transaction for 
+
+        `secondary_installment_amount`. (This is the expected behavior. However,
+        it assumes that `processing_code` and `second_processing_code` are set
+        to values for debit and credit transactions, respectively.)
+
+        In the second case, only one transaction is generated (the one for
+        `installment_amount`).
+      example: 5.45
+    SecondaryProcessingCode:
+      type: string
+      example: '99067'
+      description: >-
+        Used to create the transaction for `secondary_installment_amount`.
+        Normally, you should use a processing code for a credit transaction.
+    SplitTransaction:
+      description: >
+        Use separate transactions for the installment amount and the discount?
+
+
+        Suppose the installment amount for a cycle is $20 and the discount is
+        $2. If `split_transaction` is `false`, then one debit transaction for
+        $18 ($20 - $2) is posted to the account for that cycle. It also appears
+        as one debit transaction on the statement. If `split_transaction` is
+        `true`, then two transactions are posted to the account — a debit
+        transaction for $20 and a credit transaction for $2 — and those two
+        transactions appear on the statement. When `split_transaction` is
+        `true`, `secondary_processing_code` is used to create the credit
+        transaction.
+
+
+        Note: You aren't forced to specify a debit transaction with
+        `processing_code` and a credit transaction with
+        `secondary_processing_code`, but it's highly recommended. It's difficult
+        to think of a scenario where you would want to do something else.
+      type: boolean
+      default: false
+    StatementID:
+      type: integer
+      description: Statement ID
+      format: int64
+      example: 9497889
+    Status:
+      type: string
+      description: >
+        PENDING: Charge is scheduled and waiting for the cycle to close.
+
+        PROCESSING: Cycle closing process has started and is awaiting
+        completion.
+
+        CANCELLED: Charge canceled due to link cancellation.
+
+        SETTLED: Amount is zero and/or `minimum_spend_to_charge` has not been
+        reached.
+
+        PROCESSED: Charge was posted on the statement."         
+      example: PENDING
+      enum:
+        - PENDING
+        - PROCESSING
+        - CANCELLED
+        - SETTLED
+        - PROCESSED
+    TotalItems:
+      type: integer
+      description: Total items
+      example: 10
+    TrackingID:
+      type: string
+      description: Tracking ID
+      example: 3ea22692-a209-11eb-89a2-f73e179dcbc2
+    PostInstallmentChargeOnCurrentCycle:
+      type: boolean
+      description: >-
+        When it's true, the charge will be apply on the current cycle otherwise,
+        it will be apply on the next cycle
+      example: true
+    StartInstallmentChargeIn:
+      type: integer
+      description: >-
+        Indicates when to start applying the charge. For example, if
+        start_installment_charge_in is 3, then the charge is applied starting
+        with cycle 3. It's not applied to cycles 1 and 2. If
+        post_installment_charge_on_current_cycle is true,
+        start_installment_charge_in should be null. If
+        post_installment_charge_on_current_cycle is false,
+        start_installment_charge_in is required. In this case, it must be
+        greater than or equal to the current cycle and less than or equal to
+        number_of_cycles.
+      example: 4
+    Renew:
+      type: boolean
+      description: When it's true the migration has a renovation
+      example: true
+    UpdatedAt:
+      type: string
+      description: Date closure was updated (GMT-3)
+      example: '2022-02-01'
+    LinkDescription:
+      type: string
+      example: Link between an account and a recurring charge plan
+      minLength: 1
+      maxLength: 100
+      description: >
+        A description of the scheduled charge that's linked to the account. Use
+        `counter` to specify where the cycle count should be placed.
+
+        Example: "Annuity {counter}" generates "Annuity 2/12" for the second of
+        twelve annutities.
+
+        If `counter` is not present, the counter is placed at the end of the
+        description.
+
+        If no description is configured, the description of the transaction type
+        is used, and the counter is not shown.
+    LinkCreationResponseDto:
+      description: Represents the link between a plan and an account.
+      type: object
+      properties:
+        recurring_charge_link_id:
+          $ref: '#/components/schemas/RecurringChargeLinkID'
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        recurring_charge_plan_id:
+          $ref: '#/components/schemas/RecurringChargePlanID'
+        org_id:
+          $ref: '#/components/schemas/OrgID'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        description:
+          $ref: '#/components/schemas/LinkDescription'
+        tracking_id:
+          $ref: '#/components/schemas/TrackingID'
+        creation_cid:
+          $ref: '#/components/schemas/CreationCID'
+        post_installment_charge_on_current_cycle:
+          $ref: '#/components/schemas/PostInstallmentChargeOnCurrentCycle'
+        start_installment_charge_in:
+          $ref: '#/components/schemas/StartInstallmentChargeIn'
+        renew:
+          $ref: '#/components/schemas/Renew'
+    PagedRecurringChargeLink:
+      allOf:
+        - $ref: '#/components/schemas/PaginationInfo'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/RecurringChargeLink'
+    PagedRecurringChargePlan:
+      description: Response to a request to get a recurring charge plan.
+      allOf:
+        - $ref: '#/components/schemas/PaginationInfo'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/RecurringChargePlan'
+    PagedScheduledCharge:
+      allOf:
+        - $ref: '#/components/schemas/PaginationInfo'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ScheduledCharge'
+    PaginationInfo:
+      type: object
+      properties:
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        pages:
+          $ref: '#/components/schemas/Pages'
+        total_items:
+          $ref: '#/components/schemas/TotalItems'
+        is_last_page:
+          $ref: '#/components/schemas/IsLastPage'
+    PlanDescription:
+      type: string
+      description: >
+        Used if the recurring charge link description is not provided. Use
+        "{counter}" to indicate where the cycle count should be placed. Example:
+        "{counter} Annuity" generates "2/12 Annuity" for the second of twelve
+        installments. If "{counter}" is not present, the counter is placed at
+        the end of the description. If no description is provided, the
+        transaction type's description is used and the counter is not shown.
+    RecurringChargeLink:
+      description: Link between a plan and an account
+      type: object
+      properties:
+        recurring_charge_link_id:
+          $ref: '#/components/schemas/RecurringChargeLinkID'
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        recurring_charge_plan_id:
+          $ref: '#/components/schemas/RecurringChargePlanID'
+        previous_recurring_charge_link_id:
+          $ref: '#/components/schemas/PreviousRecurringChargeLinkID'
+        org_id:
+          $ref: '#/components/schemas/OrgID'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        cancelled_at:
+          $ref: '#/components/schemas/CanceledAt'
+        end_date:
+          $ref: '#/components/schemas/EndDate'
+        description:
+          $ref: '#/components/schemas/LinkDescription'
+        tracking_id:
+          $ref: '#/components/schemas/TrackingID'
+        creation_cid:
+          $ref: '#/components/schemas/CreationCID'
+        cancellation_cid:
+          $ref: '#/components/schemas/CancellationCID'
+    RecurringChargePlan:
+      description: Recurring charge plan
+      type: object
+      properties:
+        recurring_charge_plan_id:
+          $ref: '#/components/schemas/RecurringChargePlanID'
+        org_id:
+          $ref: '#/components/schemas/OrgID'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        installment_amount:
+          $ref: '#/components/schemas/InstallmentAmount'
+        description:
+          $ref: '#/components/schemas/PlanDescription'
+        split_transaction:
+          $ref: '#/components/schemas/SplitTransaction'
+        secondary_processing_code:
+          $ref: '#/components/schemas/SecondaryProcessingCode'
+        secondary_description:
+          $ref: '#/components/schemas/SecondaryPlanDescription'
+        number_of_cycles:
+          $ref: '#/components/schemas/NumberOfCycles'
+        first_cycles_to_discount:
+          $ref: '#/components/schemas/FirstCyclesToDiscount'
+        discount_percentage:
+          $ref: '#/components/schemas/DiscountPercentage'
+        minimum_spend_to_charge:
+          $ref: '#/components/schemas/MinimumSpendToCharge'
+        renew_method:
+          $ref: '#/components/schemas/RenewMethod'
+        tracking_id:
+          $ref: '#/components/schemas/TrackingID'
+        cid:
+          $ref: '#/components/schemas/CID'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+    RecurringChargePlanRequest:
+      description: Body of a request used to create a recurring charge plan
+      required:
+        - installment_amount
+        - number_of_cycles
+        - processing_code
+        - tracking_id
+      type: object
+      properties:
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        installment_amount:
+          $ref: '#/components/schemas/InstallmentAmount'
+        description:
+          $ref: '#/components/schemas/PlanDescription'
+        split_transaction:
+          $ref: '#/components/schemas/SplitTransaction'
+        secondary_processing_code:
+          $ref: '#/components/schemas/SecondaryProcessingCode'
+        secondary_description:
+          $ref: '#/components/schemas/SecondaryPlanDescription'
+        number_of_cycles:
+          $ref: '#/components/schemas/NumberOfCycles'
+        first_cycles_to_discount:
+          $ref: '#/components/schemas/FirstCyclesToDiscount'
+        discount_percentage:
+          $ref: '#/components/schemas/DiscountPercentage'
+        minimum_spend_to_charge:
+          $ref: '#/components/schemas/MinimumSpendToCharge'
+        renew_method:
+          $ref: '#/components/schemas/RenewMethod'
+        tracking_id:
+          $ref: '#/components/schemas/TrackingID'
+    ScheduledCharge:
+      type: object
+      properties:
+        recurring_scheduled_charge_id:
+          $ref: '#/components/schemas/RecurringScheduledChargeID'
+        org_id:
+          $ref: '#/components/schemas/OrgID'
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
+        statement_id:
+          $ref: '#/components/schemas/StatementID'
+        recurring_charge_link_id:
+          $ref: '#/components/schemas/RecurringChargeLinkID'
+        status:
+          $ref: '#/components/schemas/Status'
+        creation_cid:
+          $ref: '#/components/schemas/CreationCID'
+        cancellation_cid:
+          $ref: '#/components/schemas/CancellationCID'
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        installment_amount:
+          $ref: '#/components/schemas/InstallmentAmount'
+        description:
+          $ref: '#/components/schemas/LinkDescription'
+        authorization_id:
+          $ref: '#/components/schemas/AuthorizationID'
+        authorization_tracking_id:
+          $ref: '#/components/schemas/AuthorizationTrackingID'
+        secondary_processing_code:
+          $ref: '#/components/schemas/SecondaryProcessingCode'
+        secondary_installment_amount:
+          $ref: '#/components/schemas/SecondaryInstallmentAmount'
+        secondary_description:
+          $ref: '#/components/schemas/SecondaryLinkDescription'
+        secondary_authorization_id:
+          $ref: '#/components/schemas/SecondaryAuthorizationID'
+        secondary_authorization_tracking_id:
+          $ref: '#/components/schemas/SecondaryAuthorizationTrackingID'
+        cycle:
+          $ref: '#/components/schemas/ChargeCycleNumber'
+    SecondaryLinkDescription:
+      type: string
+      example: Link between an account and a recurring charge plan
+      minLength: 1
+      maxLength: 100
+      description: >
+        Optional secondary description of the scheduled charge. Use `counter` to
+        specify where the cycle count should be placed.
+
+        Example: "Annuity {counter}" generates "Annuity 2/12" for the second of
+        twelve annutities.
+    SecondaryPlanDescription:
+      type: string
+      description: >
+        Used to create a description for the secondary transaction. Use
+        "{counter}" to indicate where the cycle count should be placed.
+
+        Example: "{counter} Annuity" generates "2/12 Annuity" for the second of
+        twelve installments. If "{counter}" is not present, the counter is
+        placed at the end of the description. If no description is provided, the
+        transaction type's description is used and the counter is not shown.
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account access token. Tokens can expire quickly, which can result in an
+        "Unauthorized" error.
+      bearerFormat: JWT
+  responses:
+    400BadRequest:
+      description: Bad Request
+    404NotFound:
+      description: Not Found
+    409Conflict:
+      description: The specified resource status conflicts with the current request.
+    500InternalServer:
+      description: Internal server error
+paths:
+  /v1/recurring-charge-plans:
+    post:
+      tags:
+        - Recurring charge plans
+      summary: Create recurring charge plan
+      description: >
+        Create a recurring charge plan. A recurring charge is a charge that is
+        applied on a monthly basis for a fixed number of installments. When you
+        create a recurring charge plan, you specify the number of installments
+        (cycles) and the installment amount.
+
+
+        Creating a plan does not activate it. A plan must be linked to an
+        account to activate the charge schedule defined in it.
+
+
+        This endpoint generates a [Recurring charge plan
+        created](https://developers.pismo.io/events/docs/balance-recurring-charge-plan-created-1)
+        event.
+
+
+        **NOTES:**
+
+
+        - To work correctly, you must set the program parameter [504 -
+        RECURRING_CHARGE_FINAL_ACCOUNT_STATUS](doc:multivalue-parameters) to the
+        value for an account status.  Usually you use `CANCELLED` for this. When
+        the account enters this status, the system cancels all pending recurring
+        charges. (Note that if you provide more than one value, the system only
+        uses the first one, even though this is a multivalue program parameter.)
+
+
+        - This endpoint requires an account token — an access token encoded with
+        an account ID. Tokens can expire quickly, which can result in a **401
+        Unauthorized** message.
+      operationId: create-recurring-charge-plan
+      parameters:
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecurringChargePlanRequest'
+        required: true
+      responses:
+        '200':
+          description: OK - The recurring charge plan was created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringChargePlan'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      tags:
+        - Recurring charge plans
+      summary: List recurring charge plans
+      description: >
+        Returns a list of recurring charge plans.
+
+
+        **NOTE:** This endpoint requires an account token — an access token
+        encoded with an account ID. Tokens can expire quickly, which can result
+        in a **401 Unauthorized** message.
+      operationId: list-recurring-charge-plans
+      parameters:
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/ActiveQuery'
+      responses:
+        '200':
+          description: >-
+            OK - Indicates that the server accepted the request and returned the
+            results. If no records are found, the request returns an empty array
+            with `total_items` set to 0.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedRecurringChargePlan'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/recurring-charge-plans/{recurring_charge_plan_id}:
+    get:
+      tags:
+        - Recurring charge plans
+      summary: Get recurring charge plan
+      description: >
+        Gets a recurring charge plan by its ID.
+
+
+        **NOTE:** This endpoint requires an account token — an access token
+        encoded with an account ID. Tokens can expire quickly, which can result
+        in a **401 Unauthorized** message.
+      operationId: get-recurring-charge-plan
+      parameters:
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+        - $ref: '#/components/parameters/RecurringChargePlanIdPath'
+      responses:
+        '200':
+          description: >-
+            OK - Indicates that the server accepted the request and found the
+            plan.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringChargePlan'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      tags:
+        - Recurring charge plans
+      summary: Disable recurring charge plan
+      description: >
+        Disables an active recurring charge plan. Already disabled plans are
+        unaffected.
+
+        This endpoint generates a [Recurring charge plan
+        disabled](https://developers.pismo.io/events/docs/balance-recurring-charge-plan-disabled-1)
+        event.
+
+
+        **NOTE:** This endpoint requires an account token — an access token
+        encoded with an account ID. Tokens can expire quickly, which can result
+        in a **401 Unauthorized** message.
+      operationId: disable-recurring-charge-plan
+      parameters:
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+        - $ref: '#/components/parameters/RecurringChargePlanIdPath'
+      responses:
+        '200':
+          description: >-
+            OK - Indicates that the server accepted the request and disabled the
+            plan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recurring_charge_plan_id:
+                    $ref: '#/components/schemas/RecurringChargePlanID'
+                  disabled_at:
+                    type: string
+                    description: Date and time plan was disabled
+                    format: date-time
+                  disable_all_accounts:
+                    type: boolean
+                    example: false
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/recurring-charge-plans/{recurring_charge_plan_id}/accounts/{account_id}:
+    post:
+      tags:
+        - Recurring charge links
+      summary: Create link
+      description: >
+        Creates a link between an active recurring charge plan and an account.
+
+
+        This endpoint generates a [Recurring charge plan linked to
+        account](https://developers.pismo.io/events/docs/balance-recurring-charge-plan-linked-to-account-1)
+        event.
+
+
+        **NOTE:** This endpoint requires an account token — an access token
+        encoded with an account ID. Tokens can expire quickly, which can result
+        in a **401 Unauthorized** message.
+      operationId: create-recurring-charge-link
+      parameters:
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+        - $ref: '#/components/parameters/RecurringChargePlanIdPath'
+        - $ref: '#/components/parameters/AccountIdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - tracking_id
+              type: object
+              properties:
+                description:
+                  $ref: '#/components/schemas/LinkDescription'
+                tracking_id:
+                  $ref: '#/components/schemas/TrackingID'
+                post_installment_charge_on_current_cycle:
+                  $ref: '#/components/schemas/PostInstallmentChargeOnCurrentCycle'
+                start_installment_charge_in:
+                  $ref: '#/components/schemas/StartInstallmentChargeIn'
+                renew:
+                  $ref: '#/components/schemas/Renew'
+        required: true
+      responses:
+        '200':
+          description: >-
+            OK - Indicates that the server accepted the request and created the
+            link.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkCreationResponseDto'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      tags:
+        - Recurring charge links
+      summary: Get link between a plan and an account
+      description: >
+        Gets the link between a plan and an account, given the plan ID and
+        account ID.
+
+
+        **NOTE:** This endpoint requires an account token — an access token
+        encoded with an account ID. Tokens can expire quickly, which can result
+        in a **401 Unauthorized** message.
+      operationId: get-recurring-charge-link
+      parameters:
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+        - $ref: '#/components/parameters/RecurringChargePlanIdPath'
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: >-
+            OK - Indicates that the server accepted the request and found the
+            link. If no links are found, an empty array is returned and
+            `total_items` is 0.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedRecurringChargeLink'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/recurring-charge-links/{recurring_charge_link_id}:
+    delete:
+      tags:
+        - Recurring charge links
+      summary: Delete recurring charge link
+      description: >
+        Cancels the link between a recurring charge plan and an account. Results
+        in the cancellation of all `PENDING` charges for that link. Already
+        canceled links are unaffected.
+
+        This endpoint generates a [Recurring charge plan unlinked from
+        account](https://developers.pismo.io/events/docs/balance-recurring-charge-plan-unlinked-from-account-1)
+        event.
+
+
+        **NOTE:** This endpoint requires an account token — an access token
+        encoded with an account ID. Tokens can expire quickly, which can result
+        in a **401 Unauthorized** message.
+      operationId: delete-recurring-charge-link
+      parameters:
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+        - $ref: '#/components/parameters/RecurringChargeLinkIdPath'
+      responses:
+        '200':
+          description: >-
+            OK - Indicates that the server accepted the request and canceled the
+            link.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringChargeLink'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/recurring-charge-plans/{recurring_charge_plan_id}/accounts:
+    get:
+      tags:
+        - Recurring charge links
+      summary: List recurring charge plan links
+      description: >
+        Gets all the links for a plan, given the plan ID.
+
+
+        **NOTE:** This endpoint requires an account token — an access token
+        encoded with an account ID. Tokens can expire quickly, which can result
+        in a **401 Unauthorized** message.
+      operationId: list-recurring-charge-links
+      parameters:
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+        - $ref: '#/components/parameters/RecurringChargePlanIdPath'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: >-
+            OK - Indicates that the server accepted the request and returned the
+            list of links. If no links are found, an empty array is returned and
+            `total_items` is 0.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedRecurringChargeLink'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/accounts/{account_id}/recurring-charge-plans:
+    get:
+      tags:
+        - Recurring charge links
+      summary: List account links
+      description: >
+        Gets the links for a given account.
+
+
+        **NOTE:** This endpoint requires an account token — an access token
+        encoded with an account ID. Tokens can expire quickly, which can result
+        in a **401 Unauthorized** message.
+      operationId: list-account-links
+      parameters:
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: >-
+            OK - Indicates that the server accepted the request and returned the
+            list of links. If no links are found, an empty array is returned and
+            `total_items` is 0.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedRecurringChargeLink'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/accounts/{account_id}/scheduled-charges:
+    get:
+      tags:
+        - Recurring scheduled charges
+      summary: List scheduled charges
+      description: >
+        Gets all the scheduled charges for a given account, filtered by the
+        query parameters.
+
+
+        **NOTE:** This endpoint requires an account token — an access token
+        encoded with an account ID. Tokens can expire quickly, which can result
+        in a **401 Unauthorized** message.
+      operationId: list-scheduled-charges
+      parameters:
+        - $ref: '#/components/parameters/CorrelationIdHeader'
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/RecurringChargeLinkIDQuery'
+        - $ref: '#/components/parameters/StatementIdQuery'
+        - $ref: '#/components/parameters/StatusQuery'
+        - $ref: '#/components/parameters/AuthorizationIdQuery'
+      responses:
+        '200':
+          description: >-
+            OK - Indicates that the server accepted the request and returned the
+            list of charges. If no charges are found, an empty array is returned
+            and `total_items` is 0.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedScheduledCharge'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/accounts/{account_id}/scheduled-charges/{recurring_scheduled_charge_id}:
+    get:
+      tags:
+        - Recurring scheduled charges
+      summary: Get scheduled charge
+      description: >
+        Get a scheduled charge by account ID and recurring scheduled charge ID.
+
+
+        **NOTE:** This endpoint requires an account token — an access token
+        encoded with an account ID. Tokens can expire quickly, which can result
+        in a **401 Unauthorized** message.
+      operationId: get-scheduled-charge
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/RecurringScheduledChargeIdPath'
+      responses:
+        '200':
+          description: >-
+            OK - Indicates that the server accepted the request and found the
+            scheduled charge.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduledCharge'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    patch:
+      tags:
+        - Recurring scheduled charges
+      summary: Update scheduled charge
+      description: >
+        Updates a scheduled charge by account ID and recurring scheduled charge
+        ID. It's only possible to update charges with current status `PENDING`.
+
+        This endpoint generates a [Recurring scheduled charge
+        updated](https://developers.pismo.io/events/docs/balance-recurring-scheduled-charge-updated-1)
+        event.
+
+
+        **NOTE:** This endpoint requires an account token — an access token
+        encoded with an account ID. Tokens can expire quickly, which can result
+        in a **401 Unauthorized** message.
+      operationId: update-scheduled-charge
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/RecurringScheduledChargeIdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                installment_amount:
+                  $ref: '#/components/schemas/InstallmentAmount'
+                processing_code:
+                  $ref: '#/components/schemas/ProcessingCode'
+                description:
+                  $ref: '#/components/schemas/LinkDescription'
+                secondary_processing_code:
+                  $ref: '#/components/schemas/SecondaryProcessingCode'
+                secondary_installment_amount:
+                  $ref: '#/components/schemas/SecondaryInstallmentAmount'
+                secondary_description:
+                  $ref: '#/components/schemas/SecondaryLinkDescription'
+        required: true
+      responses:
+        '200':
+          description: >-
+            OK - Indicates that the server accepted the request and updated the
+            scheduled charge.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduledCharge'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'

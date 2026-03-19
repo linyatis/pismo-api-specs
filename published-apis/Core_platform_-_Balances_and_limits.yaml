@@ -1,0 +1,1004 @@
+openapi: 3.1.0
+info:
+  title: Core platform - Balances and limits
+  version: 1.0.0
+  description: recover the description with the PM
+  contact:
+    name: API Support
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/balances-limits
+    description: Sandbox API server for testing
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account access token. Tokens can expire quickly, which can result in an
+        "Unauthorized" error.
+      bearerFormat: JWT
+  schemas:
+    AccountLimitPatch:
+      type: object
+      properties:
+        max_credit_limit:
+          description: >-
+            Maximum credit amount approved for this account. This value must not
+            be less than the `total_credit_limit` or the program’s minimum
+            credit limit parameter, and must not exceed the program’s maximum
+            credit limit parameter. The ledger stores and reports this amount
+            using the exact number of decimal places provided in the request
+            payload.
+          type: number
+          example: 800.01
+        total_credit_limit:
+          description: >-
+            Total credit limit as set by the user. This can be any value up to
+            the `max_credit_limit`. The ledger stores and reports the amount
+            using the same number of decimal places as supplied in the request
+            payload.
+          type: number
+          example: 15.51
+        total_overdraft_limit:
+          description: >-
+            Maximum limit amount for overdraft spending on the account. The
+            ledger stores and reports the amount using the same number of
+            decimal places as supplied in the request payload.
+          type: number
+          example: 340.61
+        percentage_over_limit:
+          description: >-
+            Percentage of the maximum credit limit (`max_credit_limit`) made
+            available for purchases over the credit limit on the account.
+          type: number
+          example: 15.5
+        total_installment_credit_limit:
+          description: >-
+            Amount limit for installments on this credit account. This value
+            must not exceed the program’s maximum credit limit parameter. The
+            ledger stores and reports this amount using the exact number of
+            decimal places provided in the request payload.
+          type: number
+          example: 145.78
+    GlobalConfigLimit:
+      type: object
+      description: Limit configuration
+      properties:
+        value:
+          description: >-
+            Configured program limit value (must be a non-negative decimal
+            number with high precision)
+          type: number
+          minimum: 0
+          example: 1000.5
+        is_active:
+          description: >-
+            Status of the configuration limit (`true` if active, `false` if
+            inactive)
+          type: boolean
+          example: true
+      required:
+        - value
+        - is_active
+    GetGlobalConfigLimit:
+      type: object
+      description: Limit configuration
+      properties:
+        value:
+          description: Configured program limit value
+          type: number
+          minimum: 0
+          example: 1000.5
+        is_active:
+          description: >-
+            Status of the configuration limit (`true` if active, `false` if
+            inactive)
+          type: boolean
+          example: true
+        accumulated:
+          description: Accumulated value
+          type: number
+          example: 0
+      required:
+        - value
+        - is_active
+    GlobalConfigLimits:
+      type: object
+      description: Limits configuration
+      properties:
+        max_credit_limit:
+          $ref: '#/components/schemas/GlobalConfigLimit'
+      required:
+        - max_credit_limit
+    GetGlobalConfigLimits:
+      type: object
+      description: Limits configuration
+      properties:
+        max_credit_limit:
+          $ref: '#/components/schemas/GetGlobalConfigLimit'
+      required:
+        - max_credit_limit
+    CreateGlobalConfigRequest:
+      type: object
+      description: Request to create a new global configuration
+      properties:
+        level:
+          description: Configuration level (currently only PROGRAM is supported)
+          type: string
+          enum:
+            - PROGRAM
+          example: PROGRAM
+        program_id:
+          description: Program ID (required when level is PROGRAM, must be positive)
+          type: integer
+          minimum: 1
+          example: 123
+        limits:
+          $ref: '#/components/schemas/GlobalConfigLimits'
+      required:
+        - level
+        - program_id
+        - limits
+    GlobalConfigResponse:
+      type: object
+      description: Global configuration response
+      properties:
+        level:
+          description: Configuration level
+          type: string
+          enum:
+            - PROGRAM
+          example: PROGRAM
+        program_id:
+          description: Program ID
+          type: integer
+          example: 1234
+        limits:
+          $ref: '#/components/schemas/GlobalConfigLimits'
+    GetGlobalConfigResponse:
+      type: object
+      description: Global configuration response
+      properties:
+        level:
+          description: Configuration level
+          type: string
+          enum:
+            - PROGRAM
+          example: PROGRAM
+        program_id:
+          description: Program ID
+          type: integer
+          example: 1234
+        limits:
+          $ref: '#/components/schemas/GetGlobalConfigLimits'
+    UpdateGlobalConfigRequest:
+      type: object
+      description: Request to update an existing global configuration
+      properties:
+        limits:
+          $ref: '#/components/schemas/GlobalConfigLimits'
+      required:
+        - limits
+    EvaluateGlobalConfigRequest:
+      type: object
+      description: Request to evaluate a global configuration
+      properties:
+        program_id:
+          description: Program ID (required when level is PROGRAM, must be positive)
+          type: integer
+          minimum: 1
+          example: 123
+        account_granted_limit:
+          description: >-
+            Account-granted limit value (must be a non-negative decimal number
+            with high precision)
+          type: number
+          minimum: 0
+          example: 1000.5
+        workflow_type:
+          description: Workflow type
+          type: string
+          example: accounts_create_onboarding
+      required:
+        - program_id
+        - account_granted_limit
+    RelatedAccountResponse:
+      type: object
+      description: Related account response.
+      properties:
+        account_id:
+          description: Account ID.
+          type: integer
+          example: 259875469
+        parent_account_id:
+          description: Parent Account ID.
+          type: integer
+          example: 259875000
+        program_id:
+          description: Program ID.
+          type: integer
+          example: 1111
+        available_credit_limit:
+          description: Initial available credit limit of the account.
+          type: number
+          example: 712.02
+        available_savings_account_limit:
+          description: Available limit of the savings account.
+          type: number
+          example: 2700.34
+        available_withdrawal_credit:
+          description: Amount available for withdrawal in the credit account.
+          type: number
+          example: 500
+        held_funds:
+          description: >-
+            Funds held on the account. Usually, but not always, this occurs due
+            to a legal action.
+          type: number
+          example: 50
+        max_credit_limit:
+          description: >-
+            Maximum credit amount approved for this account. This value can not
+            be lower than `total_credit_limit`.
+          type: number
+          example: 800
+        total_credit_limit:
+          description: >-
+            Total credit limit amount as set by the user. This can be any value
+            up to the `max_credit_limit`.
+          type: number
+          example: 15.5
+        withdrawal_credit_limit:
+          description: Amount limit for withdrawal in credit programs.
+          type: number
+          example: 10.34
+        total_overdraft_limit:
+          description: Maximum limit amount for over draft spending on the account.
+          type: number
+          example: 340.6
+        percentage_over_limit:
+          description: >-
+            Percentage of the maximum credit limit (`max_credit_limit`) made
+            available for purchases over the credit limit on the account.
+          type: number
+          example: 15.5
+        total_installment_credit_limit:
+          description: Amount limit for installments in the credit account.
+          type: number
+          example: 145.78
+        available_total_installment_credit:
+          description: Available amount for installments in the credit account.
+          type: number
+          example: 120
+        currency_code:
+          description: ISO-4217 alphabetic code (3 characters) for transaction currency.
+          type: string
+          example: BRL
+        currency_numeric_code:
+          description: ISO-4217 numeric code (3 digits) for transaction currency.
+          type: string
+          example: '986'
+    RelatedAccountsResponse:
+      type: object
+      properties:
+        account_id:
+          description: Account ID.
+          type: integer
+          example: 259875469
+        program_id:
+          description: Program ID.
+          type: integer
+          example: 1111
+        available_credit_limit:
+          description: Initial available credit limit of the account.
+          type: number
+          example: 712.02
+        available_savings_account_limit:
+          description: Available limit of the savings account.
+          type: number
+          example: 2700.34
+        available_withdrawal_credit:
+          description: Amount available for withdrawal in the credit account.
+          type: number
+          example: 500
+        held_funds:
+          description: >-
+            Funds held on the account. Usually, but not always, this occurs due
+            to a legal action.
+          type: number
+          example: 50
+        max_credit_limit:
+          description: >-
+            Maximum credit amount approved for this account. This value can not
+            be lower than `total_credit_limit`.
+          type: number
+          example: 800
+        total_credit_limit:
+          description: >-
+            Total credit limit amount as set by the user. This can be any value
+            up to the `max_credit_limit`.
+          type: number
+          example: 15.5
+        withdrawal_credit_limit:
+          description: Amount limit for withdrawal in credit programs.
+          type: number
+          example: 10.34
+        total_overdraft_limit:
+          description: Maximum limit amount for over draft spending on the account.
+          type: number
+          example: 340.6
+        percentage_over_limit:
+          description: >-
+            Percentage of the maximum credit limit (`max_credit_limit`) made
+            available for purchases over the credit limit on the account.
+          type: number
+          example: 15.5
+        total_installment_credit_limit:
+          description: Amount limit for installments in the credit account.
+          type: number
+          example: 145.78
+        available_total_installment_credit:
+          description: Available amount for installments in the credit account.
+          type: number
+          example: 120
+        currency_code:
+          description: ISO-4217 alphabetic code (3 characters) for transaction currency.
+          type: string
+          example: BRL
+        currency_numeric_code:
+          description: ISO-4217 numeric code (3 digits) for transaction currency.
+          type: string
+          example: '986'
+        related_accounts:
+          type: array
+          description: Return related account
+          items:
+            $ref: '#/components/schemas/RelatedAccountResponse'
+    AccountBalance:
+      type: object
+      properties:
+        account_id:
+          description: Account ID where the operation is performed
+          type: number
+          example: 1234
+        org_id:
+          description: Org ID where the account exists
+          type: string
+          example: 08102A0B-D4F8-42A2-8B0E-2052D05577D7
+        ref_date:
+          description: Date of the balance
+          type: string
+          format: date
+          example: '2022-01-02'
+        available_credit_limit:
+          description: Initial available credit limit of the account.
+          type: number
+          example: 1500.5
+        available_total_installment_credit:
+          description: Amount available for installments in the credit account.
+          type: number
+          example: 1000.3
+        available_withdrawal_credit:
+          description: Amount available for withdrawal in the credit account.
+          type: number
+          example: 2000.6
+        available_savings_account_limit:
+          description: Available limit of the savings account.
+          type: number
+          example: 2700.34
+        held_funds:
+          description: >-
+            Funds held on the account. Usually, but not always, this occurs due
+            to a legal action.
+          type: number
+          example: 10.34
+        currency_code:
+          description: ISO-4217 alphabetic code (3 characters) for transaction currency.
+          type: string
+          example: BRL
+        currency_numeric_code:
+          description: ISO-4217 numeric code (3 digits) for transaction currency.
+          type: string
+          example: '986'
+    AccountBalanceResponse:
+      type: object
+      properties:
+        pages:
+          description: Total number of pages
+          type: integer
+          example: 3
+        current_page:
+          description: Current page of the pagination
+          type: integer
+          example: 1
+        per_page:
+          description: Amount of items that should be returned on each page
+          type: integer
+          example: 1
+        total_items:
+          description: Total amount of items available
+          type: integer
+          example: 3
+        items:
+          description: Array of available entries
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/AccountBalance'
+    ErrorModel:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Message that describes the error.
+          example: An Internal Server Error found, please contact the administrator
+        code:
+          type: string
+          description: Code that identifies the error type.
+          example: EBLS9999
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetails'
+    ErrorDetails:
+      type: object
+      properties:
+        location:
+          description: Location describes the attribute when the error is present
+          type: string
+          example: payload.attribute
+        message:
+          type: string
+          description: Message that describes the error detail
+          example: attribute is null
+  examples:
+    headerValidationError:
+      value:
+        message: Some required headers are missing
+        code: WBLS0001
+    jsonSyntaxError:
+      value:
+        message: Invalid syntax input
+        code: WBLS0003
+    invalidAccountIdError:
+      value:
+        message: Invalid account id
+        code: WBLS0004
+    validationError:
+      value:
+        message: Error validating input
+        code: WBLS0005
+    accountNotFoundError:
+      value:
+        message: Account not found
+        code: WBLS0006
+    genericSystemError:
+      value:
+        message: Internal error found, please contact the administrator
+        code: EBLS9999
+    dailyBalanceValidationError:
+      value:
+        message: Error when parsing the beginDate and/or endDate
+        code: WLDG0021
+    globalConfigValidationError:
+      value:
+        message: Invalid input
+        code: WBLS0002
+        details:
+          - location: payload.level
+            message: >-
+              level 'INVALID' is not supported. Only 'PROGRAM' is currently
+              allowed
+    globalConfigDuplicateError:
+      value:
+        message: Duplicate config
+        code: DUPLICATE_CONFIG
+    globalConfigInvalidProgramIDError:
+      value:
+        message: Error validating input
+        code: WBLS0005
+        details:
+          - location: query.programId
+            message: programId must be a positive integer
+    globalConfigNotFoundError:
+      value:
+        message: Global configuration not found
+        code: WBLS0007
+    relatedAccountsNotFound:
+      description: Account isn't a parent example.
+      value:
+        account_id: 259875469
+        program_id: 1111
+        available_credit_limit: 712.02
+        available_savings_account_limit: 2700.34
+        available_withdrawal_credit: 500
+        held_funds: 50
+        max_credit_limit: 800
+        total_credit_limit: 15.5
+        withdrawal_credit_limit: 10.34
+        total_overdraft_limit: 340.6
+        percentage_over_limit: 15.5
+        related_accounts: []
+    relatedAccountFound:
+      description: Account result example
+      value:
+        account_id: 259875469
+        program_id: 1111
+        available_credit_limit: 712.02
+        available_savings_account_limit: 2700.34
+        available_withdrawal_credit: 500
+        held_funds: 50
+        max_credit_limit: 800
+        total_credit_limit: 15.5
+        withdrawal_credit_limit: 10.34
+        total_overdraft_limit: 340.6
+        percentage_over_limit: 15.5
+        related_accounts:
+          - account_id: 55668877
+            program_id: 1111
+            available_credit_limit: 712.02
+            available_savings_account_limit: 2700.34
+            available_withdrawal_credit: 500
+            held_funds: 50
+            max_credit_limit: 800
+            total_credit_limit: 15.5
+            withdrawal_credit_limit: 10.34
+            total_overdraft_limit: 340.6
+            percentage_over_limit: 15.5
+tags:
+  - name: Related accounts
+    description: Endpoints to manage related accounts.
+  - name: Account balances
+    description: Endpoints to manage daily balances.
+  - name: Program limits
+    description: Endpoints to manage program limit configurations.
+  - name: Account limits
+    description: Endpoints to manage account limits.
+security:
+  - BearerAuth: []
+paths:
+  /v1/global-configs:
+    post:
+      operationId: post-v1-global-configs
+      summary: Configure program limit
+      description: >
+        Configure the maximum granted limit allowed for a program within an
+        organization.
+
+
+        Refer to the [Program limits](doc:program-limits) guide for more
+        information.
+      tags:
+        - Program limits
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGlobalConfigRequest'
+            examples:
+              valid request with positive value:
+                summary: >-
+                  Valid program limit config creation - is_active required when
+                  value > 0
+                value:
+                  level: PROGRAM
+                  program_id: 123
+                  limits:
+                    max_credit_limit:
+                      value: 1000.5
+                      is_active: true
+      responses:
+        '201':
+          description: Global configuration created successfully
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                header validation error:
+                  $ref: '#/components/examples/headerValidationError'
+                validation error:
+                  $ref: '#/components/examples/globalConfigValidationError'
+                json syntax error:
+                  $ref: '#/components/examples/jsonSyntaxError'
+        '409':
+          description: Conflict - configuration already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                duplicate config:
+                  $ref: '#/components/examples/globalConfigDuplicateError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                system error:
+                  $ref: '#/components/examples/genericSystemError'
+    get:
+      operationId: get-v1-global-configs
+      summary: Get program limits
+      description: >
+        Get a configured global limit granted for a program along with its
+        current accumulated limit value. 
+
+
+        Refer to the [Program limits](doc:program-limits) guide for more
+        information.
+      tags:
+        - Program limits
+      parameters:
+        - name: programId
+          in: query
+          description: Program ID to retrieve configurations for
+          schema:
+            type: integer
+            example: 123
+      responses:
+        '200':
+          description: Program limits retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GetGlobalConfigResponse'
+              examples:
+                single config:
+                  summary: Single program limits configuration found
+                  value:
+                    - level: PROGRAM
+                      program_id: 1234
+                      limits:
+                        max_credit_limit:
+                          value: 10000
+                          is_active: true
+                          accumulated: 0
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                validation error:
+                  $ref: '#/components/examples/globalConfigInvalidProgramIDError'
+                header validation error:
+                  $ref: '#/components/examples/headerValidationError'
+        '404':
+          description: Configuration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                config not found:
+                  value:
+                    message: Configuration not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                system error:
+                  $ref: '#/components/examples/genericSystemError'
+  /v1/global-configs/program/{programId}:
+    patch:
+      operationId: patch-v1-global-configs-program-programId
+      summary: Update program limit
+      description: >
+        Update the existing program limit.
+
+
+        Refer to the [Program limits](doc:program-limits) guide for more
+        information.
+      tags:
+        - Program limits
+      parameters:
+        - in: path
+          name: programId
+          required: true
+          description: Program ID
+          schema:
+            type: integer
+            example: 123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGlobalConfigRequest'
+            examples:
+              valid request with positive value:
+                summary: >-
+                  Valid program limits update - is_active required when value >
+                  0
+                value:
+                  limits:
+                    max_credit_limit:
+                      value: 1000.5
+                      is_active: true
+              request with zero value and is_active:
+                summary: >-
+                  Valid program limits update with zero value and explicit
+                  is_active
+                value:
+                  limits:
+                    max_credit_limit:
+                      value: 0
+                      is_active: false
+              request with zero value without is_active:
+                summary: >-
+                  Valid program limits update with zero value - is_active
+                  optional (defaults to false)
+                value:
+                  limits:
+                    max_credit_limit:
+                      value: 0
+                      is_active: true
+      responses:
+        '204':
+          description: Program limits updated successfully
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                header validation error:
+                  $ref: '#/components/examples/headerValidationError'
+                validation error:
+                  $ref: '#/components/examples/globalConfigValidationError'
+                json syntax error:
+                  $ref: '#/components/examples/jsonSyntaxError'
+        '404':
+          description: Not found - configuration does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                config not found:
+                  $ref: '#/components/examples/globalConfigNotFoundError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                system error:
+                  $ref: '#/components/examples/genericSystemError'
+  /v1/accounts/{accountId}/related-accounts-limits:
+    get:
+      operationId: get-v1-accounts-limits-related-accounts
+      summary: Get related accounts
+      description: >
+        Get balances and limits of all related accounts given the main account
+        ID. 
+
+
+        Refer to the [Related accounts](doc:accounts-overview#related-accounts)
+        section in the Accounts guide for more information.
+      tags:
+        - Related accounts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: Account ID
+          schema:
+            type: number
+            example: 9999999
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelatedAccountsResponse'
+              examples:
+                related accounts found:
+                  $ref: '#/components/examples/relatedAccountFound'
+                related accounts not found:
+                  $ref: '#/components/examples/relatedAccountsNotFound'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                header validation error:
+                  $ref: '#/components/examples/headerValidationError'
+                invalid account id error:
+                  $ref: '#/components/examples/invalidAccountIdError'
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                main account not found:
+                  $ref: '#/components/examples/accountNotFoundError'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                system error:
+                  $ref: '#/components/examples/genericSystemError'
+  /v1/accounts/{accountId}/daily-balances:
+    get:
+      summary: Get daily account balance limits
+      description: >
+        Get daily account balance limits for a date range. By default, if only
+        the account ID is specified, the range is 10 days: from 10 days before
+        yesterday's date to yesterday.
+
+
+        You can query the account balance limits as far back as 515 days before
+        the current date and for a maximum range of 90 days. You can't query for
+        today's date.
+
+
+        Refer to the [Get daily account balance
+        limits](doc:accounts-overview#get-daily-account-balance-limits) section
+        in the Accounts guide for more information.
+      operationId: get-v1-account-balance
+      security:
+        - BearerAuth: []
+      tags:
+        - Account balances
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          description: Account ID
+          schema:
+            type: number
+            example: 123456
+        - in: query
+          name: beginDate
+          description: >-
+            Beginning date to filter account balances in the yyyy-mm-dd format.
+            This date must be before or equal to `endDate`. If the value is not
+            sent in the request, the default is endDate - 10 days.
+          schema:
+            type: string
+            format: date
+            example: '2022-01-02'
+        - in: query
+          name: endDate
+          description: >-
+            Ending date to filter account balances in the yyyy-mm-dd format.
+            This date must be after or equal to the beginDate and it must be in
+            the past, yesterday or earlier. Only full/complete days are
+            considered. If the value is not sent in the request, the default is
+            yesterday's date (current date - 1 day).
+          schema:
+            type: string
+            format: date
+            example: '2022-01-05'
+        - in: query
+          name: perPage
+          required: false
+          description: >-
+            Number of entries per page. If the value is not sent in the request,
+            the default value is `10`.
+          schema:
+            type: integer
+            example: 10
+            default: 10
+        - in: query
+          name: page
+          required: false
+          description: >-
+            Page number of results to return. If the value is not sent in the
+            request, the default value is `1`.
+          schema:
+            type: integer
+            example: 1
+            default: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountBalanceResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                validation error:
+                  $ref: '#/components/examples/validationError'
+                daily balance error:
+                  $ref: '#/components/examples/dailyBalanceValidationError'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                system error:
+                  $ref: '#/components/examples/genericSystemError'
+  /v1/accounts/{accountId}/limits:
+    patch:
+      summary: Update account limits
+      description: >
+        Update account limits for a specific account. This endpoint triggers
+        validation against the global program limit configured in the [Configure
+        program limit](ref:post-v1-global-configs) endpoint.
+
+
+        This endpoint generates the [Account limit
+        changed](https://developers.pismo.io/events/docs/ledger-limit-changed-1)
+        event.
+
+
+        Refer to the [Account limits](doc:working-with-limits-objects) guide for
+        more information.
+      operationId: patch-v1-account-limits
+      security:
+        - BearerAuth: []
+      tags:
+        - Account limits
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          description: Account ID
+          schema:
+            type: number
+            example: 123456
+        - name: x-tenant
+          in: header
+          required: true
+          description: Tenant ID
+          schema:
+            type: string
+            example: org-123
+      requestBody:
+        required: true
+        description: Body description to update limits
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountLimitPatch'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'

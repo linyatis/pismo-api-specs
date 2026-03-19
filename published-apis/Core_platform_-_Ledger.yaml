@@ -1,0 +1,326 @@
+openapi: 3.1.0
+info:
+  title: Core platform - Ledger
+  version: 1.0.0
+  description: API to handle available entries.
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/ledger
+    description: Sandbox API server for testing
+tags:
+  - name: Account limits
+    description: Endpoints to manage account limits
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Account access token. Tokens can expire quickly, which can result in an
+        "Unauthorized" error.
+      bearerFormat: JWT
+  parameters: {}
+  schemas:
+    AccountLimitGet:
+      type: object
+      properties:
+        max_credit_limit:
+          description: Maximum credit amount approved for this account.
+          type: number
+          example: 800.01
+        available_total_installment_credit:
+          description: Amount available for installments in the credit account.
+          type: number
+          example: 1000.31
+        available_withdrawal_credit:
+          description: Amount available for withdrawal in the credit account.
+          type: number
+          example: 500.01
+        available_savings_account_limit:
+          description: Available limit of the savings account.
+          type: number
+          example: 10.11
+        total_overdraft_limit:
+          description: Maximum limit for over draft spending on the account.
+          type: number
+          example: 345.61
+        total_installment_credit_limit:
+          description: Amount limit for installments in the credit account.
+          type: number
+          example: 145.78
+        total_credit_limit:
+          description: >-
+            Total credit limit as set by the user. This can be any value up to
+            the `max_credit_limit`.
+          type: number
+          example: 15.51
+        percentage_over_limit:
+          description: >-
+            Percentage of the maximum credit limit (`max_credit_limit`) made
+            available for purchases over the credit limit on the account.
+          type: number
+          example: 15.5
+        available_monthly_credit:
+          description: Monthly amount available in the credit account.
+          type: number
+          example: 10000.31
+        available_credit_limit:
+          description: Initial available credit limit of the account.
+          type: number
+          example: 712.02
+        monthly_credit_limit:
+          description: Monthly credit limit amount on the account.
+          type: number
+          example: 324.82
+        held_funds:
+          description: Funds held or blocked on the account.
+          type: number
+          example: 50.01
+        additional_funds:
+          description: >-
+            Additional funds that can be used when needed to supplement credit
+            limit, held funds, or other funds.
+          type: number
+          example: 100.5
+        withdrawal_credit_limit:
+          description: Amount limit for withdrawal in credit programs.
+          type: number
+          example: 10.34
+        currency_code:
+          description: ISO-4217 alphabetic code (3 characters) for transaction currency.
+          type: string
+          example: BRL
+        currency_numeric_code:
+          description: ISO-4217 numeric code (3 digits) for transaction currency.
+          type: string
+          example: '986'
+    AccountLimitPatch:
+      type: object
+      properties:
+        max_credit_limit:
+          description: >-
+            Maximum credit amount approved for this account. This value must not
+            be less than the `total_credit_limit` or the program’s minimum
+            credit limit parameter, and must not exceed the program’s maximum
+            credit limit parameter. The ledger stores and reports this amount
+            using the exact number of decimal places provided in the request
+            payload.
+          type: number
+          example: 800.01
+        total_credit_limit:
+          description: >-
+            Total credit limit as set by the user. This can be any value up to
+            the `max_credit_limit`. The ledger stores and reports the amount
+            using the same number of decimal places as supplied in the request
+            payload.
+          type: number
+          example: 15.51
+        total_overdraft_limit:
+          description: >-
+            Maximum limit amount for overdraft spending on the account. The
+            ledger stores and reports the amount using the same number of
+            decimal places as supplied in the request payload.
+          type: number
+          example: 340.61
+        percentage_over_limit:
+          description: >-
+            Percentage of the maximum credit limit (`max_credit_limit`) made
+            available for purchases over the credit limit on the account.
+          type: number
+          example: 15.5
+        total_installment_credit_limit:
+          description: >-
+            Amount limit for installments on this credit account. This value
+            must not exceed the program’s maximum credit limit parameter. The
+            ledger stores and reports this amount using the exact number of
+            decimal places provided in the request payload.
+          type: number
+          example: 145.78
+    ErrorModel:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Message that describes the error
+security:
+  - BearerAuth: []
+paths:
+  /v1/accounts/{accountId}/limits:
+    get:
+      summary: List account limits
+      description: >
+        List available limits on the account. 
+
+
+        Refer to the [Account limits](doc:working-with-limits-objects) guide for
+        more information.
+      operationId: get-v1-account-limit
+      tags:
+        - Account limits
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          description: Account ID
+          schema:
+            type: number
+            example: 123456
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountLimitGet'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                invalidAccountId:
+                  summary: Invalid AccountID
+                  value:
+                    code: WLDG0020
+                    message: Error parsing accountID to integer number
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                noAccountLimitsFound:
+                  summary: Account not found
+                  value:
+                    code: WLDG0022
+                    message: No account limits found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                internalServerError:
+                  summary: Internal Server Error
+                  value:
+                    code: ELDG9999
+                    message: >-
+                      An Internal Server Error found, please contact the
+                      administrator passing the code
+    patch:
+      summary: Update account limits (outdated)
+      description: >
+        Update account limits. 
+
+
+        This endpoint does not validate the account limit against the program’s
+        global limit. To validate the account limit against the program’s global
+        limit, use the [Update account limits](ref:patch-v1-account-limits)
+        endpoint.
+
+
+        This endpoint generates the [Account limit
+        changed](https://developers.pismo.io/events/docs/ledger-limit-changed-1)
+        event.
+
+
+        Refer to the [Account limits](doc:working-with-limits-objects) guide for
+        more information.
+      operationId: patch-v1-account-limit
+      tags:
+        - Account limits
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          description: Account ID
+          schema:
+            type: number
+            example: 123456
+      requestBody:
+        required: true
+        description: Body description to update limits
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountLimitPatch'
+      responses:
+        '204':
+          description: No content
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                invalidBody:
+                  summary: Invalid body
+                  value:
+                    code: WLDG0021
+                    message: Invalid body
+                parseError:
+                  summary: Parse error
+                  value:
+                    code: WLDG0010
+                    message: >-
+                      Error when binding request body: code=400, message=error
+                      decoding string 'asd': can't convert asd to decimal
+                maxCreditLimitIsLowerThanTotalCreditLimitError:
+                  summary: Max credit limit lower than total credit limit
+                  value:
+                    code: WLDG0025
+                    message: >-
+                      Max credit limit 9000 must be greater than total credit
+                      limit 10000
+                totalCreditLimitIsGreaterThanMaxCreditLimitError:
+                  summary: Total credit limit exceeds max credit limit
+                  value:
+                    code: WLDG0025
+                    message: Total credit limit 14000 exceeds max credit limit 13000
+                maxCreditLimitExceedsMaxGlobalLimitError:
+                  summary: Max credit limit exceeds max global limit
+                  value:
+                    code: WLDG0025
+                    message: Max credit limit 20000 exceeds max global limit 15000
+                totalCreditLimitExceedsMinGlobalLimitError:
+                  summary: Total credit limit lower than min global limit
+                  value:
+                    code: WLDG0025
+                    message: Total credit limit 100 is less than min global limit 350
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                noAccountLimitsFound:
+                  summary: Account not found
+                  value:
+                    code: WLDG0022
+                    message: No account limits found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                internalServerError:
+                  summary: Internal Server Error
+                  value:
+                    code: ELDG9999
+                    message: >-
+                      An Internal Server Error found, please contact the
+                      administrator passing the code

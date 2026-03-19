@@ -1,0 +1,1398 @@
+openapi: 3.1.0
+info:
+  title: Instant payments - Faster payments
+  description: Faster Payments (FPS) real-time payments system API
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+  version: '1.0'
+servers:
+  - url: https://sandbox.pismolabs.io/fps
+    description: Sandbox API server for testing
+tags:
+  - name: Faster payments
+components:
+  parameters:
+    authHeader:
+      name: Authorization
+      in: header
+      schema:
+        type: string
+      description: >
+        Account token - token encoded with a Pismo account ID. Tokens can expire
+        quickly, which can result in a <b>401 Unauthorized</b> message
+      required: true
+    endToEndIDPath:
+      name: endToEndId
+      in: path
+      description: FPS transaction's end to end ID.
+      required: true
+      schema:
+        type: string
+        maxLength: 31
+    idempotencyKeyHeader:
+      name: Idempotency-key
+      in: header
+      schema:
+        type: string
+      description: >
+        A UUID to ensure the operation remains idempotent, allowing for
+        operation repetition without causing unintended effects or duplication.
+        An idempotent operation is one that can be applied multiple times, yet
+        the outcome remains the same. it ensures that network errors, retries,
+        or failures can occur without introducing inconsistencies.
+      required: true
+    tenantHeader:
+      name: x-tenant
+      in: header
+      schema:
+        type: string
+      description: |
+        Organization identifier.
+      required: true
+    reqTrackingIdHeader:
+      name: x-cid
+      in: header
+      schema:
+        type: string
+      description: >
+        Request tracking identifier. If not provided, a random UUID will be
+        generated.
+      required: false
+  schemas:
+    Amount:
+      type: number
+      description: Transaction amount.
+      example: 853.09
+    customer.DetailMessage:
+      type: object
+      properties:
+        external:
+          type: array
+          items:
+            $ref: '#/components/schemas/customer.ExternalMessage'
+        parameters:
+          type: array
+          items:
+            $ref: '#/components/schemas/customer.ParameterMessage'
+        payload:
+          type: array
+          items:
+            $ref: '#/components/schemas/customer.PayloadMessage'
+    customer.Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error's code.
+          example: EPT0001
+        details:
+          $ref: '#/components/schemas/customer.DetailMessage'
+        message:
+          type: string
+          description: Error's message.
+          example: User not found
+    customer.ExternalMessage:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Code
+          example: PBE315
+        message:
+          type: string
+          description: Message
+          example: Generic error
+    customer.ParameterMessage:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Field
+          example: Query parameter
+        message:
+          type: string
+          description: Message
+          example: Generic error
+    customer.PayloadMessage:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Field
+          example: Entity.field
+        message:
+          type: string
+          description: Message
+          example: Generic error
+    endToEndID:
+      maxLength: 31
+      type: string
+      description: >
+        Client-generated transaction identifier. Must be unique for each
+        transaction.
+      example: 1374f841568e4ff4b3a63b023c170ec
+    fps_cancel.FpsCancelResponse:
+      type: object
+      properties:
+        end_to_end_id:
+          $ref: '#/components/schemas/endToEndID'
+        status:
+          $ref: '#/components/schemas/fps_cancel.status'
+    fps_cancel.status:
+      type: string
+      enum:
+        - CANCELLED
+      description: >
+        - `CANCELLED` - Something went wrong and the transaction was cancelled.
+        Refer to `reason` for details,
+      example: CANCELLED
+    fps_get.FpsGetResponse:
+      type: object
+      properties:
+        end_to_end_id:
+          $ref: '#/components/schemas/endToEndID'
+        status:
+          $ref: '#/components/schemas/status'
+        amount:
+          $ref: '#/components/schemas/Amount'
+    fps_out.CreditorAccount:
+      type: object
+      description: Creditor's account information
+      pattern: ^[a-zA-Z0-9\/\-?:().,'+\s#=!"%&*<>;{@\r\n]*$
+      required:
+        - identification
+        - name
+        - scheme_name
+      properties:
+        name:
+          maxLength: 40
+          type: string
+          description: Creditor name.
+          example: Len Lease
+        scheme_name:
+          $ref: '#/components/schemas/schemeName'
+        identification:
+          $ref: '#/components/schemas/schemeID'
+    fps_out.FpsOutRequest:
+      type: object
+      required:
+        - end_to_end_id
+        - creditor_account
+        - currency
+        - scheme_payment_type
+      properties:
+        end_to_end_id:
+          $ref: '#/components/schemas/endToEndID'
+        creditor_account:
+          $ref: '#/components/schemas/fps_out.CreditorAccount'
+        scheme_payment_type:
+          $ref: '#/components/schemas/fps_out.SchemaPaymentType'
+        currency:
+          $ref: '#/components/schemas/fps_out.Currency'
+        remittance_information:
+          $ref: '#/components/schemas/fps_out.RemittanceInformation'
+    fps_out.FpsOutResponse:
+      type: object
+      properties:
+        end_to_end_id:
+          $ref: '#/components/schemas/endToEndID'
+        status:
+          $ref: '#/components/schemas/status'
+    fps_out.Currency:
+      required:
+        - amount
+      type: object
+      properties:
+        amount:
+          $ref: '#/components/schemas/Amount'
+        code:
+          type: string
+          enum:
+            - GBP
+          description: Transaction currency (ISO 4217 3-letter code).
+          example: GBP
+    fps_out.RemittanceInformation:
+      type: object
+      properties:
+        reference:
+          maxLength: 140
+          pattern: ^[a-zA-Z0-9\/\-?:().,'+\s#=!"%&*<>;{@\r\n]*$
+          type: string
+          description: Remittance reference.
+          example: Reference information
+    fps_out.SchemaPaymentType:
+      type: string
+      enum:
+        - ImmediatePayment
+        - StandingOrder
+        - ForwardDatedPayment
+      description: |
+        Payment scheme to be used.
+        * `ImmediatePayment` - Single Immediate Payment (SIP)
+        * `StandingOrder` - Standing Order Payment (SOP)
+        * `ForwardDatedPayment` - Forward Dated Payment (FDP)
+      example: ImmediatePayment
+    fps_release.FpsReleaseResponse:
+      type: object
+      properties:
+        end_to_end_id:
+          $ref: '#/components/schemas/endToEndID'
+        status:
+          $ref: '#/components/schemas/fps_release.status'
+        amount:
+          $ref: '#/components/schemas/Amount'
+    fps_release.status:
+      type: string
+      enum:
+        - SETTLED
+      description: |
+        - `SETTLED` - Transaction was completed processed and settled
+      example: SETTLED
+    schemeID:
+      maxLength: 22
+      type: string
+      description: >
+        Creditor's scheme value. A scheme identifies an account - UK-SCAN, IBAN,
+        or BBAN. Refer to `schemeName` for details.
+          * `uk-scan` - Sort code and account number (SCAN) scheme. Format: `sortcode + accountnumber`
+          * `bban` - Basic Bank Account Number scheme. Format: `bankidentifier + branchidentifier + accountnumber`
+          * `iban` - International Bank Account Number scheme. Format: `country code + check digits + bban`
+            
+        For example, for an IBAN account `GB93UBKL12345612345678`, the
+        identification would be: 
+            
+          `iban`: `GB93UBKL12345612345678`
+          `bban`: `UBKL12345612345678`
+          `uk-scan`: `12345612345678`
+      example: AA00AAA000000000000000
+    schemeName:
+      type: string
+      enum:
+        - uk-scan
+        - bban
+        - iban
+      description: |
+        Bank scheme that identifies the account.
+          * `uk-scan` - Sort code and account number (SCAN) scheme
+          * `bban` - Basic Bank Account Number scheme
+          * `iban` - International Bank Account Number scheme
+      example: iban
+    status:
+      type: string
+      enum:
+        - CREATED
+        - PROCESSING
+        - SETTLED
+        - CANCELLED
+        - HOLD
+      description: >
+        - `CREATED` - Payment has been created and is pending processing
+
+        - `PROCESSING` - P2P balance was impacted and waiting for provider
+        confirmation
+
+        - `SETTLED` - Transaction completed processing and is settled
+
+        - `CANCELLED` - Something went wrong and the transaction is cancelled.
+        Refer to `reason` for more details
+
+        - `HOLD` - The payment is on hold, pending further review
+      example: PROCESSING
+paths:
+  /v1/payments/fps/out:
+    post:
+      summary: Send Faster Payment [beta]
+      description: >
+        Send a Faster Payments payment.
+
+
+        The Faster Payments System (FPS) is a UK service that allows
+        near-instant electronic money transfers between banks.
+
+
+        This endpoint generates a [FPS out payment
+        transaction](https://developers.pismo.io/events/docs/fps-fps-out-status-change-1)
+        event. 
+
+
+        In case of failure, the transaction is updated with `status` =
+        `CANCELLED` and the `status_reason` field will detail why.
+
+         If the counterparty bank rejects the transaction, the transaction is still considered `SETTLED` and, when the provider webhook return is processed, a new [FPS out return](https://developers.pismo.io/events/docs/fps-fps-out-return-status-change-1)  event is generated and the amount is credited back to the debtor's account.
+         
+      operationId: post-create-fps
+      tags:
+        - Faster payments
+      parameters:
+        - $ref: '#/components/parameters/authHeader'
+        - $ref: '#/components/parameters/idempotencyKeyHeader'
+      requestBody:
+        description: Send payment request body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/fps_out.FpsOutRequest'
+        required: true
+      responses:
+        '201':
+          description: Response Body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/fps_out.FpsOutResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0004:
+                  summary: Validation Error
+                  value:
+                    code: EFPS0004
+                    message: Validation error
+                EFPS0016:
+                  summary: Unmarshal Error
+                  value:
+                    code: EFPS0016
+                    message: Unmarshal error
+                EFPS0019:
+                  summary: Accounts API Invalid Request Error
+                  value:
+                    code: EFPS0019
+                    message: Accounts - API returned 4xx error
+                EFPS0025:
+                  summary: P2P API Invalid Request Error
+                  value:
+                    code: EFPS0025
+                    message: P2p - API returned 4xx error
+                EFPS0029:
+                  summary: Ledger API Invalid Request Error
+                  value:
+                    code: EFPS0029
+                    message: Ledger - API returned 4xx error
+                EFPS0037:
+                  summary: Invalid Creditor Sort Code Account Number
+                  value:
+                    code: EFPS0037
+                    message: Invalid creditor sort code/account number
+                EFPS0038:
+                  summary: Invalid Creditor IBAN
+                  value:
+                    code: EFPS0038
+                    message: Invalid creditor IBAN
+                EFPS0039:
+                  summary: Invalid Creditor BBAN
+                  value:
+                    code: EFPS0039
+                    message: Invalid creditor BBAN
+                EFPS0046:
+                  summary: IntlBankAccounts API Invalid Request Error
+                  value:
+                    code: EFPS0046
+                    message: IntlBankAccounts - API returned 4xx error
+                EFPS0047:
+                  summary: PSP Gateway API Bad Request
+                  value:
+                    code: EFPS0047
+                    message: >-
+                      Invalid FPS Request. Check error details for more
+                      information.
+                EFPS0073:
+                  summary: Amount Greater Than Balance
+                  value:
+                    code: EFPS0073
+                    message: The amount passed is greater than the current balance
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0002:
+                  summary: Missing Tenant Header
+                  value:
+                    code: EFPS0002
+                    message: 'Missing required header: ''x-tenant'''
+                EFPS0021:
+                  summary: Account Blocked Or Cancelled
+                  value:
+                    code: EFPS0021
+                    message: Account blocked or cancelled
+                EFPS0033:
+                  summary: Invalid Account Id
+                  value:
+                    code: EFPS0033
+                    message: 'Invalid account id header: ''x-account-id'''
+                EFPS0034:
+                  summary: Invalid Idempotency Key
+                  value:
+                    code: EFPS0034
+                    message: 'Missing required header: ''x-idempotency-key'''
+                EFPS0035:
+                  summary: Account Has No Active Addresses
+                  value:
+                    code: EFPS0035
+                    message: Account has no active addresses
+                EFPS0040:
+                  summary: FPS Not Enabled
+                  value:
+                    code: EFPS0040
+                    message: FPS is not enabled for the creditor sort code
+                EFPS0041:
+                  summary: Modulus Check Error
+                  value:
+                    code: EFPS0041
+                    message: Failed to execute account number modulus check
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0010:
+                  summary: Sort Code Not Found
+                  value:
+                    code: EFPS0010
+                    message: Sort Code not found
+                EFPS0018:
+                  summary: Accounts API Not Found Error
+                  value:
+                    code: EFPS0018
+                    message: Accounts - Not found
+                EFPS0028:
+                  summary: Ledger API Not Found Error
+                  value:
+                    code: EFPS0028
+                    message: Ledger - Not found
+                EFPS0031:
+                  summary: IntlBankAccounts API Not Found Error
+                  value:
+                    code: EFPS0031
+                    message: IntlBankAccounts - Not found
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0022:
+                  summary: Transaction Already Exists
+                  value:
+                    code: EFPS0022
+                    message: >-
+                      A transaction with the specified idempotency key and
+                      end_to_end_id already exists
+                EFPS0036:
+                  summary: Mismatching Currency Error
+                  value:
+                    code: EFPS0036
+                    message: >-
+                      The provided currency does not match with the account's
+                      configured currency
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0015:
+                  summary: PSP Gateway API Rate Limit
+                  value:
+                    code: EFPS0015
+                    message: PSPGateway API Rate Limit exceeded
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0006:
+                  summary: HTTP Error
+                  value:
+                    code: EFPS0006
+                    message: HTTP request error
+                EFPS0009:
+                  summary: IntlBankAccounts API Timeout
+                  value:
+                    code: EFPS0009
+                    message: IntlBankAccounts API timeout error
+                EFPS0011:
+                  summary: IntlBankAccounts API Internal Error
+                  value:
+                    code: EFPS0011
+                    message: IntlBankAccounts API Internal Server error
+                EFPS0012:
+                  summary: PSP Gateway API Timeout
+                  value:
+                    code: EFPS0012
+                    message: PSPGateway API timeout error
+                EFPS0017:
+                  summary: Accounts API Timeout
+                  value:
+                    code: EFPS0017
+                    message: Accounts API timeout error
+                EFPS0020:
+                  summary: Accounts API Server Error
+                  value:
+                    code: EFPS0020
+                    message: Accounts - API returned 5xx error
+                EFPS0023:
+                  summary: Transaction Database Error
+                  value:
+                    code: EFPS0023
+                    message: Transaction database error
+                EFPS0024:
+                  summary: P2P API Timeout
+                  value:
+                    code: EFPS0024
+                    message: P2p - API timeout error
+                EFPS0026:
+                  summary: P2P API Server Error
+                  value:
+                    code: EFPS0026
+                    message: P2p - API returned 5xx error
+                EFPS0027:
+                  summary: Ledger API Timeout
+                  value:
+                    code: EFPS0027
+                    message: Ledger API timeout error
+                EFPS0030:
+                  summary: Ledger API Server Error
+                  value:
+                    code: EFPS0030
+                    message: Ledger - API returned 5xx error
+                EFPS0032:
+                  summary: IntlBankAccounts API Server Error
+                  value:
+                    code: EFPS0032
+                    message: IntlBankAccounts - API returned 5xx error
+        '502':
+          description: Bad Gateway
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0014:
+                  summary: PSP Gateway API Bad Gateway
+                  value:
+                    code: EFPS0014
+                    message: PSPGateway API Bad Gateway
+  /v1/payments/fps/{endToEndId}:
+    get:
+      summary: Get FPS transaction [beta]
+      description: >
+        Gets a FPS transaction given its end-to-end identifier in the path.
+
+
+        The Faster Payments System (FPS) is a UK service that allows
+        near-instant electronic money transfers between banks.
+      operationId: get-fps-in-transaction
+      tags:
+        - Faster payments
+      parameters:
+        - $ref: '#/components/parameters/authHeader'
+        - $ref: '#/components/parameters/tenantHeader'
+        - $ref: '#/components/parameters/reqTrackingIdHeader'
+        - $ref: '#/components/parameters/endToEndIDPath'
+      responses:
+        '200':
+          description: Response Body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/fps_get.FpsGetResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0004:
+                  summary: Validation Error
+                  value:
+                    code: EFPS0004
+                    message: Validation error
+                EFPS0016:
+                  summary: Unmarshal Error
+                  value:
+                    code: EFPS0016
+                    message: Unmarshal error
+                EFPS0019:
+                  summary: Accounts API Invalid Request Error
+                  value:
+                    code: EFPS0019
+                    message: Accounts - API returned 4xx error
+                EFPS0025:
+                  summary: P2P API Invalid Request Error
+                  value:
+                    code: EFPS0025
+                    message: P2p - API returned 4xx error
+                EFPS0029:
+                  summary: Ledger API Invalid Request Error
+                  value:
+                    code: EFPS0029
+                    message: Ledger - API returned 4xx error
+                EFPS0037:
+                  summary: Invalid Creditor Sort Code Account Number
+                  value:
+                    code: EFPS0037
+                    message: Invalid creditor sort code/account number
+                EFPS0038:
+                  summary: Invalid Creditor IBAN
+                  value:
+                    code: EFPS0038
+                    message: Invalid creditor IBAN
+                EFPS0039:
+                  summary: Invalid Creditor BBAN
+                  value:
+                    code: EFPS0039
+                    message: Invalid creditor BBAN
+                EFPS0046:
+                  summary: IntlBankAccounts API Invalid Request Error
+                  value:
+                    code: EFPS0046
+                    message: IntlBankAccounts - API returned 4xx error
+                EFPS0047:
+                  summary: PSP Gateway API Bad Request
+                  value:
+                    code: EFPS0047
+                    message: >-
+                      Invalid FPS Request. Check error details for more
+                      information.
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0002:
+                  summary: Missing Tenant Header
+                  value:
+                    code: EFPS0002
+                    message: 'Missing required header: ''x-tenant'''
+                EFPS0021:
+                  summary: Account Blocked Or Cancelled
+                  value:
+                    code: EFPS0021
+                    message: Account blocked or cancelled
+                EFPS0033:
+                  summary: Invalid Account Id
+                  value:
+                    code: EFPS0033
+                    message: 'Invalid account id header: ''x-account-id'''
+                EFPS0034:
+                  summary: Invalid Idempotency Key
+                  value:
+                    code: EFPS0034
+                    message: 'Missing required header: ''x-idempotency-key'''
+                EFPS0035:
+                  summary: Account Has No Active Addresses
+                  value:
+                    code: EFPS0035
+                    message: Account has no active addresses
+                EFPS0040:
+                  summary: FPS Not Enabled
+                  value:
+                    code: EFPS0040
+                    message: FPS is not enabled for the creditor sort code
+                EFPS0041:
+                  summary: Modulus Check Error
+                  value:
+                    code: EFPS0041
+                    message: Failed to execute account number modulus check
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0010:
+                  summary: Sort Code Not Found
+                  value:
+                    code: EFPS0010
+                    message: Sort Code not found
+                EFPS0018:
+                  summary: Accounts API Not Found Error
+                  value:
+                    code: EFPS0018
+                    message: Accounts - Not found
+                EFPS0028:
+                  summary: Ledger API Not Found Error
+                  value:
+                    code: EFPS0028
+                    message: Ledger - Not found
+                EFPS0031:
+                  summary: IntlBankAccounts API Not Found Error
+                  value:
+                    code: EFPS0031
+                    message: IntlBankAccounts - Not found
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0022:
+                  summary: Transaction Already Exists
+                  value:
+                    code: EFPS0022
+                    message: >-
+                      A transaction with the specified idempotency key and
+                      end_to_end_id already exists
+                EFPS0036:
+                  summary: Mismatching Currency Error
+                  value:
+                    code: EFPS0036
+                    message: >-
+                      The provided currency does not match with the account's
+                      configured currency
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0015:
+                  summary: PSP Gateway API Rate Limit
+                  value:
+                    code: EFPS0015
+                    message: PSPGateway API Rate Limit exceeded
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0006:
+                  summary: HTTP Error
+                  value:
+                    code: EFPS0006
+                    message: HTTP request error
+                EFPS0009:
+                  summary: IntlBankAccounts API Timeout
+                  value:
+                    code: EFPS0009
+                    message: IntlBankAccounts API timeout error
+                EFPS0011:
+                  summary: IntlBankAccounts API Internal Error
+                  value:
+                    code: EFPS0011
+                    message: IntlBankAccounts API Internal Server error
+                EFPS0012:
+                  summary: PSP Gateway API Timeout
+                  value:
+                    code: EFPS0012
+                    message: PSPGateway API timeout error
+                EFPS0017:
+                  summary: Accounts API Timeout
+                  value:
+                    code: EFPS0017
+                    message: Accounts API timeout error
+                EFPS0020:
+                  summary: Accounts API Server Error
+                  value:
+                    code: EFPS0020
+                    message: Accounts - API returned 5xx error
+                EFPS0023:
+                  summary: Transaction Database Error
+                  value:
+                    code: EFPS0023
+                    message: Transaction database error
+                EFPS0024:
+                  summary: P2P API Timeout
+                  value:
+                    code: EFPS0024
+                    message: P2p - API timeout error
+                EFPS0026:
+                  summary: P2P API Server Error
+                  value:
+                    code: EFPS0026
+                    message: P2p - API returned 5xx error
+                EFPS0027:
+                  summary: Ledger API Timeout
+                  value:
+                    code: EFPS0027
+                    message: Ledger API timeout error
+                EFPS0030:
+                  summary: Ledger API Server Error
+                  value:
+                    code: EFPS0030
+                    message: Ledger - API returned 5xx error
+                EFPS0032:
+                  summary: IntlBankAccounts API Server Error
+                  value:
+                    code: EFPS0032
+                    message: IntlBankAccounts - API returned 5xx error
+        '502':
+          description: Bad Gateway
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0014:
+                  summary: PSP Gateway API Bad Gateway
+                  value:
+                    code: EFPS0014
+                    message: PSPGateway API Bad Gateway
+  /v1/payments/fps/cancel/{endToEndId}:
+    post:
+      summary: Cancel FPS inbound transaction [beta]
+      description: >
+        Call this endpoint to cancel the suspended transaction which was kept on
+        hold based on client's anti-fraud provider analysis. If the transaction
+        is confirmed as fraudulent, a return is initiated and funds are moved
+        from additional funds and returned via ledger adjustment. 
+
+
+        This endpoint generates a [FPS inbound payment
+        processed](https://developers.pismo.io/events/docs/fps-fps-in-status-change-1)
+        event with `status` = `CANCELLED`.
+      operationId: post-cancel-fps
+      tags:
+        - Faster payments
+      parameters:
+        - $ref: '#/components/parameters/authHeader'
+        - $ref: '#/components/parameters/tenantHeader'
+        - $ref: '#/components/parameters/reqTrackingIdHeader'
+        - $ref: '#/components/parameters/endToEndIDPath'
+      responses:
+        '200':
+          description: Response Body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/fps_cancel.FpsCancelResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0004:
+                  summary: Validation Error
+                  value:
+                    code: EFPS0004
+                    message: Validation error
+                EFPS0016:
+                  summary: Unmarshal Error
+                  value:
+                    code: EFPS0016
+                    message: Unmarshal error
+                EFPS0019:
+                  summary: Accounts API Invalid Request Error
+                  value:
+                    code: EFPS0019
+                    message: Accounts - API returned 4xx error
+                EFPS0025:
+                  summary: P2P API Invalid Request Error
+                  value:
+                    code: EFPS0025
+                    message: P2p - API returned 4xx error
+                EFPS0029:
+                  summary: Ledger API Invalid Request Error
+                  value:
+                    code: EFPS0029
+                    message: Ledger - API returned 4xx error
+                EFPS0037:
+                  summary: Invalid Creditor Sort Code Account Number
+                  value:
+                    code: EFPS0037
+                    message: Invalid creditor sort code/account number
+                EFPS0038:
+                  summary: Invalid Creditor IBAN
+                  value:
+                    code: EFPS0038
+                    message: Invalid creditor IBAN
+                EFPS0039:
+                  summary: Invalid Creditor BBAN
+                  value:
+                    code: EFPS0039
+                    message: Invalid creditor BBAN
+                EFPS0046:
+                  summary: IntlBankAccounts API Invalid Request Error
+                  value:
+                    code: EFPS0046
+                    message: IntlBankAccounts - API returned 4xx error
+                EFPS0047:
+                  summary: PSP Gateway API Bad Request
+                  value:
+                    code: EFPS0047
+                    message: >-
+                      Invalid FPS Request. Check error details for more
+                      information.
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0002:
+                  summary: Missing Tenant Header
+                  value:
+                    code: EFPS0002
+                    message: 'Missing required header: ''x-tenant'''
+                EFPS0021:
+                  summary: Account Blocked Or Cancelled
+                  value:
+                    code: EFPS0021
+                    message: Account blocked or cancelled
+                EFPS0033:
+                  summary: Invalid Account Id
+                  value:
+                    code: EFPS0033
+                    message: 'Invalid account id header: ''x-account-id'''
+                EFPS0034:
+                  summary: Invalid Idempotency Key
+                  value:
+                    code: EFPS0034
+                    message: 'Missing required header: ''x-idempotency-key'''
+                EFPS0035:
+                  summary: Account Has No Active Addresses
+                  value:
+                    code: EFPS0035
+                    message: Account has no active addresses
+                EFPS0040:
+                  summary: FPS Not Enabled
+                  value:
+                    code: EFPS0040
+                    message: FPS is not enabled for the creditor sort code
+                EFPS0041:
+                  summary: Modulus Check Error
+                  value:
+                    code: EFPS0041
+                    message: Failed to execute account number modulus check
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0010:
+                  summary: Sort Code Not Found
+                  value:
+                    code: EFPS0010
+                    message: Sort Code not found
+                EFPS0018:
+                  summary: Accounts API Not Found Error
+                  value:
+                    code: EFPS0018
+                    message: Accounts - Not found
+                EFPS0028:
+                  summary: Ledger API Not Found Error
+                  value:
+                    code: EFPS0028
+                    message: Ledger - Not found
+                EFPS0031:
+                  summary: IntlBankAccounts API Not Found Error
+                  value:
+                    code: EFPS0031
+                    message: IntlBankAccounts - Not found
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0022:
+                  summary: Transaction Already Exists
+                  value:
+                    code: EFPS0022
+                    message: >-
+                      A transaction with the specified idempotency key and
+                      end_to_end_id already exists
+                EFPS0036:
+                  summary: Mismatching Currency Error
+                  value:
+                    code: EFPS0036
+                    message: >-
+                      The provided currency does not match with the account's
+                      configured currency
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0015:
+                  summary: PSP Gateway API Rate Limit
+                  value:
+                    code: EFPS0015
+                    message: PSPGateway API Rate Limit exceeded
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0006:
+                  summary: HTTP Error
+                  value:
+                    code: EFPS0006
+                    message: HTTP request error
+                EFPS0009:
+                  summary: IntlBankAccounts API Timeout
+                  value:
+                    code: EFPS0009
+                    message: IntlBankAccounts API timeout error
+                EFPS0011:
+                  summary: IntlBankAccounts API Internal Error
+                  value:
+                    code: EFPS0011
+                    message: IntlBankAccounts API Internal Server error
+                EFPS0012:
+                  summary: PSP Gateway API Timeout
+                  value:
+                    code: EFPS0012
+                    message: PSPGateway API timeout error
+                EFPS0017:
+                  summary: Accounts API Timeout
+                  value:
+                    code: EFPS0017
+                    message: Accounts API timeout error
+                EFPS0020:
+                  summary: Accounts API Server Error
+                  value:
+                    code: EFPS0020
+                    message: Accounts - API returned 5xx error
+                EFPS0023:
+                  summary: Transaction Database Error
+                  value:
+                    code: EFPS0023
+                    message: Transaction database error
+                EFPS0024:
+                  summary: P2P API Timeout
+                  value:
+                    code: EFPS0024
+                    message: P2p - API timeout error
+                EFPS0026:
+                  summary: P2P API Server Error
+                  value:
+                    code: EFPS0026
+                    message: P2p - API returned 5xx error
+                EFPS0027:
+                  summary: Ledger API Timeout
+                  value:
+                    code: EFPS0027
+                    message: Ledger API timeout error
+                EFPS0030:
+                  summary: Ledger API Server Error
+                  value:
+                    code: EFPS0030
+                    message: Ledger - API returned 5xx error
+                EFPS0032:
+                  summary: IntlBankAccounts API Server Error
+                  value:
+                    code: EFPS0032
+                    message: IntlBankAccounts - API returned 5xx error
+        '502':
+          description: Bad Gateway
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0014:
+                  summary: PSP Gateway API Bad Gateway
+                  value:
+                    code: EFPS0014
+                    message: PSPGateway API Bad Gateway
+  /v1/payments/fps/release/{endToEndId}:
+    post:
+      summary: Release FPS inbound transaction [beta]
+      description: >
+        This endpoint moves the suspended transaction amount from additional
+        funds to available balance and marks the transaction as settled. Once
+        settled, the beneficiary can use the funds immediately.
+
+
+        This endpoint generates a [FPS inbound payment
+        processed](https://developers.pismo.io/events/docs/fps-fps-in-status-change-1)
+        event with status `SETTLED`.
+      operationId: post-release-fps
+      tags:
+        - Faster payments
+      parameters:
+        - $ref: '#/components/parameters/authHeader'
+        - $ref: '#/components/parameters/tenantHeader'
+        - $ref: '#/components/parameters/reqTrackingIdHeader'
+        - $ref: '#/components/parameters/endToEndIDPath'
+      responses:
+        '200':
+          description: Response Body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/fps_release.FpsReleaseResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0004:
+                  summary: Validation Error
+                  value:
+                    code: EFPS0004
+                    message: Validation error
+                EFPS0016:
+                  summary: Unmarshal Error
+                  value:
+                    code: EFPS0016
+                    message: Unmarshal error
+                EFPS0019:
+                  summary: Accounts API Invalid Request Error
+                  value:
+                    code: EFPS0019
+                    message: Accounts - API returned 4xx error
+                EFPS0025:
+                  summary: P2P API Invalid Request Error
+                  value:
+                    code: EFPS0025
+                    message: P2p - API returned 4xx error
+                EFPS0029:
+                  summary: Ledger API Invalid Request Error
+                  value:
+                    code: EFPS0029
+                    message: Ledger - API returned 4xx error
+                EFPS0037:
+                  summary: Invalid Creditor Sort Code Account Number
+                  value:
+                    code: EFPS0037
+                    message: Invalid creditor sort code/account number
+                EFPS0038:
+                  summary: Invalid Creditor IBAN
+                  value:
+                    code: EFPS0038
+                    message: Invalid creditor IBAN
+                EFPS0039:
+                  summary: Invalid Creditor BBAN
+                  value:
+                    code: EFPS0039
+                    message: Invalid creditor BBAN
+                EFPS0046:
+                  summary: IntlBankAccounts API Invalid Request Error
+                  value:
+                    code: EFPS0046
+                    message: IntlBankAccounts - API returned 4xx error
+                EFPS0047:
+                  summary: PSP Gateway API Bad Request
+                  value:
+                    code: EFPS0047
+                    message: >-
+                      Invalid FPS Request. Check error details for more
+                      information.
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0002:
+                  summary: Missing Tenant Header
+                  value:
+                    code: EFPS0002
+                    message: 'Missing required header: ''x-tenant'''
+                EFPS0021:
+                  summary: Account Blocked Or Cancelled
+                  value:
+                    code: EFPS0021
+                    message: Account blocked or cancelled
+                EFPS0033:
+                  summary: Invalid Account Id
+                  value:
+                    code: EFPS0033
+                    message: 'Invalid account id header: ''x-account-id'''
+                EFPS0034:
+                  summary: Invalid Idempotency Key
+                  value:
+                    code: EFPS0034
+                    message: 'Missing required header: ''x-idempotency-key'''
+                EFPS0035:
+                  summary: Account Has No Active Addresses
+                  value:
+                    code: EFPS0035
+                    message: Account has no active addresses
+                EFPS0040:
+                  summary: FPS Not Enabled
+                  value:
+                    code: EFPS0040
+                    message: FPS is not enabled for the creditor sort code
+                EFPS0041:
+                  summary: Modulus Check Error
+                  value:
+                    code: EFPS0041
+                    message: Failed to execute account number modulus check
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0010:
+                  summary: Sort Code Not Found
+                  value:
+                    code: EFPS0010
+                    message: Sort Code not found
+                EFPS0018:
+                  summary: Accounts API Not Found Error
+                  value:
+                    code: EFPS0018
+                    message: Accounts - Not found
+                EFPS0028:
+                  summary: Ledger API Not Found Error
+                  value:
+                    code: EFPS0028
+                    message: Ledger - Not found
+                EFPS0031:
+                  summary: IntlBankAccounts API Not Found Error
+                  value:
+                    code: EFPS0031
+                    message: IntlBankAccounts - Not found
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0022:
+                  summary: Transaction Already Exists
+                  value:
+                    code: EFPS0022
+                    message: >-
+                      A transaction with the specified idempotency key and
+                      end_to_end_id already exists
+                EFPS0036:
+                  summary: Mismatching Currency Error
+                  value:
+                    code: EFPS0036
+                    message: >-
+                      The provided currency does not match with the account's
+                      configured currency
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0015:
+                  summary: PSP Gateway API Rate Limit
+                  value:
+                    code: EFPS0015
+                    message: PSPGateway API Rate Limit exceeded
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0006:
+                  summary: HTTP Error
+                  value:
+                    code: EFPS0006
+                    message: HTTP request error
+                EFPS0009:
+                  summary: IntlBankAccounts API Timeout
+                  value:
+                    code: EFPS0009
+                    message: IntlBankAccounts API timeout error
+                EFPS0011:
+                  summary: IntlBankAccounts API Internal Error
+                  value:
+                    code: EFPS0011
+                    message: IntlBankAccounts API Internal Server error
+                EFPS0012:
+                  summary: PSP Gateway API Timeout
+                  value:
+                    code: EFPS0012
+                    message: PSPGateway API timeout error
+                EFPS0017:
+                  summary: Accounts API Timeout
+                  value:
+                    code: EFPS0017
+                    message: Accounts API timeout error
+                EFPS0020:
+                  summary: Accounts API Server Error
+                  value:
+                    code: EFPS0020
+                    message: Accounts - API returned 5xx error
+                EFPS0023:
+                  summary: Transaction Database Error
+                  value:
+                    code: EFPS0023
+                    message: Transaction database error
+                EFPS0024:
+                  summary: P2P API Timeout
+                  value:
+                    code: EFPS0024
+                    message: P2p - API timeout error
+                EFPS0026:
+                  summary: P2P API Server Error
+                  value:
+                    code: EFPS0026
+                    message: P2p - API returned 5xx error
+                EFPS0027:
+                  summary: Ledger API Timeout
+                  value:
+                    code: EFPS0027
+                    message: Ledger API timeout error
+                EFPS0030:
+                  summary: Ledger API Server Error
+                  value:
+                    code: EFPS0030
+                    message: Ledger - API returned 5xx error
+                EFPS0032:
+                  summary: IntlBankAccounts API Server Error
+                  value:
+                    code: EFPS0032
+                    message: IntlBankAccounts - API returned 5xx error
+        '502':
+          description: Bad Gateway
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer.Error'
+              examples:
+                EFPS0014:
+                  summary: PSP Gateway API Bad Gateway
+                  value:
+                    code: EFPS0014
+                    message: PSPGateway API Bad Gateway

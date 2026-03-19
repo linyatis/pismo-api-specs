@@ -1,0 +1,966 @@
+openapi: 3.1.0
+info:
+  title: Banking - Credit receivables
+  contact:
+    email: support@pismo.com.br
+    name: API Support
+    url: https://developers.pismo.io/support/
+  description: Endpoints to handle contract operations
+  license:
+    name: Copyright Pismo
+    url: https://developers.pismo.io/licenses/
+  termsOfService: https://developers.pismo.io/terms/
+  version: v1
+servers:
+  - url: https://api-sandbox.pismolabs.io/credit-rights-receivable
+    description: Production server
+tags:
+  - name: Receivable
+    description: Endpoints to manage receivables
+  - name: Invoices
+    description: Endpoints to create and manage invoices
+security:
+  - bearerAuth: []
+components:
+  parameters:
+    AccessKeyPath:
+      in: path
+      name: access_key
+      description: >-
+        Client-generated identifier. Must be 44 characters. Created via the
+        [Register receivable](ref:create-receivable) endpoint.
+      required: true
+      schema:
+        type: string
+        minLength: 44
+        maxLength: 44
+    DebtorDocNumberQuery:
+      in: query
+      name: debtor_document_number
+      description: >
+        Debtor document number. A government document number, such as a Social
+        Security number (US) or Cadastro de Pessoas Fisicas number (Brazil).
+        Must not be the same as the lender document number.
+      required: true
+      schema:
+        type: string
+    FaceValueQuery:
+      in: query
+      name: face_value
+      description: >
+        Face value refers to the nominal or stated value of a financial
+        instrument or asset, typically printed or stated on the instrument
+        itself. It represents the initial value assigned to the instrument at
+        the time of issuance or purchase. Can be up to 16 digits and two decimal
+        places.
+      required: false
+      schema:
+        type: string
+    InternalNumberPath:
+      in: path
+      name: internalNumber
+      description: Client-assigned internal number.
+      required: true
+      schema:
+        type: string
+    InterOpHoldingNumQuery:
+      in: query
+      name: interop_holding_number
+      description: >-
+        Client-assigned interop holding number. Same as `holding_number` passed
+        in the Register receivable endpoint.
+      required: true
+      schema:
+        maxLength: 10
+        minLength: 1
+        type: string
+    LenderDocNumberQuery:
+      in: query
+      name: lender_document_number
+      description: >
+        Lender document number. A government document number, such as a Social
+        Security number (US) or Cadastro de Pessoas Fisicas number (Brazil).
+        Must not be the same as the debtor document number.
+      required: true
+      schema:
+        type: string
+    MaturityDateQuery:
+      in: query
+      name: maturity_date
+      description: Maturity date. Format = yyyy-mm-dd.
+      required: false
+      schema:
+        type: string
+  schemas:
+    AccessKey:
+      type: string
+      description: >-
+        Client-generated identifier. This field is used for the [Get
+        invoice](ref:findbyaccesskey) endpoint.
+      minLength: 1
+      maxLength: 44
+      example: KAB6J8903CNMH01892749JKSNOAXMCA7199382ABCERL
+    CollateralType:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 1
+      description: |
+        Collateral type:  
+
+          1 - Aval. In Brazil, the term "aval collateral" refers to a specific type of collateral used in financial transactions. "Aval" is a Portuguese term that means "endorsement" or "guarantee," and it is commonly used in the Brazilian financial system. Aval collateral is a form of guarantee where a third party, known as the "avalista" or guarantor, pledges their assets or credit worthiness to secure a loan or financial obligation on behalf of the borrower. The avalista becomes jointly liable for the debt and agrees to fulfill the obligations if the borrower fails to do so. 
+      enum:
+        - 1
+      example: 1
+    ContactNumber:
+      type: string
+      description: Contact number
+      maxLength: 15
+      minLength: 1
+      example: '+14158675309'
+    CorrelationID:
+      type: string
+      description: >
+        Correlation ID (CID). This field is used to link related API requests
+        and events. The CID can help the Pismo engineering team track everything
+        related to a call. If one isn't passed, one is automatically generated.
+        You can find the CID in a response header. 
+      example: 88474990237-94940
+    CreatedAt:
+      type: string
+      format: date-time
+      description: Created at time (UTC)
+      example: '2021-07-06T13:11:05.000Z'
+    CreditOperationsArray:
+      maxItems: 2147483647
+      minItems: 1
+      type: array
+      items:
+        $ref: '#/components/schemas/CreditOperation'
+    CreateReceivableRequest:
+      type: object
+      required:
+        - credit_rights_receivable_type
+        - debtor_document_number
+        - debtor_name
+        - face_value
+        - holding_number
+        - ibge_code
+        - internal_number
+        - invoice_number
+        - invoice_serie
+        - invoice_total_value
+        - issuing_date
+        - lender_document_number
+        - lender_name
+        - maturity_date
+        - payment_method
+        - payment_status
+        - recorder_account
+      properties:
+        credit_rights_receivable_type:
+          $ref: '#/components/schemas/CreditRightsReceivableType'
+        debtor_name:
+          $ref: '#/components/schemas/DebtorName'
+        debtor_document_number:
+          $ref: '#/components/schemas/DebtorDocumentNumber'
+        face_value:
+          $ref: '#/components/schemas/FaceValue'
+        holding_number:
+          $ref: '#/components/schemas/HoldingNumber'
+        ibge_code:
+          $ref: '#/components/schemas/IbgeCode'
+        internal_number:
+          $ref: '#/components/schemas/InternalNumber'
+        invoice_number:
+          $ref: '#/components/schemas/InvoiceNumber'
+        invoice_serie:
+          $ref: '#/components/schemas/InvoiceSerie'
+        invoice_total_value:
+          $ref: '#/components/schemas/InvoiceTotalValue'
+        issuing_date:
+          $ref: '#/components/schemas/IssuingDate'
+        lender_name:
+          $ref: '#/components/schemas/LenderName'
+        lender_document_number:
+          $ref: '#/components/schemas/LenderDocumentNumber'
+        maturity_date:
+          $ref: '#/components/schemas/MaturityDate'
+        payment_method:
+          $ref: '#/components/schemas/PaymentMethod'
+        payment_status:
+          $ref: '#/components/schemas/PaymentStatus'
+        recorder_account:
+          $ref: '#/components/schemas/RecorderAccount'
+        access_key:
+          $ref: '#/components/schemas/AccessKey'
+        collateral_type:
+          $ref: '#/components/schemas/CollateralType'
+        credit_operations:
+          $ref: '#/components/schemas/CreditOperationsArray'
+        debtor_signing_date:
+          $ref: '#/components/schemas/DebtorSigningDate'
+        description:
+          $ref: '#/components/schemas/Description'
+        guarantor_name:
+          $ref: '#/components/schemas/GuarantorName'
+        lender_signing_date:
+          $ref: '#/components/schemas/LenderSigningDate'
+        owner_document_number:
+          $ref: '#/components/schemas/OwnerDocumentNumber'
+        owner_name:
+          $ref: '#/components/schemas/OwnerName'
+    CreateReceivableResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Credit receivable response message
+        recorder_account:
+          type: integer
+          description: Recorder account number
+          format: int64
+    CreditRightsReceivableType:
+      type: integer
+      maximum: 2
+      minimum: 1
+      format: int32
+      description: |
+        Credit receivable type:
+
+        1 - Mercantile
+        2 - Service  
+      enum:
+        - 1
+        - 2
+    CreditOperation:
+      type: object
+      properties:
+        contact_number:
+          $ref: '#/components/schemas/ContactNumber'
+        guarantee_percentage:
+          $ref: '#/components/schemas/GuaranteePercentage'
+        operation_date:
+          $ref: '#/components/schemas/OperationDate'
+        operation_maturity:
+          $ref: '#/components/schemas/OperationMaturity'
+        operation_type:
+          $ref: '#/components/schemas/OperationType'
+        operation_value:
+          $ref: '#/components/schemas/OperationValue'
+    DebtorDocumentNumber:
+      type: string
+      description: >
+        Debtor document number. A government document number, such as a Social
+        Security number (US) or Cadastro de Pessoas Fisicas number (Brazil).
+        Must not be the same as the lender document number. 
+      maxLength: 14
+    DebtorName:
+      type: string
+      description: Debtor name
+      maxLength: 100
+      minLength: 1
+      example: Bonnie Ann Clyde
+    DebtorSigningDate:
+      type: string
+      description: Debtor signing date. Format = yyyy-mm-dd
+      format: date
+      example: '2023-06-07'
+    DeleteReceivableResponse:
+      type: object
+      properties:
+        internal_number:
+          type: string
+          description: Client-assigned internal number
+        message:
+          type: string
+          description: Deletion message
+    Description:
+      type: string
+      description: Receivable description
+      maxLength: 500
+      example: Receivable description...
+    Errors:
+      type: array
+      items:
+        type: string
+    FaceValue:
+      type: number
+      description: >
+        Face value refers to the nominal or stated value of a financial
+        instrument or asset, typically printed or stated on the instrument
+        itself. It represents the initial value assigned to the instrument at
+        the time of issuance or purchase.
+      example: 499.23
+    GetInvoiceResponse:
+      type: object
+      properties:
+        access_key:
+          $ref: '#/components/schemas/AccessKey'
+        message:
+          $ref: '#/components/schemas/Message'
+    GetReceivableResponse:
+      type: object
+      properties:
+        access_key:
+          $ref: '#/components/schemas/AccessKey'
+        collateral_type:
+          $ref: '#/components/schemas/CollateralType'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        credit_operations:
+          $ref: '#/components/schemas/CreditOperationsArray'
+        credit_rights_receivable_type:
+          $ref: '#/components/schemas/CreditRightsReceivableType'
+        debtor_document_number:
+          $ref: '#/components/schemas/DebtorDocumentNumber'
+        debtor_name:
+          $ref: '#/components/schemas/DebtorName'
+        debtor_signing_date:
+          $ref: '#/components/schemas/DebtorSigningDate'
+        description:
+          $ref: '#/components/schemas/Description'
+        face_value:
+          $ref: '#/components/schemas/FaceValue'
+        guarantor_name:
+          $ref: '#/components/schemas/GuarantorName'
+        holding_number:
+          $ref: '#/components/schemas/HoldingNumber'
+        ibge_code:
+          $ref: '#/components/schemas/IbgeCode'
+        internal_number:
+          $ref: '#/components/schemas/InternalNumber'
+        interop_holding_number:
+          $ref: '#/components/schemas/InteropHoldingNumber'
+        invoice_number:
+          $ref: '#/components/schemas/InvoiceNumber'
+        invoice_serie:
+          $ref: '#/components/schemas/InvoiceSerie'
+        invoice_total_value:
+          $ref: '#/components/schemas/InvoiceTotalValue'
+        issuing_date:
+          $ref: '#/components/schemas/IssuingDate'
+        lender_document_number:
+          $ref: '#/components/schemas/LenderDocumentNumber'
+        lender_name:
+          $ref: '#/components/schemas/LenderName'
+        lender_signing_date:
+          $ref: '#/components/schemas/LenderSigningDate'
+        maturity_date:
+          $ref: '#/components/schemas/MaturityDate'
+        org_id:
+          $ref: '#/components/schemas/OrgID'
+        owner_document_number:
+          $ref: '#/components/schemas/OwnerDocumentNumber'
+        owner_name:
+          $ref: '#/components/schemas/OwnerName'
+        payment_method:
+          $ref: '#/components/schemas/PaymentMethod'
+        payment_status:
+          $ref: '#/components/schemas/PaymentStatus'
+        recorder_account:
+          $ref: '#/components/schemas/RecorderAccount'
+        status:
+          $ref: '#/components/schemas/Status'
+        updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
+    GetUniqueReceivableRequest:
+      type: object
+      properties:
+        params:
+          $ref: '#/components/schemas/GetUniqueReceivableRequestParams'
+      required:
+        - params
+    GetUniqueReceivableRequestParams:
+      type: object
+      properties:
+        debtor_document_number:
+          $ref: '#/components/schemas/DebtorDocumentNumber'
+        face_value:
+          $ref: '#/components/schemas/FaceValue'
+        interop_holding_number:
+          $ref: '#/components/schemas/InteropHoldingNumber'
+        lender_document_number:
+          $ref: '#/components/schemas/LenderDocumentNumber'
+        maturity_date:
+          $ref: '#/components/schemas/MaturityDate'
+      required:
+        - debtor_document_number
+        - face_value
+        - interop_holding_number
+        - lender_document_number
+        - maturity_date
+    GetUniqueReceivableResponse:
+      type: object
+      properties:
+        debtor_document_number:
+          $ref: '#/components/schemas/DebtorDocumentNumber'
+        face_value:
+          $ref: '#/components/schemas/FaceValue'
+        interop_holding_number:
+          $ref: '#/components/schemas/InteropHoldingNumber'
+        lender_document_number:
+          $ref: '#/components/schemas/LenderDocumentNumber'
+        maturity_date:
+          $ref: '#/components/schemas/MaturityDate'
+        message:
+          $ref: '#/components/schemas/Message'
+    GlobalErrorResponse:
+      type: object
+      properties:
+        correlationId:
+          $ref: '#/components/schemas/CorrelationID'
+        errors:
+          $ref: '#/components/schemas/Errors'
+    GuarantorName:
+      type: string
+      description: Guarantor name
+      minLength: 1
+      maxLength: 100
+      example: Lansky Loan
+    GuaranteePercentage:
+      type: number
+      description: Gurantor percentage
+      example: 5
+    HoldingNumber:
+      type: string
+      description: >
+        Holding number - the number of the invoice (min size 1, max size 9) +
+        '.' + the number of installments (min 1 - max 99).
+      minLength: 3
+      maxLength: 12
+      example: '1234.8'
+    IbgeCode:
+      type: integer
+      format: int32
+      description: >
+        IBGE stands for Instituto Brasileiro de Geografia e Estatística, which
+        translates to the Brazilian Institute of Geography and Statistics. This
+        Brazilian national statistical agency is responsible for collecting and
+        providing official data on various aspects of the country. An IBGE code
+        is a specific numerical code assigned to various administrative
+        divisions and geographical areas in Brazil.
+
+
+        For this application, the IBGE code identifies the town and **must**
+        have 7 digits (1000000 to 9999999).
+      minLength: 7
+      maxLength: 7
+      example: 3304557
+    InternalNumber:
+      type: string
+      description: Client-assigned internal number.
+      minLength: 1
+      maxLength: 40
+      example: 5eae1070-28cc-4e99-ad45-c380731d5c0a
+    InteropHoldingNumber:
+      type: string
+      description: >
+        Client-assigned interoperation holding number. Called `holding_number`
+        when passed in the Register receivable endpoint.
+      example: 017917411A
+    InvoiceNumber:
+      type: integer
+      description: Invoice number. Generated when receivable is created.
+      format: int64
+      minLength: 1
+      maxLength: 9
+      example: 88
+    InvoiceSerie:
+      type: integer
+      description: Invoice series number. "Serie" is the Portuguese word for "series".
+      format: int64
+      minLength: 1
+      maxLength: 3
+      example: 1
+    InvoiceTotalValue:
+      type: number
+      description: Invoice total value. Can be up to 16 digits and two decimal places.
+      maxLength: 19
+      example: 5678.99
+    IssuingDate:
+      type: string
+      description: Issuing date. Must be before or equal to today. Format = yyyy-mm-dd.
+      format: date
+      example: '2023-06-07'
+    LenderDocumentNumber:
+      type: string
+      description: >
+        Lender document number. A government document number, such as a Social
+        Security number (US) or Cadastro de Pessoas Fisicas number (Brazil).
+        Should not be the same as the debtor document number. 
+      example: '51407165000113'
+    LenderName:
+      type: string
+      description: Lender name
+      minLength: 1
+      maxLength: 100
+      example: Al Dente
+    LenderSigningDate:
+      type: string
+      description: >-
+        Lender signing date. Format = yyyy-mm-dd. Must be before or equal to
+        today.
+      format: date
+      example: '2023-06-22'
+    MaturityDate:
+      type: string
+      description: Maturity date. Format = yyyy-mm-dd. Must be equal to today or later.
+      example: 2023-06=22
+    Message:
+      type: string
+      description: Message
+      maxLength: 500
+      example: Credit rights update request is being processed
+    OperationDate:
+      type: string
+      description: Operation date. Format = yyyy-mm-dd.
+      format: date
+      example: '2023-06-06'
+    OperationMaturity:
+      type: string
+      description: Operation maturity. Format = yyyy-mm-dd.
+      format: date
+      example: '2023-09-08'
+    OperationType:
+      type: string
+      description: Operation type. You need to configure the operation types with Pismo.
+      maxLength: 50
+      minLength: 1
+    OperationValue:
+      type: number
+      description: >
+        Operation value. Must be positive or zero. Can be up to 16 digits and
+        two decimal places.
+      example: 234.5
+    OrgID:
+      type: string
+      description: Organization/tenant ID
+      example: TN-cc8f8b89-233a-4582-9f36-63ee85278d6d
+    OwnerDocumentNumber:
+      type: string
+      description: >
+        Owner document number. A government document number, such as a Social
+        Security number (US) or Cadastro de Pessoas Físicas number (Brazil). 
+      example: '51008931000177'
+    OwnerName:
+      type: string
+      description: Owner name
+      minLength: 1
+      maxLength: 100
+      example: Biff Wellington
+    PaymentMethod:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 6
+      enum:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+      description: >
+        Payment method: 
+
+
+        1 - **Boleto**: The Boleto payment method is a popular payment system in
+        Brazil. It is a widely used alternative to traditional credit card
+        payments and bank transfers. Boleto Bancário, commonly referred to as
+        "Boleto," is a payment voucher that allows individuals and businesses to
+        make payments for goods and services.
+
+
+        2 - **TED**: The TED (Transferência Eletrônica Disponível) payment
+        method is a popular electronic funds transfer system in Brazil. It is
+        commonly used for interbank transfers, allowing individuals and
+        businesses to transfer funds between different financial institutions
+        within the country.
+
+
+        3 - **DOC**: The DOC (Documento de Ordem de Crédito) payment method is
+        another electronic funds transfer system in Brazil, similar to TED
+        (Transferência Eletrônica Disponível). DOC is primarily used for
+        interbank transfers but differs from TED in terms of timing, limits, and
+        processing.
+
+
+        4 - **Dinheiro**: "Dinheiro" is the Portuguese word for "money" or a
+        general term for cash payments. Cash is a widely used payment method in
+        various countries, including Brazil, where the official currency is the
+        Brazilian Real (BRL).
+
+
+        5 - **Título**: "Titulo" means title in Portuguese.
+
+
+        6 - **Pix**: The Pix payment method is a new and instant electronic
+        payment system introduced by the Central Bank of Brazil. It was launched
+        in November 2020 and has gained significant popularity in a short
+        period. Pix allows individuals and businesses to make real-time
+        transfers and payments between different financial institutions in
+        Brazil. It operates 24/7, including weekends and holidays, providing a
+        fast and alternative to traditional payment methods such as TED and DOC
+        transfers.  
+      example: 2
+    PaymentStatus:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 2
+      description: |
+        Payment Status:
+          1 - PAID  
+          2 - UNPAID
+      enum:
+        - 1
+        - 2
+      example: 1
+    RecorderAccount:
+      type: integer
+      description: Recorder account
+      format: int64
+      minLength: 1
+      maxLength: 8
+      example: 12345678
+    Status:
+      type: string
+      description: Status
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - INACTIVE
+        - REJECTED
+        - ACTIVE_PENDING
+      example: ACTIVE
+    UpdatedAt:
+      type: string
+      format: date-time
+      description: Updated at time (UTC)
+      example: '2021-07-06T13:11:05.000Z'
+    UpdatedFaceValue:
+      type: number
+      description: Updated face value.
+      example: 456.99
+    UpdatedMaturityDate:
+      type: string
+      description: Updated maturity date. Format = yyyy-mm-dd.
+      example: '2023-09-14'
+    UpdateReceivableRequest:
+      type: object
+      properties:
+        access_key:
+          $ref: '#/components/schemas/AccessKey'
+        collateral_type:
+          $ref: '#/components/schemas/CollateralType'
+        credit_operations:
+          $ref: '#/components/schemas/CreditOperationsArray'
+        debtor_signing_date:
+          $ref: '#/components/schemas/DebtorSigningDate'
+        description:
+          $ref: '#/components/schemas/Description'
+        guarantor_name:
+          $ref: '#/components/schemas/GuarantorName'
+        ibge_code:
+          $ref: '#/components/schemas/IbgeCode'
+        lender_signing_date:
+          $ref: '#/components/schemas/LenderSigningDate'
+        owner_document_number:
+          $ref: '#/components/schemas/OwnerDocumentNumber'
+        owner_name:
+          $ref: '#/components/schemas/OwnerName'
+        payment_method:
+          $ref: '#/components/schemas/PaymentMethod'
+        payment_status:
+          $ref: '#/components/schemas/PaymentStatus'
+        updated_face_value:
+          $ref: '#/components/schemas/UpdatedFaceValue'
+        updated_maturity_date:
+          $ref: '#/components/schemas/UpdatedMaturityDate'
+    UpdateReceivableResponse:
+      type: object
+      properties:
+        internal_number:
+          $ref: '#/components/schemas/InternalNumber'
+        message:
+          $ref: '#/components/schemas/Message'
+  responses:
+    400BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GlobalErrorResponse'
+    401Unauthorized:
+      description: Missing or invalid access token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GlobalErrorResponse'
+    500InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GlobalErrorResponse'
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+paths:
+  /v1/credit-rights:
+    post:
+      summary: Register receivable
+      description: >
+        Register an account receivable - Brazil only. A receivable represents
+        money expected to be collected from an entity (*debtor*) who has
+        purchased products or services, but has not yet paid for them in full.
+        The *lender*, the person or entity owed the money, can sell this debt to
+        a new *owner*, who may package it as part of another financial
+        instrument, in much the same way a mortgage is sold to become part of a
+        mortgage-backed security. 
+
+
+        Pismo works with <a href="https://www.b3.com.br/en_us/"
+        target="_blank">B3</a> - a large financial market infrastructure
+        provider in Brazil - to register invoices. 
+
+
+        If creation fails, a <a
+        href="https://developers.pismo.io/events/docs/depositary-credit-rights-registration-failure-1"
+        target="_blank">credit_rights_registration_failure-1</a> event is
+        generated. If creation succeeds, a <a
+        href="https://developers.pismo.io/events/docs/depositary-credit-rights-registration-success-1"
+        target="_blank">credit_rights_registration_success-1</a> event is
+        generated 
+      operationId: create-receivable
+      tags:
+        - Receivable
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReceivableRequest'
+        required: true
+      responses:
+        '202':
+          description: >-
+            Success message is sent to the client while registration is
+            processed asynchronously
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateReceivableResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    get:
+      summary: Get receivable (deprecated)
+      description: >
+        Get unique receivable. This endpoint is **DEPRECATED**, use the <a
+        href="https://developers.pismo.io/pismo-docs/reference/validateunicity">Validate
+        receivable</a> endpoint instead.
+      operationId: get-receivable
+      deprecated: true
+      tags:
+        - Receivable
+      parameters:
+        - $ref: '#/components/parameters/InterOpHoldingNumQuery'
+        - $ref: '#/components/parameters/LenderDocNumberQuery'
+        - $ref: '#/components/parameters/DebtorDocNumberQuery'
+        - $ref: '#/components/parameters/MaturityDateQuery'
+        - $ref: '#/components/parameters/FaceValueQuery'
+      responses:
+        '202':
+          content:
+            'application/json:':
+              schema:
+                $ref: '#/components/schemas/GetUniqueReceivableResponse'
+          description: >-
+            Success message is sent to the client while an unicity validation is
+            processed asynchronously
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/credit-rights/{internalNumber}:
+    get:
+      summary: Get credit rights
+      description: Get credit rights with internal number.
+      operationId: findByInternalNumber
+      tags:
+        - Receivable
+      parameters:
+        - $ref: '#/components/parameters/InternalNumberPath'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetReceivableResponse'
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetReceivableResponse'
+          description: Credit Rights not found
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    patch:
+      summary: Update receivable
+      description: >
+        Update receivable for fields passed.
+
+
+        If updating the status fails, a <a
+        href="https://developers.pismo.io/events/docs/depositary-credit-rights-status-change-failure-1"
+        target="_blank">credit_rights_status_change_failure-1</a> event is
+        generated. If updating the status succeeds, a <a
+        href="https://developers.pismo.io/events/docs/depositary-credit-rights-status-change-success-1"
+        target="_blank">credit_rights_status_change_success-1</a> event is
+        generated.
+
+
+        If updating any other fields besides status fails, a <a
+        href="https://developers.pismo.io/events/docs/depositary-credit-rights-change-failure-1"
+        target="_blank">credit_rights_change_failure-1</a> event is generated.
+        If updating a non-status field succeeds, a <a
+        href="https://developers.pismo.io/events/docs/depositary-credit-rights-change-success-1"
+        target="_blank">credit_rights_change_success-1</a> event is generated.
+      operationId: update
+      parameters:
+        - $ref: '#/components/parameters/InternalNumberPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReceivableRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateReceivableResponse'
+          description: >-
+            Success message is sent to the client while update is processed
+            asynchronously
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+      tags:
+        - Receivable
+    delete:
+      summary: Delete receivable
+      description: |
+        Delete receivable.
+
+         If deletion fails, a <a href="https://developers.pismo.io/events/docs/depositary-credit-rights-status-change-failure-1" target="_blank">credit_rights_status_change_failure-1</a> event is generated. If deletion succeeds, a <a href="https://developers.pismo.io/events/docs/depositary-credit-rights-status-change-success-1" target="_blank">credit_rights_status_change_success-1</a> event is generated.
+      operationId: delete-receivable
+      tags:
+        - Receivable
+      parameters:
+        - $ref: '#/components/parameters/InternalNumberPath'
+      responses:
+        '202':
+          content:
+            'application/json:':
+              schema:
+                $ref: '#/components/schemas/DeleteReceivableResponse'
+          description: >-
+            Success message is sent to the client while delete is processed
+            asynchronously
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/invoices/{access_key}:
+    get:
+      summary: Get invoice
+      description: >
+        Get and validate invoice given access key in path. The access key is
+        created via the [Register receivable](create-receivable) endpoint.
+
+
+        Pismo works with a third-party (B3) who registers the invoices.
+
+
+        This endpoint generates 4 possible events:
+
+
+        1. Request to third-party fails - <a
+        href="https://developers.pismo.io/events/docs/depositary-invoice-validation-request-failure-1"
+        target="_blank">invoice_validation_request_failure-1</a>
+
+        2. Request to third-party succeeds - <a
+        href="https://developers.pismo.io/events/docs/depositary-invoice-validation-request-success-1"
+        target="_blank">invoice_validation_request_success-1</a>
+
+        3. Third-party validation fails- <a
+        href="https://developers.pismo.io/events/docs/depositary-invoice-validation-failure-1"
+        target="_blank">invoice_validation_failure-1</a>
+
+        4. Third-party validation succeeds - <a
+        href="https://developers.pismo.io/events/docs/depositary-invoice-validation-success-1"
+        target="_blank">invoice_validation_success-1</a>
+      operationId: findByAccessKey
+      tags:
+        - Invoices
+      parameters:
+        - $ref: '#/components/parameters/AccessKeyPath'
+      responses:
+        '202':
+          description: >
+            Success message is sent to the client while an invoice validation is
+            processed asynchronously,
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetInvoiceResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/credit-rights/unicity:
+    post:
+      operationId: validateUnicity
+      summary: Validate receivable
+      description: Validate a receivable's uniqueness in the credit rights registry.
+      tags:
+        - Receivable
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetUniqueReceivableRequest'
+        required: true
+      responses:
+        '202':
+          description: Success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUniqueReceivableResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'

@@ -1,0 +1,189 @@
+openapi: 3.1.0
+info:
+  title: Data and reporting - Timeline
+  version: v1.0
+  description: |
+    View timeline events.
+  contact:
+    name: Pismo Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io
+    description: Sandbox API server for testing
+tags:
+  - name: Timeline
+    description: View timeline events
+paths:
+  /timeline/v1/timeline:
+    get:
+      operationId: list-timeline-events
+      tags:
+        - Timeline
+      summary: List account timeline events
+      description: |
+        List the events in an account timeline using cursor pagination.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: number
+          description: >-
+            A maximum of 1 MB of data or the maximum number of items given as
+            the limit value will be evaluated by the operation before any
+            filtering is applied to the results. Default: `100`.
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: >-
+            Filter only items with the provided category. Your Pismo
+            representative works with you to define the categories and types for
+            your organization. For more information, see [Timeline events
+            overview](https://developers.pismo.io/pismo-docs/docs/timeline-overview).
+        - name: type
+          in: query
+          schema:
+            type: string
+          description: >-
+            Filter only items with the provided type. Your Pismo representative
+            works with you to define the categories and types for your
+            organization. For more information, see [Timeline events
+            overview](https://developers.pismo.io/pismo-docs/docs/timeline-overview).
+        - name: beginDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: >-
+            Filter only items with timestamp greater than or equal to, using RFC
+            3339 format (`yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`).
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: >-
+            Filter only items with timestamp less than or equal to, using RFC
+            3339 format (`yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ`).
+        - name: order
+          in: query
+          schema:
+            type: string
+          description: >-
+            Order results as `asc` (ascending) or `desc` (descending) by date.
+            Default: `desc`
+        - name: nextCursor
+          in: query
+          schema:
+            type: string
+          description: >-
+            Cursor value to apply in a subsequent query to continue the
+            operation.
+      responses:
+        '200':
+          description: Paginated timeline items using cursor paging.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTimelineV1'
+              examples:
+                response-v1-timeline:
+                  $ref: '#/components/examples/GetV1TimelineResponse'
+        '400':
+          $ref: '#/components/responses/400InvalidParams'
+        '401':
+          $ref: '#/components/responses/401UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+components:
+  schemas:
+    PaginatedTimelineV1:
+      description: Paginated timeline response
+      type: object
+      properties:
+        has_next:
+          description: Has next page
+          type: boolean
+          example: false
+        next_cursor:
+          description: >-
+            `nextCursor` value to apply in a subsequent query to continue the
+            operation
+          type: string
+          example: >-
+            ewogICJUZW5hbnRBY2NvdW50VGltZXN0YW1wIjogIlRFTkFOVDo6QUNDT1VOVDo6VElNRVNUQU1QIiwKICAiVGVuYW50QWNjb3VudCI6ICJURU5BTlQ6OkFDQ09VTlRfSUQiLAogICJUaW1lc3RhbXAiOiAiVElNRVNUQU1QIgp9
+        count:
+          description: Number of items
+          type: number
+          example: 10
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+    Event:
+      description: Timeline items
+      type: object
+      properties:
+        type:
+          type: string
+        account_id:
+          type: number
+        category:
+          type: string
+        tenant_account_timestamp:
+          type: string
+        data:
+          type: object
+        correlation_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+  responses:
+    400InvalidParams:
+      description: Invalid request.
+    401UnauthorizedError:
+      description: Access token is missing or invalid.
+    404NotFound:
+      description: The specified resource was not found.
+    500InternalServerError:
+      description: Internal Server Error.
+  securitySchemes:
+    S2SAuthentication:
+      type: http
+      scheme: bearer
+      description: All requests must be previoulsy authenticated with an account token
+  examples:
+    GetV1TimelineResponse:
+      value:
+        has_next: true
+        next_cursor: >-
+          ewogICJUZW5hbnRBY2NvdW50VGltZXN0YW1wIjogIlRFTkFOVDo6QUNDT1VOVDo6VElNRVNUQU1QIiwKICAiVGVuYW50QWNjb3VudCI6ICJURU5BTlQ6OkFDQ09VTlRfSUQiLAogICJUaW1lc3RhbXAiOiAiVElNRVNUQU1QIgp9
+        count: 2
+        items:
+          - type: TYPE
+            account_id: 123456
+            category: CATEGORY
+            tenant_account_timestamp: TENANT::ACCOUNT::TIMESTAMP
+            data:
+              item:
+                item-1: ONE
+                item-2: 2
+            correlation_id: cb6d3dc1-be6d-4abf-8ed1-7b40f4d24654
+            timestamp: '2021-01-01T01:12:23.123456789Z'
+          - type: OTHER_TYPE
+            account_id: 123456
+            category: OTHER_CATEGORY
+            tenant_account_timestamp: TENANT::ACCOUNT::TIMESTAMP
+            data:
+              item:
+                item-3: 3
+                item-4: FOUR
+            correlation_id: cb6d3dc1-be6d-4abf-8ed1-7b40f4d24654
+            timestamp: '2020-08-04T18:08:10.172955069Z'
+security:
+  - S2SAuthentication: []

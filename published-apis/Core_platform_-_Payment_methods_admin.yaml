@@ -1,0 +1,427 @@
+openapi: 3.0.0
+info:
+  title: Core platform - Payment methods admin
+  version: beta
+  description: API to handle administrative operations for payment methods.
+  contact:
+    name: API Support
+    email: support@pismo.io
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyrigth Pismo
+    url: https://developers.pismo.io/licenses/
+servers:
+  - url: https://sandbox.pismolabs.io/payment-methods-admin
+    description: Sandbox API server for testing
+tags:
+  - name: Cards (internal)
+    description: Endpoints to handle administrative operations for account cards.
+  - name: Simulation
+    description: Endpoints to handle administrative operations for simulations.
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    UnexpectedError:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: DO0001
+        message:
+          type: string
+          description: Error description
+          example: An unexpected error happened.
+        violations:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+                description: Violation error code
+                example: AC000
+              message:
+                type: string
+                description: Violation error description
+                example: An unexpected error has occurred
+    UnprocessableEntityError:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: CA0001
+        message:
+          type: string
+          description: Error description
+          example: An unexpected error happened.
+        violations:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+                description: Violation error code
+                example: AC002
+              message:
+                type: string
+                description: Violation error description
+                example: >-
+                  An unexpected error has occurred while fetching Account
+                  Information.
+    ListCardAccountRequest:
+      description: Request
+      type: object
+      required:
+        - phone
+      properties:
+        phone:
+          type: object
+          required:
+            - number
+          description: Account phone object representation
+          properties:
+            number:
+              type: string
+              description: Account phone number
+              example: '919846049491'
+            country_code:
+              type: string
+              description: Country code of phone number
+              example: '55'
+            area_code:
+              type: string
+              description: Area code of phone number
+              example: '11'
+        filters:
+          type: object
+          description: Filters opetions to be applied in the search
+          properties:
+            card:
+              type: object
+              description: Filters applied in card search
+              properties:
+                status:
+                  type: array
+                  description: Filter card by statuses
+                  example:
+                    - ACTIVE
+                    - BLOCKED
+                type:
+                  type: array
+                  description: Filter card by types
+                  example:
+                    - PLASTIC
+                    - VIRTUAL
+            accounts:
+              type: object
+              description: Filter applied in account search
+              properties:
+                status:
+                  type: array
+                  description: Filter account by statuses
+                  example:
+                    - NORMAL
+                    - BLOCKED
+                    - CANCELLED
+            phones:
+              type: object
+              description: Filter applied in phones search
+              properties:
+                active:
+                  type: boolean
+                  description: Filter phone by statuses
+                  example: true
+    ListCardAccountResponse:
+      description: Response
+      properties:
+        accounts:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: number
+                example: 123
+              document_number:
+                type: string
+                example: '1234567890'
+              entities:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: number
+                      example: 456
+                    name:
+                      type: string
+                      example: John Doe Jr.
+                    social_name:
+                      type: string
+                      example: John
+              cards:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: 77cdd87e-b9b6-11ec-b4f5-4a7a44f81261
+                    printed_name:
+                      type: string
+                      example: Don Khee
+                    status:
+                      type: string
+                      example: ACTIVE
+                    type:
+                      type: string
+                      example: PLASTIC
+                    first_6_digits:
+                      type: string
+                      example: '123456'
+                    last_4_digits:
+                      type: string
+                      example: '7890'
+    BalanceEnquiryRequest:
+      description: Request
+      properties:
+        card_stored_id:
+          type: string
+          description: Card Stored ID
+          example: '12345600000000001140340134'
+    BalanceEnquiryResponse:
+      description: Response
+      properties:
+        available_credit_limit:
+          type: number
+          example: 150000
+        max_credit_limit:
+          type: number
+          example: 1000
+        currency_numeric_code:
+          type: string
+          example: '986'
+        currency_code:
+          type: string
+          example: BRL
+    CardValidationRequest:
+      description: Request
+      properties:
+        pin:
+          type: object
+          properties:
+            pinblock:
+              type: string
+              example: ABC1321456798
+            key_id:
+              type: string
+              example: A8CFB33B30CD40B9A5918AC74E2B57A5
+        last_6_digits:
+          type: string
+          example: '222233'
+        expiration_date:
+          type: string
+          example: '0228'
+        cvv:
+          type: string
+          example: '123'
+    CardValidationResponse:
+      description: Request
+      properties:
+        result:
+          type: string
+          example: VALIDATED
+    SimulationRequest:
+      description: Request
+      required:
+        - amount
+        - authorization_mode
+      properties:
+        amount:
+          type: number
+          description: Total simulation amount
+          example: 100
+        authorization_mode:
+          type: string
+          description: >
+            Requested simulation authorization mode. Credit cards can operate
+            only in `CREDIT` mode. Debit cards from savings or checking accounts
+            can operate only in `DEBIT` mode. Combo and multi-application cards
+            can operate in both modes. **REQUIRED** for simulation requests,
+            where message type indicator (MTI) is `0100` or `0120`.
+          enum:
+            - CREDIT
+            - DEBIT
+        card:
+          type: object
+          description: >-
+            Information related to the card used to perform this simulation.
+            **REQUIRED** if `document_number` is not present.
+          properties:
+            pan:
+              type: string
+              description: >-
+                Primary account number of the card being used for simulation.
+                **REQUIRED** if `document_number` is not present.
+              example: '5555550000000001'
+        custom_filters:
+          type: array
+          description: Custom filters to be used in the simulation
+          items:
+            type: string
+            example: custom filter1
+          example:
+            - custom filter1
+            - custom filter2
+            - custom filter3
+        document_number:
+          type: string
+          description: >-
+            Document number related to the account to be used as the owner of
+            this request. This field should be used in requests simulation based
+            on client document number. **REQUIRED** if card `pan` is not
+            present.
+          example: '39947739977'
+        merchants:
+          type: array
+          description: Merchant IDs used to filter the simulation
+          items:
+            type: string
+            example: MERCH01
+          example:
+            - MERCH01
+            - MERCH02
+            - MERCH03
+        payment_agreement:
+          description: Payment agreement information
+          properties:
+            original_principal_amount:
+              description: Principal amount in the original contract
+              type: number
+              example: 80
+            applied_interest_amount:
+              description: Applied interest amount in the original contract
+              type: number
+              example: 80
+            down_payment:
+              description: Down payment
+              type: number
+              example: 50
+        plan_ids:
+          type: array
+          description: Plan IDs used to filter the simulation
+          items:
+            type: string
+            example: '000900'
+          example:
+            - '000700'
+            - '000800'
+            - '000900'
+        processing_codes:
+          type: array
+          description: Procesing codes used to filter the simulation
+          items:
+            type: string
+            example: '000900'
+          example:
+            - '000700'
+            - '000800'
+            - '000900'
+    SimulationResponse:
+      description: Response
+      properties:
+        account_id:
+          type: integer
+          description: Pismo ID of the account assigned as the owner of this request
+          example: 123
+        program_id:
+          type: number
+          description: Program ID linked to the user account
+          example: 1
+        amount:
+          type: number
+          description: Total simulation amount
+          example: 100
+        simulation:
+          type: object
+          description: Any valid JSON that contains useful simulation information
+paths:
+  /v1/cards/validate/{card_stored_id}:
+    parameters:
+      - name: card_stored_id
+        schema:
+          type: string
+        in: path
+        required: true
+        description: Card Stored ID.
+  /v1/simulations:
+    post:
+      operationId: post-v1-simulation
+      summary: Create simulation
+      description: >
+        Create a simulation. 
+
+
+        Prior to calling this endpoint to create a simulation, you must create a
+        simulation configuration via the [Create simulation
+        config](ref:simulationconfigs) endpoint.
+
+
+        Refer to the [Simulation service](doc:simulation-service) guide for
+        additional information.
+      tags:
+        - Simulation
+      requestBody:
+        description: Create simulation
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulationRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+              examples:
+                Invalid payload:
+                  value:
+                    code: DO0002
+                    message: Invalid Request.
+                    violations:
+                      - code: field
+                        message: required
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+              examples:
+                Invalid payload:
+                  value:
+                    code: SI001
+                    message: An unexpected error happened.
+                    violations:
+                      - code: SI003
+                        message: Card doesn't have authorization mode created.
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'

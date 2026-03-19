@@ -1,0 +1,576 @@
+openapi: 3.1.0
+info:
+  title: Platform setup - Orgs operation
+  description: Orgs operations management endpoints.
+  version: v1.0
+  contact:
+    name: Pismo Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo.
+servers:
+  - url: https://sandbox.pismolabs.io
+    description: Sandbox API server for testing
+security:
+  - S2SAuthentication: []
+tags:
+  - name: Processing codes
+    description: Manage processing codes
+  - name: Reversal processing codes
+    description: Manage reversal processing codes
+  - name: Orgs operation
+    description: View and manage your orgs operations
+components:
+  parameters:
+    GetProcessingCodesListCursorQuery:
+      name: nextCursor
+      in: query
+      required: false
+      description: >-
+        Cursor to get next results. This is the `next_cursor` field in the
+        response.
+      schema:
+        type: string
+    GetProcessingCodesListLimit:
+      name: limit
+      in: query
+      required: false
+      description: Maximum items to return. 100 maximum.
+      schema:
+        type: string
+    LanguageQuery:
+      name: language
+      in: query
+      required: false
+      description: >
+        Description language requested. If this field is not present or the
+        language is not in the translation list, the default description (root
+        description) is returned.
+
+
+        For example, the code for English (United States) is `en-US`. The
+        prefix, `en`, is a language code following the ISO 639-1 standard. The
+        suffix, `US`, is a country code following the ISO 3166-1 Alpha-2
+        standard.
+      schema:
+        type: string
+        example: en-US
+    ProcessingCodePath:
+      name: processingCode
+      in: path
+      required: true
+      description: Processing code ID
+      schema:
+        type: string
+        example: PC0000
+  schemas:
+    BalanceImpact:
+      type: integer
+      description: |
+        Balance impact associated with processing code:
+          * `1` - Credit 
+          * `0` - No impact. Zero balance operations have no impact. Zero balance customers are responsible for settling accounts and generating transactions.
+          * `-1` - Debit
+      enum:
+        - 1
+        - 0
+        - -1
+      example: 1
+    GetProcessingCodeItem:
+      type: object
+      properties:
+        processing_codes:
+          type: string
+          description: Processing code ID
+          example: '01'
+        org_operation_id:
+          type: integer
+          description: Org operation ID
+        balance_impact:
+          $ref: '#/components/schemas/BalanceImpact'
+        description:
+          type: string
+          description: Processing code description
+          example: International purchase
+        standard:
+          $ref: '#/components/schemas/Standard'
+        reversal_processing_code:
+          $ref: '#/components/schemas/ReversalProcessingCode'
+        partial_reversal_processing_code:
+          $ref: '#/components/schemas/PartialReversalProcessingCode'
+        status:
+          $ref: '#/components/schemas/Status'
+        tags:
+          $ref: '#/components/schemas/Tags'
+        translations:
+          $ref: '#/components/schemas/Translations'
+    GetProcessingCodesResponse:
+      type: object
+      properties:
+        has_next:
+          type: boolean
+          description: Are there more results?
+        next_cursor:
+          type: string
+          description: Cursor to get next results
+        count:
+          type: integer
+          description: Number of processing codes returned
+        items:
+          type: array
+          description: Processing code items list
+          items:
+            $ref: '#/components/schemas/GetProcessingCodeItem'
+    OrgOperationID:
+      type: integer
+      description: Org operation ID
+    PartialReversalDescription:
+      type: string
+      maxLength: 50
+      description: >
+        Partial reversal description. **REQUIRED** if
+        `partial_reversal_processing_code` does not exist.
+      example: Partial reversal description
+    PartialReversalProcessingCode:
+      type: string
+      description: >
+        Partial reversal processing code. Processing code for partial reversal
+        cancellation. Used in transactions and accounting flow to post the
+        correct entries related to partial cancellation. 
+
+
+        Every `AUTHORIZATION` processing code is **REQUIRED** to have a reversal
+        and a partial reversal processing code. If a partial code isn't
+        provided, a default one is assigned based on `balance_impact`. 
+
+
+        For more information, refer to [default reversal processing
+        codes](doc:processing-codes-and-transaction-types#default-reversal-processing-codes).
+      example: '578739'
+    PcDescription:
+      type: string
+      maxLength: 50
+      description: Processing code description
+    ProcessingCode:
+      type: string
+      description: >
+        A processing code identifies a financial operation on the Pismo
+        platform. Processing codes need to be mapped to transaction type codes
+        to create a transaction flow. 
+
+
+        A custom processing code is created with a `PENDING` status . Initially,
+        its use is not allowed in authorizations. Once the transaction flow for
+        a custom processing code is completely configured, its status changes to
+        `SUCCESS` and it is ready for use. 
+
+
+        For more information, refer to [Processing
+        codes](doc:processing-codes-and-transaction-types)
+    ProcessingCodeCreateRequest:
+      type: object
+      required:
+        - processing_code
+        - balance_impact
+        - description
+        - reversal_processing_code
+      properties:
+        processing_code:
+          type: string
+          minLength: 3
+          maxLength: 6
+          description: |
+            Processing code ID
+
+            The following applies to this field:
+              * It must have between 3 and 6 characters.
+              * Only letters and numbers are allowed.
+              * Must be unique and not already exist in the org's database
+              * Cannot start with the prefix “PSM”, this is reserved for Pismo platform processing codes.
+          example: I87654
+        balance_impact:
+          $ref: '#/components/schemas/BalanceImpact'
+        description:
+          $ref: '#/components/schemas/PcDescription'
+        reversal_processing_code:
+          $ref: '#/components/schemas/ReversalProcessingCode'
+        reversal_description:
+          $ref: '#/components/schemas/ReversalDescription'
+        partial_reversal_processing_code:
+          $ref: '#/components/schemas/PartialReversalProcessingCode'
+        partial_reversal_description:
+          $ref: '#/components/schemas/PartialReversalDescription'
+        tags:
+          $ref: '#/components/schemas/Tags'
+        translations:
+          type: array
+          items:
+            type: object
+            properties:
+              language:
+                $ref: '#/components/schemas/TranslatedLanguage'
+              description:
+                type: string
+                maxLength: 50
+                description: Translated description
+              reversal_description:
+                type: string
+                maxLength: 50
+                description: Translated reversal translated description
+              partial_reversal_description:
+                type: string
+                maxLength: 50
+                description: Translated partial reversal description
+    ProcessingCodeCreateResponse:
+      type: object
+      properties:
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        reversal_processing_code:
+          $ref: '#/components/schemas/ReversalProcessingCode'
+        partial_reversal_processing_code:
+          $ref: '#/components/schemas/PartialReversalProcessingCode'
+        status:
+          $ref: '#/components/schemas/Status'
+    ProcessingCodeUpdateRequest:
+      type: object
+      properties:
+        description:
+          $ref: '#/components/schemas/PcDescription'
+        reversal_processing_code:
+          $ref: '#/components/schemas/ReversalProcessingCode'
+        partial_reversal_processing_code:
+          $ref: '#/components/schemas/PartialReversalProcessingCode'
+        tags:
+          $ref: '#/components/schemas/Tags'
+        translations:
+          $ref: '#/components/schemas/Translations'
+    ProcessingResponse:
+      type: object
+      properties:
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        org_operation_id:
+          $ref: '#/components/schemas/OrgOperationID'
+        balance_impact:
+          $ref: '#/components/schemas/BalanceImpact'
+        description:
+          $ref: '#/components/schemas/PcDescription'
+        standard:
+          $ref: '#/components/schemas/Standard'
+        reversal_processing_code:
+          $ref: '#/components/schemas/ReversalProcessingCode'
+        partial_reversal_processing_code:
+          $ref: '#/components/schemas/PartialReversalProcessingCode'
+        status:
+          $ref: '#/components/schemas/Status'
+        tags:
+          $ref: '#/components/schemas/Tags'
+    ReversalDescription:
+      type: string
+      maxLength: 50
+      description: >
+        Reversal description. If not passed, it is automatically set to "REV "
+        plus the `description` field.  For example, if `description` is
+        "Purchase", the reversal description will be "REV Purchase".
+      example: Reversal description
+    ReversalOrgsOperationCreateResponse:
+      type: object
+      properties:
+        processing_code:
+          $ref: '#/components/schemas/ProcessingCode'
+        status:
+          $ref: '#/components/schemas/Status'
+    ReversalProcessingCode:
+      type: string
+      minLength: 2
+      maxLength: 6
+      description: >
+        Reversal processing code. Processing code for cancellation. Used in
+        transactions and accounting flow to post the correct entries related to
+        cancellation. 
+
+
+        Every `AUTHORIZATION` processing code is **REQUIRED** to have a reversal
+        and a partial reversal processing code. If a partial code isn't
+        provided, a default one is assigned based on `balance_impact`. 
+
+
+        The reversal processing code can either currently exist or not. If it
+        exists, its `balance_impact` must be the opposite of the main processing
+        code and its type must be `REVERSAL`.
+
+
+        For more information, refer to [default reversal processing
+        codes](doc:processing-codes-and-transaction-types#default-reversal-processing-codes).
+      example: '578739'
+    ReversalProcessingCodeCreateRequest:
+      type: object
+      required:
+        - processing_code
+        - description
+      properties:
+        processing_code:
+          type: string
+          description: Processing code ID
+        balance_impact:
+          $ref: '#/components/schemas/BalanceImpact'
+        description:
+          $ref: '#/components/schemas/PcDescription'
+        translations:
+          $ref: '#/components/schemas/Translations'
+    Standard:
+      type: boolean
+      description: >
+        Is this a standard processing code?  A standard processing code, as
+        opposed to a custom one, is one that is pre-defined for every
+        organization on the Pismo platform. 
+
+
+        For more information, refer to [Standard processing
+        codes](doc:processing-codes-and-transaction-types#standard-processing-codes).   
+      example: true
+    Status:
+      type: string
+      description: |
+        Processing code status:
+          * `PENDING` - Missing required configurations. A custom processing code is initially created with a `PENDING` status and its use is not allowed in authorizations. Once the transaction flow for a custom processing code is completely configured, its status changes to `SUCCESS` and it is ready for use. All standard processing codes have a `SUCCESS` status.
+
+          * `SUCCESS` - Required configurations done
+      enum:
+        - SUCCESS
+        - PENDING
+      example: SUCCESS
+    Tags:
+      type: array
+      description: >
+        Processing code tags.  These tags apply **ONLY** to `AUTHORIZATION` type
+        processing codes. You cannot add tags to reverse processing codes as
+        they may be associated with more than one authorization processing code.
+      items:
+        type: string
+        description: Processing code tag.
+        enum:
+          - GLOBAL
+          - BRAZIL
+          - ARGENTINA
+          - INDIA
+          - NETWORK
+          - VISA
+          - MASTERCARD
+          - ELO
+          - RUPAY
+          - TECBAN
+          - UPI
+          - PIX
+          - FPS
+          - TRANSACTION_BANKING
+          - BNPL
+          - LENDING
+          - DEPRECATED
+        example: INDIA
+    TranslatedLanguage:
+      type: string
+      description: >
+        Translation language. 
+
+
+        For example, the code for English (United States) is `en-US`. The
+        prefix, `en`, is a language code following the ISO 639-1 standard. The
+        suffix, `US`, is a country code following the ISO 3166-1 Alpha-2
+        standard.
+      example: en-US
+    Translations:
+      type: array
+      description: Processing code descriptions translation in different languages
+      items:
+        type: object
+        properties:
+          language:
+            $ref: '#/components/schemas/TranslatedLanguage'
+          description:
+            type: string
+            maxLength: 50
+            description: Translated description
+    HTTPError:
+      type: object
+      description: Code and error message.
+      properties:
+        code:
+          type: string
+          description: HTTP error code
+        message:
+          type: string
+          description: HTTP error message
+  responses:
+    500InternalServerError:
+      description: Internal server error
+  securitySchemes:
+    S2SAuthentication:
+      type: http
+      scheme: bearer
+      description: All requests must be previously authenticated with an account token
+paths:
+  /orgs-operation/v1/processing-codes:
+    post:
+      summary: Create processing code
+      description: >
+        Create a processing code for an organization.
+
+
+        Processing codes identify financial operations on the Pismo platform.
+        For example, `00` is a purchase, `01` is a withdrawal, and so on. 
+
+
+        Processing codes need to be mapped to [transaction
+        types](doc:transactiontypes) to create a transaction flow.
+
+
+        This endpoint creates an `AUTHORIZATION` type processing code and
+        generates a [Orgs operation
+        created](https://developers.pismo.io/events/docs/orgs-operation-create-1)
+        event.
+
+
+        **Notes:**
+
+         * The prefix `PSM` is reserved at Pismo platform, customers are not allowed to use this prefix when creating  custom processing codes . Not all standard processing codes have the `PSM`prefix. There are codes created before this standard and are kept for backward compatibility.  New ones, however, will always have this prefix.
+         * On the Pismo platform, 2-digit processing codes are reserved and used only for network processing. Because of this, customers are not allowed to  have 2-digit custom processing codes.
+         * When a new standard processing code is created, it is replicated and configured to all platform organizations, no action is required on your part.
+         * This endpoint generates a [Orgs operation created](https://developers.pismo.io/events/docs/orgs-operation-create-1) event.
+
+
+        For more information, refer to <a
+        href="https://developers.pismo.io/pismo-docs/docs/processing-codes-and-transaction-types">Processing
+        codes</a>.
+      operationId: CreateProcessingCode
+      tags:
+        - Processing codes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessingCodeCreateRequest'
+      responses:
+        '201':
+          description: Processing code sucessfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingCodeCreateResponse'
+        '400':
+          description: Bad request error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+    get:
+      summary: List processing codes
+      description: |
+        Get an organization's processing codes with filtering options.
+      operationId: ProcessingCodeList
+      tags:
+        - Processing codes
+      parameters:
+        - $ref: '#/components/parameters/GetProcessingCodesListCursorQuery'
+        - $ref: '#/components/parameters/GetProcessingCodesListLimit'
+      responses:
+        '200':
+          description: Sucessful response with list of processing codes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProcessingCodesResponse'
+        '400':
+          description: Bad request error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+  /orgs-operation/v1/processing-codes/{processingCode}:
+    get:
+      summary: Get processing code
+      description: Get details about a specific processing code.
+      operationId: ProcessingCodeFetchByOrgsOperationId
+      tags:
+        - Processing codes
+      parameters:
+        - $ref: '#/components/parameters/ProcessingCodePath'
+        - $ref: '#/components/parameters/LanguageQuery'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingResponse'
+        '400':
+          description: Bad request error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+        '404':
+          description: Not found
+    patch:
+      summary: Update processing code
+      description: |
+        Update a processing code. Only fields passed are updated.
+
+         This endpoint generates a [Orgs operation updated](https://developers.pismo.io/events/docs/orgs-operation-update-1) event.
+      operationId: ProcessingCodeUpdate
+      tags:
+        - Processing codes
+      parameters:
+        - $ref: '#/components/parameters/ProcessingCodePath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessingCodeUpdateRequest'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Bad request error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+        '404':
+          description: Not Found
+  /orgs-operation/v1/reversal-processing-codes:
+    post:
+      summary: Create reversal processing code
+      description: >
+        Create a reversal processing code for an existing processing code.
+
+
+        This endpoint creates a `REVERSAL` type processing code and a [Orgs
+        operation
+        created](https://developers.pismo.io/events/docs/orgs-operation-create-1)
+        event.
+      operationId: ReversalProcessingCode
+      tags:
+        - Reversal processing codes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReversalProcessingCodeCreateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReversalOrgsOperationCreateResponse'
+        '400':
+          description: Bad request error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'

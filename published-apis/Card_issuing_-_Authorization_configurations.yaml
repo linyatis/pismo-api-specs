@@ -1,0 +1,711 @@
+openapi: 3.1.0
+info:
+  title: Card issuing - Authorization configurations
+  version: 1.0.0
+  description: Endpoints to allow the management of the Authorization configurations.
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/network-transactions-config
+    description: Sandbox API server for testing
+components:
+  parameters:
+    AccountIdPath:
+      name: accountId
+      schema:
+        type: integer
+        format: int32
+      in: path
+      required: true
+      description: >-
+        ID of the account to which this authorization configuration should be
+        applied.
+    AccountIdQuery:
+      name: accountId
+      schema:
+        type: integer
+        format: int32
+      in: query
+      required: true
+      description: >-
+        ID of the account to which the authorization configuration being fetched
+        should be applied. You can skip this parameter if the `programId`
+        parameter is present in the query.
+      example: 1237890
+    FetchConfigQuery:
+      name: fetchConfig
+      schema:
+        type: boolean
+      in: query
+      required: true
+      description: Fetches the result from the configuration (priority).
+      example: true
+    ProcessingCodePath:
+      name: processingCode
+      schema:
+        type: string
+      in: path
+      required: true
+      description: Processing code to which this configuration should be applied.
+    ProgramIdPath:
+      name: programId
+      schema:
+        type: integer
+        format: int32
+      in: path
+      required: true
+      description: ID of the program to which this configuration should be applied.
+    ProgramIdQuery:
+      name: programId
+      schema:
+        type: integer
+        format: int32
+      in: query
+      required: true
+      description: >-
+        ID of the program to which the authorization configuration being fetched
+        should be applied. You can skip this parameter if the `accountId`
+        parameter is present in the query.
+    XTenantHeader:
+      name: x-tenant
+      in: header
+      schema:
+        type: string
+      example: TN-12345678-9f53-46ce-953b-b81dd1234567
+      description: Organization ID
+  schemas:
+    AlwaysCallLedgerRules:
+      type: boolean
+      description: >-
+        Flag indicates whether Ledger API and Rules API should be always called,
+        even when the authorization has already been denied.
+      example: true
+      default: false
+    ApproveAntiFraudUnavailable:
+      type: boolean
+      description: >-
+        If set to `true` when anti-fraud is unavailable, the anti-fraud check is
+        marked as `APPROVED`. If set to `false`, it is marked as `REJECTED`.
+      example: true
+      default: false
+    CallAntiFraudWhenCancelling:
+      type: boolean
+      description: >-
+        Flag indicates whether the anti-fraud API should be called during
+        cancellation.
+      example: true
+      default: false
+    CreateNetworkTransactionsConfigRequest:
+      type: object
+      description: Create authorization configuration record
+      allOf:
+        - $ref: '#/components/schemas/NetworkTransactionsConfigObject'
+    CreateNetworkTransactionsConfigResponse:
+      type: object
+      description: Create authorization configuration record response
+      allOf:
+        - $ref: '#/components/schemas/NetworkTransactionsConfigObject'
+    DaysToCancelPreAuthorization:
+      type: integer
+      description: >-
+        Number of days to cancel pre-authorization. **NOTE:** The minimum number
+        of days is 1 and the maximum is 60.
+      format: int32
+      example: 5
+    DaysToCancelAuthorization:
+      type: integer
+      description: >-
+        Number of days to cancel authorization. **NOTE:** The minimum number of
+        days is 1 and the maximum is 60.
+      format: int32
+      example: 5
+    DaysToCancelPreAuthorizationMigration:
+      type: integer
+      description: >-
+        Number of days to cancel migrated pre-authorization. **NOTE:** The
+        minimum number of days is 1 and the maximum is 60.
+      format: int32
+      example: 5
+    DaysToCancelAuthorizationMigration:
+      type: integer
+      description: >-
+        Number of days to cancel migrated authorization. **NOTE:** The minimum
+        number of days is 1 and the maximum is 60.
+      format: int32
+      example: 5
+    DenyAllAuthorizations:
+      type: boolean
+      description: >-
+        Flag indicates whether authorizations should be denied. This is useful
+        for cases where a product is deprecated or during a migration process.
+      example: true
+      default: false
+    DisableDcc:
+      type: boolean
+      description: >-
+        This setting indicates whether or not the program allows dynamic
+        currency conversion (DCC) transactions. By default, every program allows
+        DCC transactions. In case it's necessary to block this type of
+        transaction, the configuration must be set to `true`.
+      format: int32
+      example: true
+      default: false
+    EnabledPartialAuthorization:
+      type: boolean
+      description: >-
+        By default, authorizations don’t validate partial authorization, but if
+        this property is enabled, it allows the platform to process partial
+        authorizations for a given org/program/account. **NOTE:** This property
+        also depends on the merchant, as it is necessary for the merchant to be
+        able to partially authorize.
+      example: true
+      default: false
+    GetNetworkTransactionsConfigResponse:
+      type: object
+      description: Get authorization configuration record response
+      allOf:
+        - $ref: '#/components/schemas/NetworkTransactionsConfigObject'
+    NetworkTransactionsConfigObject:
+      type: object
+      description: Authorization configuration object
+      allOf:
+        - $ref: '#/components/schemas/NetworkTransactionsConfigOptions'
+      properties:
+        override_bins:
+          type: object
+          description: >-
+            Configurations that can be overwritten individually at the BIN
+            level, applying the default values if absent.
+          additionalProperties:
+            $ref: '#/components/schemas/NetworkTransactionsConfigOptions'
+          example:
+            '123456':
+              use_anti_fraud_response_code: true
+              zero_balance_url: http://zerobalanceurl
+              should_use_anti_fraud_decision: true
+              approve_anti_fraud_unavailable: true
+              enabled_partial_authorization: true
+              disable_dcc: true
+              deny_all_authorizations: true
+              use_settlement_from_network: true
+              use_rates_fee_models: true
+            '12345678':
+              use_anti_fraud_response_code: true
+              zero_balance_url: http://zerobalanceurl
+              should_use_anti_fraud_decision: true
+              approve_anti_fraud_unavailable: true
+              enabled_partial_authorization: true
+              disable_dcc: true
+              deny_all_authorizations: true
+              use_settlement_from_network: true
+              use_rates_fee_models: true
+    NetworkTransactionsConfigOptions:
+      type: object
+      description: >-
+        Collection of options that can be customized by Org, Program, Account,
+        and BIN.
+      properties:
+        use_anti_fraud_response_code:
+          $ref: '#/components/schemas/UseAntiFraudResponseCode'
+        zero_balance_url:
+          $ref: '#/components/schemas/ZeroBalanceURL'
+        should_use_anti_fraud_decision:
+          $ref: '#/components/schemas/ShouldUseAntiFraudDecision'
+        approve_anti_fraud_unavailable:
+          $ref: '#/components/schemas/ApproveAntiFraudUnavailable'
+        enabled_partial_authorization:
+          $ref: '#/components/schemas/EnabledPartialAuthorization'
+        disable_dcc:
+          $ref: '#/components/schemas/DisableDcc'
+        deny_all_authorizations:
+          $ref: '#/components/schemas/DenyAllAuthorizations'
+        use_settlement_from_network:
+          $ref: '#/components/schemas/UseSettlementFromNetwork'
+        use_rates_fee_models:
+          $ref: '#/components/schemas/UseRatesFeeModels'
+        call_anti_fraud_when_cancelling:
+          $ref: '#/components/schemas/CallAntiFraudWhenCancelling'
+        days_to_cancel_pre_authorization:
+          $ref: '#/components/schemas/DaysToCancelPreAuthorization'
+        days_to_cancel_authorization:
+          $ref: '#/components/schemas/DaysToCancelAuthorization'
+        days_to_cancel_pre_authorization_migration:
+          $ref: '#/components/schemas/DaysToCancelPreAuthorizationMigration'
+        days_to_cancel_authorization_migration:
+          $ref: '#/components/schemas/DaysToCancelAuthorizationMigration'
+        always_call_ledger_rules:
+          $ref: '#/components/schemas/AlwaysCallLedgerRules'
+    ShouldUseAntiFraudDecision:
+      type: boolean
+      description: Flag indicates whether anti-fraud decisions should be used.
+      example: true
+      default: false
+    UpdateNetworkTransactionsConfigRequest:
+      type: object
+      description: Update authorization configuration record
+      allOf:
+        - $ref: '#/components/schemas/NetworkTransactionsConfigObject'
+    UpdateNetworkTransactionsConfigResponse:
+      type: object
+      description: Update authorization configuration record response
+      allOf:
+        - $ref: '#/components/schemas/NetworkTransactionsConfigObject'
+    UseAntiFraudResponseCode:
+      type: boolean
+      description: >-
+        Flag indicates whether we should use the response code sent in
+        anti-fraud.
+      example: true
+      default: false
+    UseRatesFeeModels:
+      type: boolean
+      description: Flag indicates whether rate fee models should be used.
+      example: true
+      default: false
+    UseSettlementFromNetwork:
+      type: boolean
+      description: >-
+        By default, in clearing flow for international purchases, the
+        authorizations use the same settlement amount of authorization (online
+        flow). Setting this flag to truemeans the system will use the settlement
+        amount from the clearing message, which can be different from
+        authorization.
+      example: true
+      default: false
+    ZeroBalanceURL:
+      type: string
+      description: >-
+        Indicates that it’s a Zero Balance flow, so the URL to call the
+        customer’s service is informed. **NOTE:** This is only required for Zero
+        balance.
+      example: http://zerobalanceurl
+      default: ''
+  responses:
+    400BadRequest:
+      description: Bad request
+    401Unauthorized:
+      description: Access token is missing or invalid
+    403Forbidden:
+      description: The request has been lost
+    404NotFound:
+      description: The specified resource was not found
+    409Conflict:
+      description: Conflict
+    500InternalServer:
+      description: Internal server error
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - BearerAuth: []
+paths:
+  /v1/config:
+    post:
+      summary: Create configuration by Org
+      description: >-
+        Create an authorization configuration for an authorization at the
+        organization (Org) level. This level can be used as a default
+        configuration for all programs and accounts in this Org. An Org can only
+        have one configuration. Executing this endpoint on an Org that already
+        has a configuration defined for it generates a conflict response.
+      operationId: post-config-by-tenant
+      tags:
+        - Authorization configurations
+      parameters:
+        - $ref: '#/components/parameters/XTenantHeader'
+      requestBody:
+        description: Create the Authorization configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNetworkTransactionsConfigRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateNetworkTransactionsConfigResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: Get configuration by Org
+      description: Get the authorization configuration at the Org level.
+      operationId: get-config-by-tenant
+      tags:
+        - Authorization configurations
+      parameters:
+        - $ref: '#/components/parameters/XTenantHeader'
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNetworkTransactionsConfigResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    put:
+      summary: Update configuration by Org
+      description: >-
+        Update the authorization configuration at the organization (Org) level.
+        This operation updates the entire configuration. Therefore, all fields
+        must be sent to avoid data loss.
+      operationId: put-config-by-tenant
+      tags:
+        - Authorization configurations
+      parameters:
+        - $ref: '#/components/parameters/XTenantHeader'
+      requestBody:
+        description: Create the authorization configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNetworkTransactionsConfigRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateNetworkTransactionsConfigResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      summary: Delete configuration by Org
+      description: >-
+        Delete an authorization configuration for an authorization at the
+        organization (Org) level. This level can be used as a default
+        configuration for all programs and accounts in this Org.
+      operationId: delete-config-by-tenant
+      tags:
+        - Authorization configurations
+      parameters:
+        - $ref: '#/components/parameters/XTenantHeader'
+      responses:
+        '204':
+          description: Deleted
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/config/program/{programId}:
+    post:
+      summary: Create configuration by program
+      description: >-
+        Create the authorization configuration at the program level. This level
+        can be used as a default configuration for all accounts in this program
+        and at a more granular level than Org. A program can only have one
+        configuration. Executing this endpoint on a program that already has a
+        configuration defined for it generates a conflict response.
+      operationId: post-config-by-program
+      tags:
+        - Authorization configurations
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+        - $ref: '#/components/parameters/XTenantHeader'
+      requestBody:
+        description: Create the authorization configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNetworkTransactionsConfigRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateNetworkTransactionsConfigResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: Get configuration by program
+      description: Get the authorization configuration at the program level.
+      operationId: get-config-by-program
+      tags:
+        - Authorization configurations
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+        - $ref: '#/components/parameters/XTenantHeader'
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNetworkTransactionsConfigResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    put:
+      summary: Update configuration by program
+      description: >-
+        Update the authorization configuration at the program level. This
+        operation updates the entire configuration. Therefore, all fields must
+        be sent to avoid data loss.
+      operationId: put-config-by-program
+      tags:
+        - Authorization configurations
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+        - $ref: '#/components/parameters/XTenantHeader'
+      requestBody:
+        description: Update the authorization configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNetworkTransactionsConfigRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateNetworkTransactionsConfigResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      summary: Delete configuration by program
+      description: >-
+        Delete the authorization configuration at the program level. This level
+        can be used as a default configuration for all accounts in this program
+        and at a more granular level than Org.
+      operationId: delete-config-by-program
+      tags:
+        - Authorization configurations
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+        - $ref: '#/components/parameters/XTenantHeader'
+      responses:
+        '204':
+          description: Deleted
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/config/account/{accountId}:
+    post:
+      summary: Create configuration by account
+      description: >-
+        Create the authorization configuration at the account level. This is the
+        most granular level allowed and can be used to customize a specific
+        account. An account can only have one configuration. Executing this
+        endpoint on an account that already has a configuration defined for it
+        generates a conflict response.
+      operationId: post-config-by-account
+      tags:
+        - Authorization configurations
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/XTenantHeader'
+      requestBody:
+        description: Create the authorization configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNetworkTransactionsConfigRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateNetworkTransactionsConfigResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    get:
+      summary: Get configuration by account
+      description: Get the authorization configuration at the account level.
+      operationId: get-config-by-account
+      tags:
+        - Authorization configurations
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/XTenantHeader'
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNetworkTransactionsConfigResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    put:
+      summary: Update configuration by account
+      description: >-
+        Update the authorization configuration at the account level. This
+        operation updates the entire configuration. Therefore, all fields must
+        be sent to avoid data loss.
+      operationId: put-config-by-account
+      tags:
+        - Authorization configurations
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/XTenantHeader'
+      requestBody:
+        description: Update the authorization configuration request body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNetworkTransactionsConfigRequest'
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateNetworkTransactionsConfigResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+    delete:
+      summary: Delete configuration by account
+      description: >-
+        Delete the authorization configuration at the account level. This is the
+        most granular level allowed and can be used to customize a specific
+        account.
+      operationId: delete-config-by-account
+      tags:
+        - Authorization configurations
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/XTenantHeader'
+      responses:
+        '204':
+          description: Deleted
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'
+  /v1/config/priority-config:
+    get:
+      summary: Get configuration by hierarchy
+      description: >-
+        Retrieve the authorization configuration based on the hierarchy: account
+        -> program -> tenant, in other words from the most granular to the less
+        granular one.
+      operationId: get-config-by-priority
+      tags:
+        - Authorization configurations
+      parameters:
+        - $ref: '#/components/parameters/XTenantHeader'
+        - $ref: '#/components/parameters/ProgramIdQuery'
+        - $ref: '#/components/parameters/AccountIdQuery'
+      responses:
+        '200':
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNetworkTransactionsConfigResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServer'

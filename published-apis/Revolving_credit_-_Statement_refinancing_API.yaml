@@ -1,0 +1,432 @@
+openapi: 3.1.0
+info:
+  title: Revolving credit - Statement refinancing
+  version: 1.0.0
+  description: Endpoints to handle statement refinancing
+  termsOfService: https://developers.pismo.io/terms/
+  contact:
+    name: API Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io/statement-refinancing
+    description: Sandbox API server for testing and development
+tags:
+  - name: Payment agreement simulation
+    description: Endpoints to manage payment agreement simulations
+  - name: Payment agreements
+    description: Endpoints to manage payment agreement processes
+components:
+  parameters:
+    AccountIdPath:
+      name: accountId
+      in: path
+      description: Account ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+        example: 101
+    PaymentAgreementSimulationIdPath:
+      in: path
+      name: paymentAgreementSimulationId
+      description: Payment agreement simulation ID
+      required: true
+      style: simple
+      schema:
+        type: integer
+        example: 101023
+  schemas:
+    AccountID:
+      type: integer
+      format: int64
+      description: Account ID
+      example: 1010
+    ContractAmount:
+      type: number
+      format: float
+      description: Contract amount
+      example: 500
+    ConversionRate:
+      type: number
+      format: double
+      description: Conversion rate
+      example: 5.5
+    DailyIofRate:
+      type: number
+      format: float
+      description: Daily IOF (Brazilian tax) rate
+      example: 0.001
+    DownPayment:
+      type: number
+      format: double
+      description: Down payment amount
+      example: 500.99
+    EffectiveAnnualCost:
+      type: number
+      format: double
+      description: Annual percentage rate (APR)
+      example: 100.56
+    ErrorResponse:
+      title: ErrorResponse
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: Internal error
+          description: Error message
+      description: Standard error response
+    FeeAmount:
+      type: number
+      format: double
+      description: Fees amount
+      example: 30.5
+    FirstInstallmentValue:
+      type: number
+      format: double
+      description: First installment value
+      example: 80.5
+    FixedIofAmount:
+      type: number
+      format: float
+      description: Fixed IOF (Brazilian tax) Amount
+      example: 1.15
+    FixedIofRate:
+      type: number
+      format: float
+      description: Fixed IOF (Brazilian tax) rate
+      example: 0.1
+    GetPaymentAgreementSimulationResponse:
+      type: object
+      properties:
+        payment_agreement_simulation_id:
+          $ref: '#/components/schemas/PaymentAgreementSimulationID'
+        created_at:
+          $ref: '#/components/schemas/PaymentAgreementSimulationCreatedAt'
+        plan_ids:
+          $ref: '#/components/schemas/SimulationPlanIDs'
+        down_payment:
+          $ref: '#/components/schemas/DownPayment'
+        payment_date:
+          $ref: '#/components/schemas/SimulationPaymentDate'
+        type:
+          $ref: '#/components/schemas/PaymentAgreementType'
+        status:
+          $ref: '#/components/schemas/PaymentAgreementSimulationStatus'
+        creation_cid:
+          $ref: '#/components/schemas/PaymentAgreementSimulationCorrelationID'
+        org_id:
+          $ref: '#/components/schemas/OrgID'
+        account_id:
+          $ref: '#/components/schemas/AccountID'
+        error_message:
+          $ref: '#/components/schemas/StandardErrorResponse'
+        simulations:
+          type: array
+          description: List of simulations generated based on the provided parameters
+          items:
+            $ref: '#/components/schemas/SimulationObject'
+      responses:
+        400BadRequest:
+          description: Bad Request
+        404NotFound:
+          description: Not Found
+        409Conflict:
+          description: The specified resource status conflicts with the current request.
+        500InternalServer:
+          description: Internal server error
+    InstallmentValue:
+      type: number
+      format: double
+      description: Value for each installment
+      example: 150.08
+    InterestAmount:
+      type: number
+      format: float
+      description: Interest amount. Maximum of 2 digits allowed after the decimal place.
+      example: 12.35
+    InterestRate:
+      type: number
+      format: double
+      description: Interest rate
+      example: 10.99
+    IofAmount:
+      type: number
+      format: float
+      description: >-
+        IOF (Brazilian tax) amount. Maximum of 2 digits allowed after the
+        decimal place.
+      example: 1.35
+    NumberOfInstallments:
+      type: integer
+      format: int32
+      description: Number of installments
+      example: 8
+    OrgID:
+      type: string
+      description: Organization ID
+      example: TN-e7091464-cd1e-4c20-8c68-1e4c5774d972
+    OverriddenAmountDue:
+      type: number
+      format: double
+      description: >-
+        Overridden amount due. If provided, it overrides the total amount due
+        for the account in the payment agreement simulation.
+      example: 2000
+    PaymentAgreementSimulationCorrelationID:
+      type: string
+      format: uuid
+      description: Correlation ID for tracking the simulation request
+      example: 1144f6a7-ed73-4fd2-ba45-80d3b881cad6
+    PaymentAgreementSimulationCreatedAt:
+      type: string
+      format: date-time
+      description: >-
+        Timestamp when the payment agreement simulation was created. Format =
+        YYYY-MM-DDThh:mm:ss.ssssssZ.
+      example: '2025-06-17T15:22:51.978005295'
+    PaymentAgreementSimulationID:
+      type: integer
+      format: int64
+      description: Payment agreement simulation ID
+      example: 12345678
+    PaymentAgreementSimulationRequest:
+      type: object
+      properties:
+        plan_ids:
+          $ref: '#/components/schemas/SimulationPlanIDs'
+        down_payment:
+          $ref: '#/components/schemas/DownPayment'
+        type:
+          $ref: '#/components/schemas/PaymentAgreementType'
+        payment_date:
+          $ref: '#/components/schemas/SimulationPaymentDate'
+        overridden_amount_due:
+          $ref: '#/components/schemas/OverriddenAmountDue'
+    PaymentAgreementSimulationResponse:
+      type: object
+      properties:
+        created_at:
+          $ref: '#/components/schemas/PaymentAgreementSimulationCreatedAt'
+        plan_ids:
+          $ref: '#/components/schemas/SimulationPlanIDs'
+        down_payment:
+          $ref: '#/components/schemas/DownPayment'
+        payment_date:
+          $ref: '#/components/schemas/SimulationPaymentDate'
+        type:
+          $ref: '#/components/schemas/PaymentAgreementType'
+        status:
+          $ref: '#/components/schemas/PaymentAgreementSimulationStatus'
+        cid:
+          $ref: '#/components/schemas/PaymentAgreementSimulationCorrelationID'
+        org_id:
+          $ref: '#/components/schemas/OrgID'
+    PaymentAgreementSimulationStatus:
+      type: string
+      description: Status of payment agreement simulation
+      enum:
+        - PENDING
+        - PROCESSED
+        - ERROR
+      example: PENDING
+    PaymentAgreementType:
+      type: string
+      description: >
+        Payment agreement type. Possible values:
+
+        - `STATEMENT_INSTALLMENT`: Customer makes an agreement with their credit
+        card issuer stating that they aren't able to pay off their debt within
+        the current month, so they intend to settle the amount over the next few
+        bills.
+
+        - `STATEMENT_INSTALLMENT_COMPULSORY`: Issuer-imposed installment
+        agreement renegotiated without customer input.
+
+        - `STATEMENT_AGREEMENT`: Customer renegotiates all pending debt for all
+        their statements.
+
+
+        For more information, refer to the [Create payment
+        agreement](ref:installmentpaymentsv4) endpoint and the [Credit card
+        refinancing](doc:negotiating-credit-card-debt) guide.
+      enum:
+        - STATEMENT_INSTALLMENT
+        - STATEMENT_INSTALLMENT_COMPULSORY
+        - STATEMENT_AGREEMENT
+      example: STATEMENT_AGREEMENT
+    PrincipalAmount:
+      type: number
+      format: float
+      description: Principal amount. (The sum of all overdue transactions.)
+      example: 1855
+    SimulationObject:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/NumberOfInstallments'
+        plan_id:
+          $ref: '#/components/schemas/SimulationPlanID'
+        options:
+          type: object
+          description: Options used in the payment agreement simulation
+          properties:
+            installments:
+              $ref: '#/components/schemas/NumberOfInstallments'
+            contract_amount:
+              $ref: '#/components/schemas/ContractAmount'
+            principal_amount:
+              $ref: '#/components/schemas/PrincipalAmount'
+            effective_annual_cost:
+              $ref: '#/components/schemas/EffectiveAnnualCost'
+            first_installment_value:
+              $ref: '#/components/schemas/FirstInstallmentValue'
+            installment_value:
+              $ref: '#/components/schemas/InstallmentValue'
+            postings:
+              type: object
+              description: Postings used in the simulation
+              properties:
+                iof_amount:
+                  $ref: '#/components/schemas/IofAmount'
+                fixed_iof_amount:
+                  $ref: '#/components/schemas/FixedIofAmount'
+                interest_amount:
+                  $ref: '#/components/schemas/InterestAmount'
+                fee_amount:
+                  $ref: '#/components/schemas/FeeAmount'
+            rates:
+              type: object
+              description: Rates
+              properties:
+                conversion_rate:
+                  $ref: '#/components/schemas/ConversionRate'
+                daily_iof_rate:
+                  $ref: '#/components/schemas/DailyIofRate'
+                fixed_iof_rate:
+                  $ref: '#/components/schemas/FixedIofRate'
+                interest_rate:
+                  $ref: '#/components/schemas/InterestRate'
+    SimulationPaymentDate:
+      type: string
+      format: date
+      description: Date of first payment. Format = YYYY-MM-DD.
+      example: '2025-06-20'
+    SimulationPlanID:
+      type: string
+      format: uuid
+      description: Simulation plan ID
+      example: 5695f64c-ed54-4f52-ba45-80d3b121cad6
+    SimulationPlanIDs:
+      type: array
+      items:
+        type: string
+      description: List of plan IDs used in the payment agreement simulation
+      example:
+        - id1
+        - id2
+        - id3
+    StandardErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: '1020030'
+        message:
+          type: string
+          example: Error message
+  responses:
+    400BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardErrorResponse'
+          examples:
+            Missing request header:
+              description: Missing request header
+              value:
+                code: EX0002
+                message: Missing request header for method parameter of type String
+    500InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Internal Server Error:
+              description: Service is unavailable
+              value:
+                code: GN0001
+                message: Service is unavailable
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Account JWT
+security:
+  - BearerAuth: []
+paths:
+  /v1/accounts/{accountId}/payment-agreement-simulations:
+    post:
+      tags:
+        - Payment agreement simulation
+      summary: Create payment agreement simulation
+      description: >
+        Create a payment agreement simulation.
+
+
+        If successful, this endpoint generates a [Payment agreement simulation
+        processed](https://developers.pismo.io/events/docs/balance-installment-payment-processed-1)
+        event.
+
+        If it fails, it generates a [Payment agreement simulation not
+        processed](https://developers.pismo.io/events/docs/statement-refinancing-payment-agreement-simulation-not-processed-1)
+        event.
+      operationId: create-payment-agreement-simulation
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentAgreementSimulationRequest'
+      responses:
+        '200':
+          description: OK - Indicates that the simulation was successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentAgreementSimulationResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/accounts/{accountId}/payment-agreement-simulations/{paymentAgreementSimulationId}:
+    get:
+      tags:
+        - Payment agreement simulation
+      summary: Get payment agreement simulation
+      description: |
+        Get a payment agreement simulation by its ID
+      operationId: get-payment-agreement-simulation
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+        - $ref: '#/components/parameters/PaymentAgreementSimulationIdPath'
+      responses:
+        '200':
+          description: OK - Indicates that the simulation was successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPaymentAgreementSimulationResponse'
+        '404':
+          description: Not Found - The specified simulation does not exist.
+        '500':
+          $ref: '#/components/responses/500InternalServerError'

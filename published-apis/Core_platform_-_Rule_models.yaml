@@ -1,0 +1,910 @@
+openapi: 3.0.1
+info:
+  title: Core platform - Rule models
+  description: Manage rule models
+  contact:
+    name: API Support
+    email: support@pismo.com.br
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+    url: https://developers.pismo.io/licenses/
+  version: 1.37.0
+servers:
+  - url: https://sandbox.pismolabs.io/processing-code
+    description: Sandbox API server for testing
+tags:
+  - name: Processing Code
+    description: >-
+      The processing code API applies rules to define which internal processing
+      code is used for a transaction.
+  - name: Model
+    description: Endpoints for rule model management.
+  - name: Model list
+    description: Endpoints for model list management.
+  - name: Apply
+    description: Endpoints to apply a rule model
+components:
+  parameters:
+    AccountIdPath:
+      name: accountId
+      description: Account ID
+      in: path
+      required: true
+      schema:
+        type: string
+      example: 30db80ce-ca5e-41ed-b9b0-4a2ee5e02c7a
+    ListIdPath:
+      name: listId
+      description: List ID
+      in: path
+      required: true
+      schema:
+        type: string
+      example: 30db80ce-ca5e-41ed-b9b0-4a2ee5e02c7a
+    ModelIdPath:
+      name: modelId
+      description: Model ID
+      in: path
+      required: true
+      schema:
+        type: string
+      example: b3f53d8f-6812-4869-b17a-874d78750cc6
+    ProgramIdPath:
+      name: programId
+      description: Program ID
+      in: path
+      required: true
+      schema:
+        type: string
+      example: '86754'
+  schemas:
+    BadRequestError:
+      type: object
+      properties:
+        code:
+          type: string
+          example: PC0001
+          description: Error code
+        message:
+          type: string
+          example: Invalid request payload
+          description: Error message
+    Clearing:
+      type: object
+      properties:
+        reversal_indicator:
+          type: boolean
+          example: false
+          description: >-
+            Is this a reversal clearing? Used to define the processing code for
+            debit voucher cases.
+    Condition:
+      type: object
+      required:
+        - type
+        - operator
+        - data
+      properties:
+        type:
+          $ref: '#/components/schemas/ModelListType'
+        operator:
+          type: string
+          example: eq
+          description: |
+            Rule evaluation operator and allowable data:
+            - `eq` - Equals; strings, numbers, and booleans.
+            - `neq`-  Not equals; strings, numbers, and booleans.
+            - `gt`- Greater than; numbers.
+            - `gte`- Greater than or equal; numbers.
+            - `lt`- Less than; numbers.
+            - `lte`- Less than or equal; numbers.
+            - `in`- In; use with [model list](ref:post-org-model-list-1).
+            - `contains`- Contains; model list.
+            - `starts_with`-  Starts with; model list. 
+            - `ends_with`-  Ends with; model list.  
+          enum:
+            - eq
+            - neq
+            - gt
+            - gte
+            - lt
+            - lte
+            - in
+            - contains
+            - starts_with
+            - ends_with
+        data:
+          type: string
+          example: '10'
+          description: >
+            Data used to evaluate this rule against the operator and the
+            information received in the request.
+
+
+            This field must be in the format as indicated in `type` and
+            `operator`.
+
+
+            **Note:** This field's value can be a model list ID returned from
+            [Create model list](ref:post-org-model-list-1). A model list
+            contains a list of values for evaluation. 
+    Config:
+      properties:
+        modelId:
+          type: string
+          description: Model ID configured for this organization, program, or account.
+          example: b3f53d8f-6812-4869-b17a-874d78750cc6
+    ConfigRequest:
+      type: object
+      required:
+        - modelId
+      properties:
+        modelId:
+          type: string
+          description: Model ID
+          example: a9995aba-c2c0-41f9-84e9-f245665e0159
+    InternalServerError:
+      type: object
+      properties:
+        code:
+          type: string
+          example: PC0002
+          description: Error code
+        message:
+          type: string
+          example: An unexpected error happened.
+          description: Error message
+    Merchant:
+      type: object
+      properties:
+        code:
+          type: string
+          description: >-
+            Merchant code as registered at the payments network database
+            (Visa/Mastercard).
+          example: '687555537877464'
+        name:
+          type: string
+          description: >-
+            Merchant name as registered at the payments network database
+            (Visa/Mastercard).
+          example: PISMO
+    ModelListCreationRequest:
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ModelListData'
+    ModelListData:
+      type: array
+      items:
+        type: string
+      description: List of values used to evaluate the rule condition.
+      example:
+        - MERCHANT 1
+        - MERCHANT 2
+    ModelListPayload:
+      properties:
+        data:
+          $ref: '#/components/schemas/ModelListData'
+    ModelListReplaceRequest:
+      properties:
+        append:
+          type: array
+          items:
+            type: string
+          description: Values to add to the model list.
+          example:
+            - VALUE 1
+            - VALUE 2
+        delete:
+          type: array
+          items:
+            type: string
+          description: Values to remove from the model list.
+          example:
+            - VALUE 3
+            - VALUE 4
+    ModelListResponse:
+      properties:
+        id:
+          type: string
+          example: b3f53d8f-6812-4869-b17a-874d78750cc6
+          description: Model list ID
+    ModelListType:
+      type: string
+      example: MERCHANT_NAME_LIST
+      description: |
+        List types and data formats allowed:
+            - `INSTALLMENT_NUMBER` - Integer values
+            - `PROCESSING_CODE` - Alphanumeric strings
+            - `ACCOUNT_TYPE` - Alphanumeric strings
+            - `ORIGIN`- Alphanumeric strings
+            - `DCC`- Boolean values
+            - `DOMESTIC`- Boolean values
+            - `MERCHANT_NAME_LIST` - Alphanumeric strings
+            - `INSTALLMENT_PLAN` - Alphanumeric strings
+            - `AMOUNT` - Numbers with or without decimal places
+            - `MERCHANT_CATEGORY_CODE` - Alphanumeric strings
+            - `REVERSAL_INDICATOR` - Boolean values
+            - `AUTHORIZATION_FLOW` - Either `PAYMENTS` or `NETWORK`
+            - `ORIGINAL_PROCESSING_CODE` - Original processing code or persisted authorization processing code
+            - `MTI` - Message Type Indicator - a four-digit numeric field - ISO 8583 standard
+      enum:
+        - INSTALLMENT_NUMBER
+        - PROCESSING_CODE
+        - ACCOUNT_TYPE
+        - ORIGIN
+        - DCC
+        - DOMESTIC
+        - MERCHANT_NAME_LIST
+        - INSTALLMENT_PLAN
+        - AMOUNT
+        - MERCHANT_CATEGORY_CODE
+        - REVERSAL_INDICATOR
+        - AUTHORIZATION_FLOW
+        - ORIGINAL_PROCESSING_CODE
+        - MTI
+    ModelPayload:
+      type: object
+      required:
+        - rules
+      properties:
+        rules:
+          type: array
+          description: Processing code rules configuration array.
+          items:
+            $ref: '#/components/schemas/Rule'
+        name:
+          type: string
+          description: Model name
+          example: Model name
+    ModelPostResponse:
+      properties:
+        id:
+          $ref: '#/components/schemas/RulesModelID'
+        name:
+          $ref: '#/components/schemas/RulesGroupName'
+    NotFoundError:
+      type: object
+      properties:
+        code:
+          type: string
+          example: PC0004
+          description: Error code
+        message:
+          type: string
+          example: 'Validation error: Item not found.'
+          description: Error message
+    PersistedAuthorization:
+      type: object
+      properties:
+        processing_code:
+          type: string
+          description: Processing code from the original authorization.
+          example: '00'
+    ProcessingCodeResponse:
+      type: object
+      properties:
+        processing_code:
+          type: string
+          example: '00'
+          description: The processing code created based on custom and default rules.
+    ProcessingCodeRequest:
+      type: object
+      required:
+        - network_processing_code
+      properties:
+        network_processing_code:
+          type: string
+          example: '00'
+          description: >-
+            The original processing code that started the request. The
+            processing code describes the transaction on the customer account
+            and the type of accounts affected. See the [Processing codes and
+            transaction
+            types](doc:processing-codes-and-transaction-types#changing-processing-codes-during-authorization-with-rule-models)
+            guide for more information.
+        mti:
+          type: string
+          example: '0100'
+          description: >-
+            A message type indicator (MTI) is a four-digit numeric code that
+            identifies the purpose and nature of a financial transaction
+            message. ISO-8583.
+        caller:
+          type: string
+          example: Visa
+          description: Transaction network.
+          enum:
+            - Visa
+            - Mastercard
+            - Tecban
+        accountId:
+          type: integer
+          example: 1234
+          description: Pismo internal account ID related performing this request.
+        account_type:
+          type: string
+          example: '30'
+          description: |
+            Account type:
+              - `00` - non-specified account
+              - `10` - savings account
+              - `20` - checking account
+              - `30` - credit card account
+          enum:
+            - '00'
+            - '10'
+            - '20'
+            - '30'
+        origin:
+          type: string
+          example: STRIKER
+          description: |
+            Request origin. For example 'STRIKER', 'ONUS', or 'MIGRATION'.
+        amount:
+          type: number
+          example: 100.5
+          description: Transaction amount
+        merchant:
+          $ref: '#/components/schemas/Merchant'
+        program:
+          $ref: '#/components/schemas/Program'
+        installments:
+          type: integer
+          example: 1
+          description: Number of installments of the request.
+        installment_plan:
+          type: string
+          example: '21'
+          description: >
+            Installment plan code related to the calculation used on this
+            request.
+        local_currency_code:
+          type: string
+          example: '986'
+          description: >-
+            Currency code where transaction occurred according to [ISO
+            4217](https://en.wikipedia.org/wiki/ISO_4217).
+        persisted_authorization:
+          $ref: '#/components/schemas/PersistedAuthorization'
+        clearing:
+          $ref: '#/components/schemas/Clearing'
+        is_domestic:
+          type: boolean
+          default: false
+          example: true
+          description: Indicates if the transaction is a domestic one.
+        is_dcc:
+          type: boolean
+          default: false
+          example: false
+          description: >-
+            Indicates if the transaction is a DCC (dynamic currency conversion)
+            transaction.
+        skip_default_rules:
+          type: boolean
+          default: false
+          example: true
+          description: Indicates if default rules evaluation should be skipped.
+    Program:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 99
+          description: Pismo program ID
+        network_wallet_id:
+          type: string
+          description: Wallet ID
+          example: '618'
+        currency_code:
+          type: string
+          description: ISO 4217 cardholder currency code
+          example: '840'
+    Rule:
+      type: object
+      required:
+        - processing_code
+        - order
+        - conditions
+      properties:
+        processing_code:
+          type: string
+          example: '00'
+          description: >
+            Processing code to use when the rule condition is met and it is a
+            domestic transaction.
+
+            For more information, refer to [Processing
+            codes](doc:processing-codes-and-transaction-types).
+        order:
+          $ref: '#/components/schemas/RuleOrder'
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+          description: Conditions that need to be `true` to assign the processing code.
+        name:
+          $ref: '#/components/schemas/RuleName'
+        international_processing_code:
+          type: string
+          example: '003100'
+          description: >
+            Processing code to use when the rule condition is met and it is an
+            international transaction. If this is an international transaction
+            and this field is not passed, the `processing_code` field is used
+            instead.
+    RuleName:
+      type: string
+      description: Rule name
+      example: Rule name example
+    RuleOrder:
+      type: integer
+      description: Rule evaluation order, `1` being the highest.
+      example: 1
+    RulesGroupName:
+      type: string
+      description: Rules group name
+      example: Model name
+    RulesModelID:
+      type: string
+      description: Model ID
+      example: b3f53d8f-6812-4869-b17a-874d78750cc6
+  responses:
+    400BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BadRequestError'
+    404NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NotFoundError'
+    500InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InternalServerError'
+paths:
+  /v1/models:
+    post:
+      summary: Create rule model
+      description: >
+        Create a rule model at the organizational level for a processing code.
+        The organization ID is parsed from the access token.
+
+
+        A rule model swaps one processing code for another during authorization
+        if certain conditions are met. For example, you may want to use a custom
+        processing code if the merchant is Apple. 
+
+
+        Rule models cannot be shared between organizations.
+
+
+        Refer to [Processing
+        codes](doc:processing-codes-and-transaction-types#changing-processing-codes-during-authorization-with-rule-models)
+        for more information on processing codes and rule models.
+
+
+        **Notes:**
+          * A rule model is not active until it is applied. 
+          * Only one rule model can be applied to an organization, program, or account at a time.
+          * A rule model applied at a lower level overrides the rule model applied at a higher level. For example, an account rule model overrides a rule model applied to its program. 
+          * Once applied, a rule model cannot be deleted. You would have to replace it with an empty rule model.
+
+        Call the following to apply a rule model to an organization, program, or
+        account. 
+
+
+        - [Apply rule model to org](ref:post-org-model-config-1)
+
+        - [Apply rule model to program](ref:post-program-model-config-1)
+
+        - [Apply rule model to account](ref:post-account-model-config-1)
+      operationId: post-org-rule-model
+      tags:
+        - Model
+      requestBody:
+        description: Parameters to create a new rule model
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelPayload'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelPostResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/models/{modelId}:
+    get:
+      summary: Get rule model
+      description: Get the rule model identified in the path.
+      operationId: get-rule-model
+      tags:
+        - Model
+      parameters:
+        - $ref: '#/components/parameters/ModelIdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelPayload'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    put:
+      tags:
+        - Model
+      summary: Replace rule model
+      description: Replace the rule model identified in the path.
+      operationId: put-rule-model
+      parameters:
+        - $ref: '#/components/parameters/ModelIdPath'
+      requestBody:
+        description: Parameters to replace a given rule model
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelPayload'
+        required: true
+      responses:
+        '200':
+          description: No content
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/models/list:
+    post:
+      summary: Create model list
+      description: >
+        Create data for a rule model to evaluate.
+
+
+        A model list contains values to evaluate in a rule model. To use the
+        list, pass its ID as a `data` field's value in a `condition` when you
+        [create a rule model](ref:post-org-rule-model-1).
+
+
+        For example, you can create a model list to capture purchases made
+        through designated merchants with the `MERCHANT_NAME_LIST` condition
+        type. The list could look like this: `["APPLE", "MICROSOFT", "BEST
+        BUY"]`, and be used like this:
+
+        ```json
+          {
+            "type": "MERCHANT_NAME_LIST",
+            "operator": "contains",
+            "data": "15bda43f-5f6d-4681-8c09-853de8b9479d"  ## Model list ID
+          }
+        ```
+      operationId: post-org-model-list
+      tags:
+        - Model list
+      requestBody:
+        description: Parameters to create a new model list
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelListCreationRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelListResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/models/list/{listId}:
+    get:
+      summary: Get model list
+      description: Get the model list identified in the path.
+      operationId: get-model-list
+      tags:
+        - Model list
+      parameters:
+        - $ref: '#/components/parameters/ListIdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelListPayload'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    patch:
+      tags:
+        - Model list
+      summary: Update model list
+      description: >
+        Update the model list identified in the path, either adding new values
+        or deleting values. 
+      operationId: patch-model-list
+      parameters:
+        - $ref: '#/components/parameters/ListIdPath'
+      requestBody:
+        description: Parameters to update a given model list
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelListReplaceRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelListPayload'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    put:
+      summary: Replace model list
+      description: >
+        Replace a model list to evaluate a rule that the platform applies at the
+        organization level, overriding the old list with the list being sent on
+        this request.
+      operationId: put-org-model-list
+      tags:
+        - Model list
+      parameters:
+        - $ref: '#/components/parameters/ListIdPath'
+      requestBody:
+        description: Parameters to replace a model list.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelListCreationRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelListResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/config:
+    post:
+      summary: Apply rule model to  org
+      description: |
+        Apply rule model to an organization.
+
+        The organization ID is parsed from the access token.
+      operationId: post-org-model-config
+      tags:
+        - Apply
+      requestBody:
+        description: Parameters to apply the rule model
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRequest'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    get:
+      tags:
+        - Apply
+      summary: Get org rule model
+      description: Get an organization's rule model
+      operationId: get-org-model-config
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    put:
+      summary: Replace org rule model
+      description: Replace the organization rule model
+      operationId: put-org-model-config
+      tags:
+        - Apply
+      requestBody:
+        description: Parameters to create the configuration
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRequest'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/config/program/{programId}:
+    parameters:
+      - $ref: '#/components/parameters/ProgramIdPath'
+    post:
+      summary: Apply rule model to program
+      description: |
+        Apply a rule model to a specified program.
+      operationId: post-program-model-config
+      tags:
+        - Apply
+      requestBody:
+        description: Parameters to apply the rule model.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRequest'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    get:
+      summary: Get program rule model
+      description: Get a program rule model
+      operationId: get-program-model-config
+      tags:
+        - Apply
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    put:
+      tags:
+        - Apply
+      summary: Replace program rule model
+      description: Replace the program rule model
+      operationId: put-program-model-config
+      requestBody:
+        description: Parameters to create the configuration.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRequest'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /v1/config/account/{accountId}:
+    parameters:
+      - $ref: '#/components/parameters/AccountIdPath'
+    post:
+      summary: Apply rule model to account
+      description: Apply rule model to an account
+      operationId: post-account-model-config
+      tags:
+        - Apply
+      requestBody:
+        description: Parameters to create the configuration.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRequest'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    get:
+      summary: Get account rule model
+      description: Get account rule model
+      operationId: get-account-model-config
+      tags:
+        - Apply
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    put:
+      summary: Replace account rule model
+      description: Replace an account rule model
+      operationId: put-account-model-config
+      tags:
+        - Apply
+      requestBody:
+        description: Parameters to create the configuration.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigRequest'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'

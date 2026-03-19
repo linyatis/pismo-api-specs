@@ -1,0 +1,2926 @@
+openapi: 3.1.0
+info:
+  title: Platform setup - Programs
+  description: Endpoints to handle Programs
+  version: v1.0
+  contact:
+    name: Pismo Support
+    url: https://developers.pismo.io/support/
+  license:
+    name: Copyright Pismo
+servers:
+  - url: https://sandbox.pismolabs.io
+    description: Sandbox API server for testing.
+tags:
+  - name: Programs
+    description: Create and manage programs
+  - name: Parameters
+    description: Manage program parameters
+  - name: Export and import
+    description: Export and import programs
+components:
+  parameters:
+    BeginDateQuery:
+      name: beginDate
+      in: query
+      description: >-
+        Return programs exported on or after this date. Format =
+        yyyy-mm-ddThh:mm:ss.
+      schema:
+        type: string
+      example: '2021-09-22T15:00:00Z'
+    BinValueQuery:
+      name: binValue
+      in: query
+      description: >-
+        Bank Identification Number (BIN) value filter. Card network-issued 6 or
+        8 digit value identifying the card network, issuer, and product.
+      schema:
+        type: string
+        maxLength: 8
+      example: '123456'
+    EndDateQuery:
+      name: endDate
+      in: query
+      description: >-
+        Return programs exported on or before this date. Format =
+        yyyy-mm-ddThh:mm:ss.
+      schema:
+        type: string
+      example: '2021-09-22T15:00:00Z'
+    LanguageQuery:
+      name: language
+      in: query
+      description: |
+        Allows localization object content to be localized as specified.
+        * `en-US` - US English
+        * `pt-BR` - Brazilian Portuguese
+      schema:
+        type: string
+        enum:
+          - en-US
+          - pt-BR
+      example: en-US
+    OrderByQuery:
+      name: orderBy
+      in: query
+      description: Field to sort on. Default = `ID`.
+      schema:
+        type: string
+        enum:
+          - ID
+          - NAME
+      example: NAME
+    OrderQuery:
+      name: order
+      in: query
+      description: Sort order. Default = `ASC`.
+      schema:
+        type: string
+        enum:
+          - ASC
+          - DESC
+      example: DESC
+    PageQuery:
+      name: page
+      in: query
+      description: Current page number. Must be greater than `0`. Default = `1`.
+      schema:
+        type: integer
+        format: int32
+      example: 2
+    PerPageQuery:
+      name: perPage
+      in: query
+      description: >-
+        Maximum number of items per page. Must be greater than `0`. Default =
+        `10`.
+      schema:
+        type: integer
+        format: int32
+      example: 20
+    ProgramParameterCategoryQuery:
+      name: category
+      in: query
+      description: |
+        One or more program parameter categories. Use `,` as separator. 
+        `CREDITO` - Credit
+        `TAXA` - Tax
+        `TARIFA` -  Fee
+        `PARAMETRO` - Parameter
+        `ARQUIVOS` - Archives
+        `COBRANCA` - Collection
+        `FISCAL` - Fiscal
+        `FATURAMENTO` - Billing
+        `CARTAO` - Card
+        `FRAUDE` - Fraud
+        `TIPO DE TRANSACAO` -  Type of transaction
+      schema:
+        type: string
+      example: CREDITO
+    ProgramIdPath:
+      description: Program ID
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        format: int64
+      example: 12345
+    ProgramImportIdPath:
+      description: Program import ID
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        format: int64
+      example: 12345
+    ProgramExportIdPath:
+      description: Exported program ID
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        format: int64
+      example: 12345
+    ProgramIdPath2:
+      name: program_id
+      in: path
+      description: Program ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+      example: 12345
+    ProgramIdQuery:
+      name: id
+      in: query
+      description: Program ID filter
+      schema:
+        type: integer
+        format: int64
+      example: 12345
+    ProgramNameQuery:
+      name: name
+      in: query
+      description: Program name filter
+      schema:
+        type: string
+        maxLength: 50
+      example: Pismolabs
+    ProgramNamesQuery:
+      name: names
+      in: query
+      description: One or more program names. Use `,` as separator.
+      schema:
+        type: string
+      example: Pismolabs, Acme Testing
+    ProgramParameterIdPath:
+      name: program_parameter_id
+      in: path
+      description: >
+        Program parameter ID. Parameter IDs can change depending on the
+        environment and, consequently, are not listed in the [program parameters
+        reference table](doc:program-parameters-reference-table). Call [List
+        program parameters](ref:programparameter) endpoint to get the IDs
+        (`parameter_id` in the response) for your program parameters. 
+      required: true
+      schema:
+        type: integer
+        format: int64
+      example: 23
+    ProgramStatusQuery:
+      name: status
+      in: query
+      description: >-
+        Program status filter. Can be `ACTIVE` and/or `INACTIVE`. Use ',' as
+        separator.
+      schema:
+        type: string
+      example: ACTIVE
+    ProgramStatusQuery2:
+      name: status
+      in: query
+      description: >-
+        Program status. Possible values are `PENDING`, `PROCESS`, `SUCCESS`,
+        and/or `ERROR`. Use `,` as separator.
+      schema:
+        type: string
+      example: PENDING
+    ProgramTypeQuery:
+      name: type
+      in: query
+      description: >
+        Program type:
+          `CREDITO` — Full balance credit accounts
+          `PRE-PAGO` — Full balance prepaid accounts
+          `DEBITO` — Full balance debit accounts
+          `MERCHANT` — Merchant accounts
+          `CREDITO ZERO-BALANCE` — Zero balance credit accounts
+          `PRE-PAGO ZERO-BALANCE` — Zero balance prepaid accounts
+          `DEBITO ZERO-BALANCE` — Zero balance debit accounts
+          `CURRENT ACCOUNTS` — Current accounts
+          `INTERNAL ACCOUNTS` — Internal accounts
+          `CORRESPONDENT ACCOUNTS` — Correspondent accounts   
+          `VOUCHER` - Prepaid voucher meal/food card
+
+        For more information, refer to [Program
+        types](https://developers.pismo.io/pismo-docs/docs/program-types).
+      schema:
+        type: string
+        enum:
+          - CREDITO
+          - PRE-PAGO
+          - DEBITO
+          - MERCHANT
+          - CREDITO ZERO-BALANCE
+          - PRE-PAGO ZERO-BALANCE
+          - DEBITO ZERO-BALANCE
+          - CURRENT ACCOUNTS
+          - INTERNAL ACCOUNTS
+          - CORRESPONDENT ACCOUNTS
+          - VOUCHER
+        maxLength: 30
+      example: CURRENT ACCOUNTS
+    RequiredQuery:
+      name: required
+      in: query
+      description: Can be `REQUIRED` and/or `OPTIONAL`. Use `,` as separator.
+      schema:
+        type: string
+      example: REQUIRED
+    SearchQuery:
+      name: search
+      in: query
+      description: Filter for provided text in the localization object's `name` field.
+      schema:
+        type: string
+      example: test
+    TextQuery:
+      name: text
+      in: query
+      description: >-
+        Filter items with provided text in the program name or the base program
+        name.
+      schema:
+        type: string
+        maxLength: 50
+      example: Pismo test
+    UserQuery:
+      name: user
+      in: query
+      description: User filter
+      schema:
+        type: string
+        maxLength: 255
+      example: Test User
+    ValidFromQuery:
+      name: validFrom
+      in: query
+      description: >-
+        Return results greater than or equal to the parameter's expiration date.
+        Format = yyyy-mm-ddThh:mm:ss.
+      schema:
+        type: string
+      example: '2021-07-06T13:11:05Z'
+    ValidUntilQuery:
+      name: validUntil
+      in: query
+      description: >-
+        Return results less than or equal to the parameter expiration date.
+        Format = yyyy-mm-ddThh:mm:ss.
+      schema:
+        type: string
+      example: '2021-07-06T13:11:05Z'
+  schemas:
+    AccountParameterBoolean:
+      type: boolean
+      description: Can the parameter be customized at both the account and program levels?
+      example: false
+    Assignor:
+      type: object
+      description: Assignor
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: |
+            Assignor ID. Assignors are configured at the program level.
+        name:
+          type: string
+          description: Assignor name
+    BaseProgramID:
+      type: integer
+      format: int64
+      description: ID of program that was used to create this program.
+      example: 2
+    Bin:
+      type: object
+      description: >
+        Bank Identification Number (BIN) object. **REQUIRED** for card-issuing
+        programs. 
+      properties:
+        start_range:
+          type: string
+          description: BIN range start.  **REQUIRED** for card-issuing programs.
+          example: '0'
+        end_range:
+          type: string
+          description: BIN range end.  **REQUIRED** for card-issuing programs.
+          example: '999999999'
+        value:
+          type: string
+          description: |
+            Card network-issued Bank Identification Number (BIN). 
+            6 or 8-digit BIN identifying the card network, issuer, and product.
+             **REQUIRED** for card-issuing programs.
+          example: '999999'
+    Brand:
+      type: string
+      description: |
+        Program's card brand.  **REQUIRED** for card-issuing programs.
+      enum:
+        - VISA
+        - MASTERCARD
+        - ELO
+        - RUPAY
+        - PRIVATE
+        - CABAL
+        - GOODCARD
+      example: VISA
+    BrandData:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: |
+            Brand ID. 
+        description:
+          type: string
+          description: Program's card brand.  **REQUIRED** for card-issuing programs.
+          enum:
+            - VISA
+            - MASTERCARD
+            - ELO
+            - RUPAY
+            - PRIVATE
+            - CABAL
+            - GOODCARD
+          example: VISA
+        pci:
+          type: boolean
+          description: Is specified program PCI (Payment Card Industry)?
+          example: true
+    Channel:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: >
+            Acquisition channel ID. ID of How the customer was referrred, such
+            as from a web page or mobile app. Acquisition channels are
+            configured at the program level.
+        name:
+          type: string
+          description: Customer-supplied acquistion channel name
+        type:
+          type: string
+          description: |
+            Customer-supplied Acquisition channel type.
+    Channels:
+      type: array
+      description: Program channels
+      items:
+        $ref: '#/components/schemas/Channel'
+    CopyProgram:
+      type: object
+      required:
+        - base_program_id
+        - name
+        - timezone
+        - currency_numeric_code
+        - country_code
+      properties:
+        base_program_id:
+          $ref: '#/components/schemas/BaseProgramID'
+        name:
+          $ref: '#/components/schemas/ProgramName'
+        timezone:
+          $ref: '#/components/schemas/TimeZone'
+        currency_numeric_code:
+          $ref: '#/components/schemas/CurrencyNumericCode'
+        country_code:
+          $ref: '#/components/schemas/CountryCode'
+        due_dates:
+          $ref: '#/components/schemas/DueDates'
+        brand:
+          $ref: '#/components/schemas/Brand'
+        bin:
+          $ref: '#/components/schemas/Bin'
+        language:
+          $ref: '#/components/schemas/ProgramLanguage'
+        cycle_closing:
+          $ref: '#/components/schemas/ProgramCycleClosing'
+        holiday_calendar_id:
+          $ref: '#/components/schemas/ProgramHolidayCalendarId'
+    CountryCode:
+      type: string
+      description: >-
+        <a href="https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3"
+        target="_blank">ISO 3166 Alpha-3</a> program country code. For example,
+        `BRA` = Brazil.
+      example: BRA
+    CreatedAt:
+      type: string
+      description: Program creation datetime. Format = yyyy-mm-ddThh:mm:ss.
+      example: '2021-07-06T13:11:05Z'
+    CreateProgramParameter:
+      type: object
+      required:
+        - parameter_name
+      properties:
+        parameter_name:
+          $ref: '#/components/schemas/ProgramParameterName'
+    CreateProgramParameterResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ProgramParameterID'
+        parameter_name:
+          $ref: '#/components/schemas/ProgramParameterName'
+        value:
+          $ref: '#/components/schemas/FloatParameterValue'
+        valid_from:
+          $ref: '#/components/schemas/ValidFrom'
+        status:
+          $ref: '#/components/schemas/ProgramParameterStatus'
+    CSS:
+      type: string
+      description: Card image. [Legacy - restricted]
+    CurrentPage:
+      type: integer
+      format: int32
+      description: Current page
+      example: 1
+    CurrencyNumericCode:
+      type: string
+      description: Program ISO 4217 currency code.
+      example: '986'
+    DueDateActiveBoolean:
+      type: boolean
+      description: Is due date active?
+      example: true
+    DueDateDay:
+      type: integer
+      format: int32
+      description: Day of the month (1 to 28) for the statement due date.
+      example: 10
+    DueDateID:
+      type: integer
+      format: int64
+      description: Due date ID
+      example: 1234
+    DueDates:
+      type: array
+      description: >
+        Array of available program due dates. Every program account specifies a
+        due date to use.
+
+
+        A due date is **REQUIRED** for Full balance credit programs.
+
+
+        For each due date, `day` and `active` are **REQUIRED**, as in the
+        following example:
+
+        ```
+
+        {
+            "due_dates": [
+                  {
+                    "day": 1,
+                    "active": true
+                  },
+                  {
+                    "day": 2,
+                    "active": false
+                  }
+            ]
+        }
+
+        ```
+
+        **Note:** The due date ID is passed as a **numeric value**. For example,
+        for due date `1` (first day of the month) the ID could be something like
+        `3063`. This is the value you should use. `day` must be between 1 and
+        28.
+      items:
+        $ref: '#/components/schemas/ProgramDueDate'
+    DueDatesPatch:
+      type: array
+      items:
+        $ref: '#/components/schemas/ProgramDueDatePatch'
+    ExistsAccountBoolean:
+      type: boolean
+      description: Is there a related account?
+      example: true
+    ExportCreatedAt:
+      type: string
+      description: Program export creation datetime. Format = yyyy-mm-ddThh:mm:ss.
+      example: '2023-07-10 15:30:14'
+    ExporterDetails:
+      type: string
+      description: Program exporter details
+      example: Details of program export 484
+    ExportFileUrl:
+      type: string
+      description: File URL for download export
+      nullable: true
+      example: export/TN-00001/484/export.json
+    ExportFinishedAt:
+      type: string
+      description: Datetime when program export finished. Format = yyyy-mm-ddThh:mm:ss.
+      example: '2023-07-10 18:31:18'
+    ExportStepDetails:
+      type: string
+      description: Export step details
+      example: Export step details
+    ExportStepID:
+      type: integer
+      format: int32
+      description: Program export step ID
+      example: 45
+    ExportStepOrder:
+      type: integer
+      format: int32
+      description: Program export step order, with `1` as the highest.
+      example: 1
+    ExportStepStatus:
+      type: string
+      description: Program export step status
+      enum:
+        - PENDING
+        - PROCESS
+        - SUCCESS
+        - ERROR
+      example: PENDING
+    ExportUser:
+      type: string
+      description: User who created the export's email address
+      example: example@pismo.io
+    FloatParameterValue:
+      type: number
+      format: float
+      description: Parameter value
+      example: 1.5
+    handler.HTTPError:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Bad request code
+          example: EOA0017
+        message:
+          type: string
+          description: Bad request response
+          example: Bad Request
+    ImportExportStepName:
+      type: string
+      description: >
+        Program export step name
+
+
+        Steps per [program type](doc:program-types): 
+
+
+        Key: FBC = Full balance (FB) credit, ZBC = Zero balance (ZB) credit, FBD
+        = FB debit, ZBD = ZB debit, FBPP = FB pre-paid, ZBPP= ZB pre-paid, Corp
+        = Corporate
+
+
+        | Step | FBC | ZBC | FBD | ZBD | FBPP | ZBPP| Corp |
+
+        | ------------------------------|---|---|---|---|---|---|---|
+
+        | `PROGRAM` | X | X | X | X | X | X | X |
+
+        | `DUEDATES` | X |  |  |  |  |  |  |
+
+        | `CHANNELS` | X | X | X | X | X | X |  |
+
+        | `PROGRAMS_PARAMETERS` | X | X | X | X | X | X | X |
+
+        | `TRANSACTIONS_CATEGORIES` | X |  |  |  |  |  |  |
+
+        | `PROGRAMS_TRANSACTION_TYPES` | X |  |  |  |  |  |  |
+
+        | `ORGS_OPERATIONS` | X |  | X |  | X |  | X |
+
+        | `NETWORK_ACCEPTANCES` | X | X |  |  |  |  |  |
+      enum:
+        - PROGRAM
+        - DUEDATES
+        - CHANNELS
+        - PROGRAMS_PARAMETERS
+        - TRANSACTIONS_CATEGORIES
+        - PROGRAMS_TRANSACTION_TYPES
+        - ORGS_OPERATIONS
+        - NETWORK_ACCEPTANCES
+      maxLength: 50
+      example: PROGRAM
+    ImportFileUrl:
+      type: string
+      description: >-
+        File URL for downloading the import. Contains part of the path and JSON
+        file name.
+      example: https://programs-api.s3.amazonaws.com/TENANT/import/file.json
+    ImportFinishedAt:
+      type: string
+      description: When program import finished. Format = yyyy-mm-ddThh:mm:ss.
+      example: '2021-09-22T15:45:00Z'
+    ImportStartedAt:
+      type: string
+      description: Program import start datetime. Format = yyyy-mm-ddThh:mm:ss.
+      example: '2021-09-22T15:00:00Z'
+    ImportStepDetails:
+      type: string
+      description: Program import step details
+      example: Import step details
+    ImportStepID:
+      type: integer
+      format: int64
+      description: Program import step ID
+      example: 12
+    ImportStepOrder:
+      type: integer
+      format: int32
+      description: >-
+        Program import step order. For example, `1` = first step, `2`  = second,
+        and so on.
+      example: 1
+    ImportStepStatus:
+      type: string
+      description: Program import step status
+      enum:
+        - PENDING
+        - PROCESS
+        - SUCCESS
+        - ERROR
+      example: SUCCESS
+    InitialCardStatus:
+      type: string
+      enum:
+        - CREATED
+        - BLOCKED
+        - UNBLOCKED
+      description: Initial status for cards created in this program.
+      example: CREATED
+    LegacyBoolean:
+      type: boolean
+      description: Is parameter from a legacy process and kept for compatibility only?
+      example: false
+    Pages:
+      type: integer
+      format: int32
+      description: Number of pages
+      example: 1
+    ParameterID:
+      description: >
+        Parameter ID. Parameter IDs can change depending on the environment and,
+        consequently, are not listed in the [program parameters reference
+        table](doc:program-parameters-reference-table). Use the [List program
+        parameters](ref:programparameter) endpoint to get the IDs
+        (`parameter_id` in the response) for your program parameters.
+      example: 1
+      type: integer
+      format: int64
+    PerPage:
+      type: integer
+      format: int32
+      description: Maximum items per page
+      example: 10
+    PrintCardBoolean:
+      type: boolean
+      description: >-
+        Should physical cards be issued by default on creation? Default is
+        `false`. [Legacy - restricted]
+      example: true
+    Program:
+      type: object
+      properties:
+        bin:
+          $ref: '#/components/schemas/Bin'
+        brand:
+          $ref: '#/components/schemas/Brand'
+        css:
+          $ref: '#/components/schemas/CSS'
+        id:
+          $ref: '#/components/schemas/ProgramID'
+        base_program_id:
+          $ref: '#/components/schemas/BaseProgramID'
+        initial_card_status:
+          $ref: '#/components/schemas/InitialCardStatus'
+        name:
+          $ref: '#/components/schemas/ProgramName'
+        print_card:
+          $ref: '#/components/schemas/PrintCardBoolean'
+        provider:
+          $ref: '#/components/schemas/Provider'
+        type:
+          $ref: '#/components/schemas/ProgramType'
+        url_image:
+          $ref: '#/components/schemas/UrlImage'
+        currency_numeric_code:
+          $ref: '#/components/schemas/CurrencyNumericCode'
+        timezone:
+          $ref: '#/components/schemas/TimeZone'
+        country_code:
+          $ref: '#/components/schemas/CountryCode'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        status:
+          $ref: '#/components/schemas/ProgramStatus'
+        language:
+          $ref: '#/components/schemas/ProgramLanguage'
+        cycle_closing:
+          $ref: '#/components/schemas/ProgramCycleClosing'
+        holiday_calendar_id:
+          $ref: '#/components/schemas/ProgramHolidayCalendarId'
+    ProgramDetails:
+      type: object
+      properties:
+        bin:
+          $ref: '#/components/schemas/Bin'
+        assignor_charge:
+          $ref: '#/components/schemas/Assignor'
+        assignor_invoice:
+          $ref: '#/components/schemas/Assignor'
+        brand:
+          $ref: '#/components/schemas/BrandData'
+        css:
+          $ref: '#/components/schemas/CSS'
+        id:
+          $ref: '#/components/schemas/ProgramID'
+        base_program_id:
+          $ref: '#/components/schemas/BaseProgramID'
+        initial_card_status:
+          $ref: '#/components/schemas/InitialCardStatus'
+        name:
+          $ref: '#/components/schemas/ProgramName'
+        print_card:
+          $ref: '#/components/schemas/PrintCardBoolean'
+        type:
+          $ref: '#/components/schemas/ProgramTypeData'
+        url_image:
+          $ref: '#/components/schemas/UrlImage'
+        currency_numeric_code:
+          $ref: '#/components/schemas/CurrencyNumericCode'
+        timezone:
+          $ref: '#/components/schemas/TimeZone'
+        country_code:
+          $ref: '#/components/schemas/CountryCode'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        status:
+          $ref: '#/components/schemas/ProgramStatus'
+        language:
+          $ref: '#/components/schemas/ProgramLanguage'
+        cycle_closing:
+          $ref: '#/components/schemas/ProgramCycleClosing'
+        holiday_calendar_id:
+          $ref: '#/components/schemas/ProgramHolidayCalendarId'
+    ProgramCopyV2Response:
+      type: object
+      properties:
+        program_export_id:
+          type: integer
+          description: >-
+            Through `program_export_id`, it is possible to check the creation
+            stage
+          example: 1504
+        message:
+          type: string
+          description: Process started message
+          example: >-
+            Your request has been submitted successfully. It may take some time
+            to finish. You can track the progress on the programs dashboard.
+    ProgramDueDate:
+      type: object
+      required:
+        - active
+        - day
+      properties:
+        active:
+          $ref: '#/components/schemas/DueDateActiveBoolean'
+        day:
+          $ref: '#/components/schemas/DueDateDay'
+        id:
+          description: Program due date ID
+          type: integer
+          format: int64
+          example: 12345
+    ProgramDueDatePatch:
+      type: object
+      properties:
+        active:
+          $ref: '#/components/schemas/DueDateActiveBoolean'
+        day:
+          $ref: '#/components/schemas/DueDateDay'
+    ProgramExportArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/ProgramExport'
+    ProgramExportBatchRequest:
+      type: object
+      required:
+        - export_ids
+      properties:
+        export_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgramExportID'
+          example:
+            - 1
+            - 2
+    ProgramExporterID:
+      type: integer
+      format: int64
+      description: Program exporter ID
+      example: 12
+    ProgramExporterStatus:
+      type: string
+      description: Program exporter status
+      enum:
+        - PENDING
+        - PROCESS
+        - SUCCESS
+        - ERROR
+      example: SUCCESS
+    ProgramExportID:
+      type: integer
+      format: int64
+      description: Program export ID
+      example: 1
+    ProgramExportPage:
+      type: object
+      properties:
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgramExport'
+        pages:
+          $ref: '#/components/schemas/Pages'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        total_items:
+          $ref: '#/components/schemas/TotalItems'
+    ProgramExportRequest:
+      type: object
+      required:
+        - program_id
+      properties:
+        program_id:
+          $ref: '#/components/schemas/ProgramID'
+    ProgramExportSteps:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ExportStepID'
+        name:
+          $ref: '#/components/schemas/ImportExportStepName'
+        status:
+          $ref: '#/components/schemas/ExportStepStatus'
+        order:
+          $ref: '#/components/schemas/ExportStepOrder'
+        details:
+          $ref: '#/components/schemas/ExportStepDetails'
+        started_at:
+          $ref: '#/components/schemas/StepStartedAt'
+        finished_at:
+          $ref: '#/components/schemas/StepFinishedAt'
+        deleted_at:
+          $ref: '#/components/schemas/StepDeletedAt'
+    ProgramExportWithStepResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ProgramExporterID'
+        program_id:
+          $ref: '#/components/schemas/ProgramID'
+        status:
+          $ref: '#/components/schemas/ProgramExporterStatus'
+        file_url:
+          $ref: '#/components/schemas/ExportFileUrl'
+        details:
+          $ref: '#/components/schemas/ExporterDetails'
+        started_at:
+          $ref: '#/components/schemas/ExportCreatedAt'
+        finished_at:
+          $ref: '#/components/schemas/ExportFinishedAt'
+        program_export_steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgramExportSteps'
+    ProgramFromTemplate:
+      type: object
+      required:
+        - name
+        - type
+        - timezone
+        - currency_numeric_code
+        - country_code
+      properties:
+        name:
+          $ref: '#/components/schemas/ProgramName'
+        type:
+          $ref: '#/components/schemas/ProgramType'
+        timezone:
+          $ref: '#/components/schemas/TimeZone'
+        currency_numeric_code:
+          $ref: '#/components/schemas/CurrencyNumericCode'
+        country_code:
+          $ref: '#/components/schemas/CountryCode'
+        bin:
+          $ref: '#/components/schemas/Bin'
+        brand:
+          $ref: '#/components/schemas/Brand'
+        due_dates:
+          $ref: '#/components/schemas/DueDates'
+        language:
+          $ref: '#/components/schemas/ProgramLanguage'
+        cycle_closing:
+          $ref: '#/components/schemas/ProgramCycleClosing'
+        holiday_calendar_id:
+          $ref: '#/components/schemas/ProgramHolidayCalendarId'
+    ProgramID:
+      type: integer
+      format: int64
+      description: Program ID
+      example: 12345
+    ProgramImporterDetails:
+      type: string
+      description: Program importer details
+      example: Import process details
+    ProgramImporterStatus:
+      type: string
+      description: Program import status
+      enum:
+        - PENDING
+        - PROCESS
+        - SUCCESS
+        - ERROR
+      example: SUCCESS
+    ProgramImportID:
+      type: integer
+      format: int64
+      description: Program import ID
+      example: 1234
+    ProgramImportRequest:
+      type: object
+      required:
+        - name
+        - file
+      properties:
+        name:
+          $ref: '#/components/schemas/ProgramName'
+        file:
+          description: JSON file to import
+          type: string
+          format: binary
+          example: file=@"/Users/pismo/Desktop/program-export-484.json
+    ProgramImportStep:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ImportStepID'
+        name:
+          $ref: '#/components/schemas/ImportExportStepName'
+        order:
+          $ref: '#/components/schemas/ImportStepOrder'
+        status:
+          $ref: '#/components/schemas/ImportStepStatus'
+        details:
+          $ref: '#/components/schemas/ImportStepDetails'
+        started_at:
+          $ref: '#/components/schemas/StepStartedAt'
+        finished_at:
+          $ref: '#/components/schemas/StepFinishedAt'
+        deleted_at:
+          $ref: '#/components/schemas/StepDeletedAt'
+    ProgramImportWithStepResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ProgramImportID'
+        program_id:
+          $ref: '#/components/schemas/ProgramID'
+        status:
+          $ref: '#/components/schemas/ProgramImporterStatus'
+        file_url:
+          $ref: '#/components/schemas/ImportFileUrl'
+        details:
+          $ref: '#/components/schemas/ProgramImporterDetails'
+        started_at:
+          $ref: '#/components/schemas/ImportStartedAt'
+        finished_at:
+          $ref: '#/components/schemas/ImportFinishedAt'
+        program_import_steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgramImportStep'
+          description: Program import process steps
+    ProgramItems:
+      type: array
+      items:
+        $ref: '#/components/schemas/Program'
+    ProgramName:
+      type: string
+      description: Program name
+      maxLength: 50
+      example: Acme debit program
+    ProgramLanguage:
+      type: string
+      description: |
+        Program Language:
+
+        * `en-US` - US English
+        * `pt-BR` - Brazilian Portuguese
+
+        Default is `en-US`
+      enum:
+        - pt-BR
+        - en-US
+      example: en-US
+    ProgramHolidayCalendarId:
+      type: string
+      description: Program holiday calendar ID
+      maxLength: 36
+      example: 0c78714f-3e88-40f3-9eda-debd356faabc
+    ProgramCycleClosing:
+      type: string
+      description: >
+        Program cicle closing. 
+
+
+        This field is used for things like accrual basis, interest calculation,
+        taxes, penalties, tiers, and more.  
+
+
+        Format = HH:MM:SS. Default is null.
+      example: '23:59:59'
+    ProgramPage:
+      type: object
+      properties:
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        items:
+          $ref: '#/components/schemas/ProgramItems'
+        pages:
+          $ref: '#/components/schemas/Pages'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        total_items:
+          $ref: '#/components/schemas/TotalItems'
+    ProgramParameter:
+      type: object
+      properties:
+        account_parameter:
+          $ref: '#/components/schemas/AccountParameterBoolean'
+        category:
+          $ref: '#/components/schemas/ProgramParameterCategory'
+        description:
+          $ref: '#/components/schemas/ProgramParameterDescription'
+        id:
+          $ref: '#/components/schemas/ProgramParameterID'
+        parameter_id:
+          $ref: '#/components/schemas/ParameterID'
+        name:
+          $ref: '#/components/schemas/ProgramParameterName'
+        type:
+          $ref: '#/components/schemas/ProgramParameterValueType'
+        valid_from:
+          $ref: '#/components/schemas/ValidFrom'
+        valid_until:
+          $ref: '#/components/schemas/ValidUntil'
+        value:
+          $ref: '#/components/schemas/FloatParameterValue'
+    ProgramParameters:
+      type: array
+      items:
+        $ref: '#/components/schemas/ProgramParameter'
+    ProgramParameterCategory:
+      type: string
+      description: >
+        Program parameter categories. When passing as a parameter, use `,` as
+        separator. 
+
+        `CREDITO` - Credit
+
+        `TAXA` -  Tax
+
+        `TARIFA` -  Fee
+
+        `PARAMETRO` -  Parameter
+
+        `ARQUIVOS` -  Archives
+
+        `COBRANCA` -  Collection
+
+        `FISCAL` -  Fiscal
+
+        `FATURAMENTO` -  Billing
+
+        `CARTAO` -  Card
+
+        `FRAUDE` -  Fraud
+
+        `TIPO DE TRANSACAO` -  Type of transaction
+      example: CREDITO
+    ProgramParameterDescription:
+      type: string
+      description: Program parameter description
+      example: Turn the control on and off.
+    ProgramParameterID:
+      type: integer
+      format: int64
+      description: >
+        Program parameter ID. An ID, specific to the program itself, that
+        identifies the program's setting for a specific program parameter.
+
+
+        For example, suppose you have a program parameter named `CONTROL
+        EXPIRATION CHANGES`, and its `id` is `15`. One program might set the
+        value for that parameter like this:
+
+        ```json
+
+        {
+          "account_parameter": false,
+          "category": "PARAMETER",
+          "description": "Turn the control on and off.",
+          "id": 2,
+          "parameter_id": 15,
+          "name": "CONTROL EXPIRATION CHANGES",
+          "type": "DECIMAL",
+          "valid_from": "2020-01-01T00:00:00.000Z",
+          "valid_until": "2020-12-31T23:59:59.999Z",
+          "value": 0
+        }
+
+        ```
+
+
+        Another program might set the value for same program parameter like
+        this:
+
+        ```json
+
+        {
+          "account_parameter": false,
+          "category": "PARAMETER",
+          "description": "Turn the control on and off.",
+          "id": 4,
+          "parameter_id": 15,
+          "name": "CONTROL EXPIRATION CHANGES",
+          "type": "DECIMAL",
+          "valid_from": "2020-02-04T00:00:00.000Z",
+          "valid_until": "2020-11-25T22:36:55.999Z",
+          "value": 1
+        }
+
+        ```
+
+
+        In both cases, `parameter_id` is `15` because the programs are setting
+        the same program parameter - the one with `id` = `15`. However, the `id`
+        value is different for each program, because it is used to identify that
+        program's specific parameter setting.
+      example: 1
+    ProgramParameterName:
+      type: string
+      maxLength: 50
+      description: >
+        Program parameter name.
+
+
+        For more information, refer to the [program
+        parameters](doc:program-parameters-reference-table) reference table.
+      example: CONTROL EXPIRATION CHANGES
+    ProgramParameterPage:
+      type: object
+      properties:
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        items:
+          $ref: '#/components/schemas/ProgramParameters'
+        pages:
+          $ref: '#/components/schemas/Pages'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        total_items:
+          $ref: '#/components/schemas/TotalItems'
+    ProgramParameterStatus:
+      type: string
+      description: |
+        Program parameter status:
+         * `ACTIVE` - Parameter is operational 
+         * `INACTIVE` Parameter cannot be used
+      enum:
+        - ACTIVE
+        - INACTIVE
+      example: ACTIVE
+    ProgramParameterTranslated:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ProgramRelationshipID'
+        parameter_id:
+          $ref: '#/components/schemas/ParameterID'
+        name:
+          $ref: '#/components/schemas/ProgramParameterName'
+        category:
+          $ref: '#/components/schemas/ProgramParameterCategory'
+        type:
+          $ref: '#/components/schemas/ProgramParameterValueType'
+        value:
+          $ref: '#/components/schemas/FloatParameterValue'
+        valid_from:
+          $ref: '#/components/schemas/ValidFrom'
+        valid_until:
+          $ref: '#/components/schemas/ValidUntil'
+        account_parameter:
+          $ref: '#/components/schemas/AccountParameterBoolean'
+        status:
+          $ref: '#/components/schemas/ProgramParameterStatus'
+        required:
+          $ref: '#/components/schemas/RequiredOrOptional'
+        update_date:
+          $ref: '#/components/schemas/UpdateDate'
+        legacy:
+          $ref: '#/components/schemas/LegacyBoolean'
+        translation:
+          $ref: '#/components/schemas/ProgramParameterTranslation'
+    ProgramParameterTranslatedPage:
+      type: object
+      properties:
+        current_page:
+          $ref: '#/components/schemas/CurrentPage'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgramParameterTranslated'
+        pages:
+          $ref: '#/components/schemas/Pages'
+        per_page:
+          $ref: '#/components/schemas/PerPage'
+        total_items:
+          $ref: '#/components/schemas/TotalItems'
+    ProgramParameterTranslation:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/TranslatedProgramParameterName'
+        description:
+          $ref: '#/components/schemas/ProgramParameterDescription'
+        details:
+          $ref: '#/components/schemas/TranslatedProgramParameterDetails'
+        language:
+          $ref: '#/components/schemas/TranslatedProgramParameterLanguage'
+    ProgramParameterValueType:
+      type: string
+      description: Parameter value type
+      enum:
+        - INTEGER
+        - DECIMAL
+        - PERCENTAGE
+      example: DECIMAL
+    ProgramPatch:
+      type: object
+      properties:
+        bin:
+          $ref: '#/components/schemas/Bin'
+        name:
+          $ref: '#/components/schemas/ProgramName'
+        timezone:
+          $ref: '#/components/schemas/TimeZone'
+        currency_numeric_code:
+          $ref: '#/components/schemas/CurrencyNumericCode'
+        country_code:
+          $ref: '#/components/schemas/CountryCode'
+        due_dates:
+          $ref: '#/components/schemas/DueDatesPatch'
+        language:
+          $ref: '#/components/schemas/ProgramLanguage'
+        cycle_closing:
+          $ref: '#/components/schemas/ProgramCycleClosing'
+        holiday_calendar_id:
+          $ref: '#/components/schemas/ProgramHolidayCalendarId'
+    ProgramRelationshipID:
+      type: integer
+      format: int64
+      description: Program relationship ID with parameter
+      example: 1
+    ProgramExport:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ProgramExportID'
+        program_id:
+          $ref: '#/components/schemas/ProgramID'
+        program_name:
+          $ref: '#/components/schemas/ProgramName'
+        program_type_id:
+          $ref: '#/components/schemas/ProgramTypeID'
+        status:
+          $ref: '#/components/schemas/ProgramExporterStatus'
+        details:
+          $ref: '#/components/schemas/ExporterDetails'
+        file_url:
+          $ref: '#/components/schemas/ExportFileUrl'
+        started_at:
+          $ref: '#/components/schemas/ExportCreatedAt'
+        finished_at:
+          $ref: '#/components/schemas/ExportFinishedAt'
+        user:
+          $ref: '#/components/schemas/ExportUser'
+    ProgramResponse:
+      type: object
+      properties:
+        bin:
+          $ref: '#/components/schemas/Bin'
+        brand:
+          $ref: '#/components/schemas/Brand'
+        channels:
+          $ref: '#/components/schemas/Channels'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        css:
+          $ref: '#/components/schemas/CSS'
+        timezone:
+          $ref: '#/components/schemas/TimeZone'
+        currency_numeric_code:
+          $ref: '#/components/schemas/CurrencyNumericCode'
+        country_code:
+          $ref: '#/components/schemas/CountryCode'
+        due_dates:
+          $ref: '#/components/schemas/DueDates'
+        id:
+          $ref: '#/components/schemas/ProgramID'
+        initial_card_status:
+          $ref: '#/components/schemas/InitialCardStatus'
+        name:
+          $ref: '#/components/schemas/ProgramName'
+        print_card:
+          $ref: '#/components/schemas/PrintCardBoolean'
+        provider:
+          $ref: '#/components/schemas/Provider'
+        status:
+          $ref: '#/components/schemas/ProgramStatus'
+        type:
+          $ref: '#/components/schemas/ProgramType'
+        url_image:
+          $ref: '#/components/schemas/UrlImage'
+        language:
+          $ref: '#/components/schemas/ProgramLanguage'
+        cycle_closing:
+          $ref: '#/components/schemas/ProgramCycleClosing'
+        holiday_calendar_id:
+          $ref: '#/components/schemas/ProgramHolidayCalendarId'
+    ProgramIDs:
+      type: array
+      items:
+        $ref: '#/components/schemas/ProgramID'
+    ProgramStatus:
+      type: string
+      description: |
+        Program status:
+         * `ACTIVE` - A program is active when PCI settings and accounting stages are configured.
+         * `PENDING` - A program is pending when PCI settings and accounting stages are not configured. A program that is pending is not ready for use.
+      enum:
+        - ACTIVE
+        - PENDING
+      example: PENDING
+    ProgramTemplateV2Response:
+      type: object
+      properties:
+        program_import_id:
+          type: integer
+          description: Program import ID
+          example: 1
+        message:
+          type: string
+          description: Process started message
+          example: >-
+            Your request has been submitted successfully. It may take some time
+            to finish. You can track the progress on the programs dashboard.
+    ProgramType:
+      type: string
+      description: >
+        Program type:
+          `CREDITO` — Full balance credit accounts
+          `PRE-PAGO` — Full balance prepaid accounts
+          `DEBITO` — Full balance debit accounts
+          `MERCHANT` — Merchant accounts
+          `CREDITO ZERO-BALANCE` — Zero balance credit accounts
+          `PRE-PAGO ZERO-BALANCE` — Zero balance prepaid accounts
+          `DEBITO ZERO-BALANCE` — Zero balance debit accounts
+          `CURRENT ACCOUNTS` — Current accounts
+          `INTERNAL ACCOUNTS` — Internal accounts
+          `CORRESPONDENT ACCOUNTS` — Correspondent accounts
+          `VOUCHER` - Prepaid voucher meal/food card
+
+        For more information, refer to [Program
+        types](https://developers.pismo.io/pismo-docs/docs/program-types)
+      enum:
+        - CREDITO
+        - PRE-PAGO
+        - DEBITO
+        - MERCHANT
+        - CREDITO ZERO-BALANCE
+        - PRE-PAGO ZERO-BALANCE
+        - DEBITO ZERO-BALANCE
+        - CURRENT ACCOUNTS
+        - INTERNAL ACCOUNTS
+        - CORRESPONDENT ACCOUNTS
+        - VOUCHER
+      example: CREDITO
+    ProgramMode:
+      type: string
+      description: Mode of the program type. It can be either `CREDIT` or `DEBIT`.
+      enum:
+        - CREDIT
+        - DEBIT
+      example: CREDIT
+    ProgramTypeData:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ProgramTypeID'
+        description:
+          $ref: '#/components/schemas/ProgramType'
+        mode:
+          $ref: '#/components/schemas/ProgramMode'
+    ProgramTypeID:
+      type: integer
+      format: int64
+      description: |
+        Program type ID:  
+
+          `1` =  `CREDITO`
+          `2` =  `PRE-PAGO`
+          `3` = `DEBITO`
+          `5` = `MERCHANT`
+          `7` = `CREDITO ZERO-BALANCE`
+          `8` = `PRE-PAGO ZERO-BALANCE`
+          `9` = `DEBITO ZERO-BALANCE`
+          `11` =` CURRENT ACCOUNTS`
+          `12` = `INTERNAL ACCOUNTS`
+          `13` = `CORRESPONDENT ACCOUNTS`
+          `15` = `VOUCHER`
+
+        For more information, refer to [Program types](doc:program-types).
+      example: 1
+    Provider:
+      type: object
+      description: '[Legacy - restricted]'
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Provider ID (outdated)
+          example: 12
+        name:
+          type: string
+          description: Provider name (outdated)
+          example: Acme Services
+    PutProgramParameter:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          $ref: '#/components/schemas/FloatParameterValue'
+    RequiredOrOptional:
+      type: string
+      description: Sets whether the parameter is required or optional.
+      enum:
+        - REQUIRED
+        - OPTIONAL
+      example: REQUIRED
+    StepDeletedAt:
+      type: string
+      description: Step deletion datetime. Format = yyyy-mm-ddThh:mm:ss.
+      example: '2021-09-23T10:10:25Z'
+    StepFinishedAt:
+      type: string
+      description: Step completion datetime. Format = yyyy-mm-ddThh:mm:ss.
+      example: '2021-09-23T10:15:45Z'
+    StepStartedAt:
+      type: string
+      description: Step start datetime. Format = yyyy-mm-ddThh:mm:ss.
+      example: '2021-09-23T10:05:00Z'
+    TimeZone:
+      type: string
+      description: >
+        Program timezone. This is the <a
+        href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+        target="_blank"> IANA (Internet Assigned Numbers Authority) time zone
+        database</a> "Region/City" format.
+      example: America/Anchorage
+    TotalItems:
+      type: integer
+      format: int32
+      description: Total number of items
+      example: 3
+    TranslatedProgramParameterDetails:
+      type: string
+      description: Localized program parameter details.
+      example: Defines whether the projected interest...
+    TranslatedProgramParameterLanguage:
+      type: string
+      description: Localized program parameter language
+      example: en-us
+    TranslatedProgramParameterName:
+      type: string
+      description: Localized program parameter name
+      example: Interest projection reversal
+    UpdateDate:
+      type: string
+      format: date-time
+      description: Parameter last updated datetime. Format = yyyy-mm-ddThh:mm:ss.
+      example: '2020-12-31 23:59:59'
+    SetParameterBatch:
+      type: object
+      properties:
+        parameter_id:
+          $ref: '#/components/schemas/ParameterID'
+        value:
+          $ref: '#/components/schemas/FloatParameterValue'
+    SetProgramParameter:
+      type: object
+      properties:
+        parameter_id:
+          $ref: '#/components/schemas/ParameterID'
+        value:
+          $ref: '#/components/schemas/FloatParameterValue'
+        programs:
+          $ref: '#/components/schemas/ProgramIDs'
+    SetProgramParametersBatch:
+      type: array
+      items:
+        $ref: '#/components/schemas/SetParameterBatch'
+    SetProgramsParameters:
+      type: array
+      items:
+        $ref: '#/components/schemas/SetProgramParameter'
+    UrlImage:
+      type: string
+      description: Program image URL [Legacy - restricted]
+    ValidFrom:
+      type: string
+      format: date-time
+      description: Provided value start datetime. Format = yyyy-mm-ddThh:mm:ss.
+      example: '2020-01-01T00:00:00.000Z'
+    ValidUntil:
+      type: string
+      format: date-time
+      description: Provided value expiration datetime. Format = yyyy-mm-ddThh:mm:ss.
+      example: '2020-12-31T23:59:59.999Z'
+  responses:
+    204NoContent:
+      description: No Content
+    400BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/handler.HTTPError'
+    404NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/handler.HTTPError'
+    404NotFound2:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/handler.HTTPError'
+          examples:
+            program-not-found:
+              $ref: '#/components/examples/ProgramNotFoundResponse'
+            brand-not-found:
+              $ref: '#/components/examples/BrandNotFoundResponse'
+  examples:
+    BinEndRangeNotAValidNumberResponse:
+      value:
+        code: EOA0040
+        message: bin.end_range is not a valid number
+    BinStartRangeNotAValidNumberResponse:
+      value:
+        code: EOA0040
+        message: bin.start_range is not a valid number
+    BinValueNotAValidNumberResponse:
+      value:
+        code: EOA0040
+        message: bin.value is not a valid number
+    BodyParsingError2Response:
+      value:
+        code: EOA0011
+        message: 'Error parsing utils body with message: '
+    BodyParsingErrorResponse:
+      value:
+        code: EOA0008
+        message: 'Error parsing utils body with message: '
+    CardInformationBinBrandRequiredResponse:
+      value:
+        code: EOA0073
+        message: Card information is required (Bin and Brand)
+    BrandNotFoundResponse:
+      value:
+        code: EOA0064
+        message: Brand not found
+    CardInformationRequiredResponse:
+      value:
+        code: EOA0054
+        message: Card information is required (Bin, Brand and DueDate)
+    ConnectionFailErrorResponse:
+      value:
+        code: EOA0010
+        message: 'Connection failed with message: '
+    ConnectionFailResponse:
+      value:
+        code: EOA0009
+        message: 'Connection failed with message: '
+    ErrorMissingXTenantResponse:
+      value:
+        code: EOA0017
+        message: Missing x-tenant header
+    ErrorToBinderResponse:
+      value:
+        code: EOA0018
+        message: Error to Binder
+    FailCreateChannelResponse:
+      value:
+        code: EOA0022
+        message: Failed to create program channel
+    FailCreateCorporateConfigurationResponse:
+      value:
+        code: EOA0058
+        message: Failed to create corporate configuration
+    FailCreateDueDatesResponse:
+      value:
+        code: EOA0034
+        message: Failed to create program due dates
+    FailCreateTransactionCategoryResponse:
+      value:
+        code: EOA0035
+        message: Failed to create transaction category
+    FieldRequiredResponse:
+      value:
+        code: EOA0086
+        message: fieldName' field is required
+    GenericError2Response:
+      value:
+        code: EOA0016
+        message: Something went wrong, please try again later
+    GenericErrorResponse:
+      value:
+        code: EOA0015
+        message: Something went wrong, please try again later
+    InvalidBin68Response:
+      value:
+        code: EOA0037
+        message: Bin must be 6 or 8 digits
+    InvalidBinRange6Response:
+      value:
+        code: EOA0038
+        message: When a BIN is 6, the range can be up to 9 digits
+    InvalidBinRange8Response:
+      value:
+        code: EOA0039
+        message: When a BIN is 8, the range can be up to 7 digits
+    InvalidBrandOverwriteResponse:
+      value:
+        code: EOA0059
+        message: >-
+          It is not possible to update the Brand value, the value is already
+          filled
+    InvalidCountryCodeResponse:
+      value:
+        code: EOA0063
+        message: 'Invalid country_code: xxx'
+    InvalidCurrencyNumericCodeResponse:
+      value:
+        code: EOA0033
+        message: 'Invalid currency_numeric_code: xxx'
+    InvalidDueDatesResponse:
+      value:
+        code: EOA0082
+        message: Due dates need at least one active day
+    InvalidChannelNameResponse:
+      value:
+        code: EOA0021
+        message: 'Invalid channel name: xxx'
+    InvalidRequestResponse:
+      value:
+        code: EOA0080
+        message: Invalid request
+    InvalidTimezoneResponse:
+      value:
+        code: EOA0029
+        message: 'Invalid timezone: xxx'
+    ProgramExportNotFoundResponse:
+      value:
+        code: EOA0072
+        message: Program export xxx not found
+    ProgramExportStepsNotFoundResponse:
+      value:
+        code: EOA0090
+        message: Steps for program export xxx not found
+    ProgramImportNotFoundResponse:
+      value:
+        code: EOA0091
+        message: Program import xxx not found
+    ProgramImportStepsNotFoundResponse:
+      value:
+        code: EOA0092
+        message: Steps for program import xxx not found
+    ProgramNotFoundResponse:
+      value:
+        code: EOA0020
+        message: Program x not found
+    ProgramNotOperationalResponse:
+      value:
+        code: EOA0085
+        message: Program xxx isn't operational
+    ProgramTypeNotFoundResponse:
+      value:
+        code: EOA0031
+        message: Program type not found
+    ShouldNotContainCardInformationResponse:
+      value:
+        code: EOA0055
+        message: Should not contain card information (Bin, Brand and DueDate)
+    TemplateFileNotFoundResponse:
+      value:
+        code: EOA0030
+        message: Template file not found
+    TransactionCategoryNotFoundResponse:
+      value:
+        code: EOA0036
+        message: Failed to find a transaction category by description
+  securitySchemes:
+    S2SAuthentication:
+      type: http
+      scheme: bearer
+      description: All requests must be previoulsy authenticated.
+security:
+  - S2SAuthentication: []
+paths:
+  /programs/v1/programs/template:
+    post:
+      summary: Create program
+      description: >
+        Create a program synchronously. 
+
+
+        For more information about programs, refer to [Core
+        objects](doc:setup-overview#program).
+
+
+        This endpoint executes synchronously, meaning, a network timeout or
+        similar network delay could occur. In this case, an error is generated.
+        To avoid this possibility, call the [Create program
+        (async)](ref:createprogrambasedontemplateasync) endpoint instead.
+
+
+        Thie endpoint generates a [Program
+        created](https://developers.pismo.io/events/docs/programs-creation-1)
+        event. 
+
+
+        To get your Organization's programs, call the [List
+        programs](ref:programs-1) endpoint, or view them in the [Pismo Control
+        Center](doc:get-started-with-control-center).
+      operationId: CreateProgramBasedOnTemplate
+      tags:
+        - Programs
+      x-codegen-request-body-name: programTemplate
+      requestBody:
+        description: Create program from template request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramFromTemplate'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                missing-x-tenant:
+                  $ref: '#/components/examples/ErrorMissingXTenantResponse'
+                error-to-binder:
+                  $ref: '#/components/examples/ErrorToBinderResponse'
+                field-required:
+                  $ref: '#/components/examples/FieldRequiredResponse'
+                invalid-timezone:
+                  $ref: '#/components/examples/InvalidTimezoneResponse'
+                invalid-currency-numeric-code:
+                  $ref: '#/components/examples/InvalidCurrencyNumericCodeResponse'
+                invalid-country-code:
+                  $ref: '#/components/examples/InvalidCountryCodeResponse'
+                should-not-contain-card-info:
+                  $ref: >-
+                    #/components/examples/ShouldNotContainCardInformationResponse
+                card-info-bin-brand-required:
+                  $ref: >-
+                    #/components/examples/CardInformationBinBrandRequiredResponse
+                card-info-required:
+                  $ref: '#/components/examples/CardInformationRequiredResponse'
+                invalid-bin-value:
+                  $ref: '#/components/examples/BinValueNotAValidNumberResponse'
+                invalid-bin-start-range:
+                  $ref: '#/components/examples/BinStartRangeNotAValidNumberResponse'
+                invalid-bin-end-range:
+                  $ref: '#/components/examples/BinEndRangeNotAValidNumberResponse'
+                invalid-bin:
+                  $ref: '#/components/examples/InvalidBin68Response'
+                invalid-bin-6-range:
+                  $ref: '#/components/examples/InvalidBinRange6Response'
+                invalid-bin-8-range:
+                  $ref: '#/components/examples/InvalidBinRange8Response'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                program-not-found:
+                  $ref: '#/components/examples/ProgramNotFoundResponse'
+                program-type-not-found:
+                  $ref: '#/components/examples/ProgramTypeNotFoundResponse'
+                brand-not-found:
+                  $ref: '#/components/examples/BrandNotFoundResponse'
+        '416':
+          description: Range not satisfiable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                template-not-found:
+                  $ref: '#/components/examples/TemplateFileNotFoundResponse'
+                invalid-channel-name:
+                  $ref: '#/components/examples/InvalidChannelNameResponse'
+                fail-create-channel:
+                  $ref: '#/components/examples/FailCreateChannelResponse'
+                fail-create-due-dates:
+                  $ref: '#/components/examples/FailCreateDueDatesResponse'
+                fail-create-transaction-category:
+                  $ref: '#/components/examples/FailCreateTransactionCategoryResponse'
+                transaction-category-not-found:
+                  $ref: '#/components/examples/TransactionCategoryNotFoundResponse'
+                fail-create-coporate-configuration:
+                  $ref: >-
+                    #/components/examples/FailCreateCorporateConfigurationResponse
+                connection-fail:
+                  $ref: '#/components/examples/ConnectionFailResponse'
+                connection-fail-2:
+                  $ref: '#/components/examples/ConnectionFailErrorResponse'
+                body-parsing-error:
+                  $ref: '#/components/examples/BodyParsingErrorResponse'
+                body-parsing-error-2:
+                  $ref: '#/components/examples/BodyParsingError2Response'
+                generic-error:
+                  $ref: '#/components/examples/GenericErrorResponse'
+                generic-error-2:
+                  $ref: '#/components/examples/GenericError2Response'
+  /programs/v2/programs/template:
+    post:
+      summary: Create program (async)
+      description: >
+        Create a program asynchronously. 
+
+
+        For more information about programs, refer to [Core
+        objects](doc:setup-overview#program).
+
+
+        This endpoint creates a program asynchronously; meaning, your app can
+        continue executing during this. It could take 2 minutes or more for the
+        platform to finish creating the program. Alternatively, you can use the
+        [Create program](ref:createprogrambasedontemplate) endpoint, which
+        executes synchronously and throws an error if the program cannot be
+        created.
+
+
+        This endpoint generates a [Program
+        created](https://developers.pismo.io/events/docs/programs-creation-1)
+        event. Given that creation is done asynchronously, it is recommended you
+        do not try to access the program object via Pismo endpoints until this
+        event is received.
+
+
+        To get your Organization's programs, call the [List
+        programs](ref:programs-1) endpoint, or view them in the [Pismo Control
+        Center](doc:get-started-with-control-center).
+      operationId: CreateProgramBasedOnTemplateAsync
+      tags:
+        - Programs
+      x-codegen-request-body-name: programTemplate
+      requestBody:
+        description: Create program from template request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramFromTemplate'
+        required: true
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramTemplateV2Response'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                missing-x-tenant:
+                  $ref: '#/components/examples/ErrorMissingXTenantResponse'
+                error-to-binder:
+                  $ref: '#/components/examples/ErrorToBinderResponse'
+                field-required:
+                  $ref: '#/components/examples/FieldRequiredResponse'
+                invalid-timezone:
+                  $ref: '#/components/examples/InvalidTimezoneResponse'
+                invalid-currency-numeric-code:
+                  $ref: '#/components/examples/InvalidCurrencyNumericCodeResponse'
+                invalid-country-code:
+                  $ref: '#/components/examples/InvalidCountryCodeResponse'
+                should-not-contain-card-info:
+                  $ref: >-
+                    #/components/examples/ShouldNotContainCardInformationResponse
+                card-info-bin-brand-required:
+                  $ref: >-
+                    #/components/examples/CardInformationBinBrandRequiredResponse
+                card-info-required:
+                  $ref: '#/components/examples/CardInformationRequiredResponse'
+                invalid-bin-value:
+                  $ref: '#/components/examples/BinValueNotAValidNumberResponse'
+                invalid-bin-start-range:
+                  $ref: '#/components/examples/BinStartRangeNotAValidNumberResponse'
+                invalid-bin-end-range:
+                  $ref: '#/components/examples/BinEndRangeNotAValidNumberResponse'
+                invalid-bin:
+                  $ref: '#/components/examples/InvalidBin68Response'
+                invalid-bin-6-range:
+                  $ref: '#/components/examples/InvalidBinRange6Response'
+                invalid-bin-8-range:
+                  $ref: '#/components/examples/InvalidBinRange8Response'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                program-type-not-found:
+                  $ref: '#/components/examples/ProgramTypeNotFoundResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                template-not-found:
+                  $ref: '#/components/examples/TemplateFileNotFoundResponse'
+                connection-fail:
+                  $ref: '#/components/examples/ConnectionFailResponse'
+                body-parsing-error:
+                  $ref: '#/components/examples/BodyParsingErrorResponse'
+                generic-error:
+                  $ref: '#/components/examples/GenericErrorResponse'
+                generic-error-2:
+                  $ref: '#/components/examples/GenericError2Response'
+  /programs/v1/programs/copy:
+    post:
+      summary: Copy program
+      operationId: CopyProgram
+      tags:
+        - Programs
+      description: >
+        Copy an existing program to create a new one synchronously. 
+
+
+        For more information about programs, refer to [Core
+        objects](doc:setup-overview#program).
+
+
+        For information on what properties are copied, refer to [Cloned and
+        exported program properties](doc:cc-cloned-and-exported-data).
+
+
+        This endpoint executes synchronously; meaning, a network timeout or
+        similar delay could occur. In this case, an error is generated. To avoid
+        this possibility, call the [Copy program (async)](ref:copyprogramasync)
+        endpoint instead. 
+
+
+        This endpoint generates a [Program
+        created](https://developers.pismo.io/events/docs/programs-creation-1)
+        event.
+
+         To get your Organization's programs, call the [List programs](ref:programs-1) endpoint, or view them in the [Pismo Control Center](doc:get-started-with-control-center).
+      x-codegen-request-body-name: program
+      requestBody:
+        description: Copy program request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopyProgram'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                missing-x-tenant:
+                  $ref: '#/components/examples/ErrorMissingXTenantResponse'
+                error-to-binder:
+                  $ref: '#/components/examples/ErrorToBinderResponse'
+                field-required:
+                  $ref: '#/components/examples/FieldRequiredResponse'
+                invalid-timezone:
+                  $ref: '#/components/examples/InvalidTimezoneResponse'
+                invalid-currency-numeric-code:
+                  $ref: '#/components/examples/InvalidCurrencyNumericCodeResponse'
+                invalid-country-code:
+                  $ref: '#/components/examples/InvalidCountryCodeResponse'
+                should-not-contain-card-info:
+                  $ref: >-
+                    #/components/examples/ShouldNotContainCardInformationResponse
+                card-info-bin-brand-required:
+                  $ref: >-
+                    #/components/examples/CardInformationBinBrandRequiredResponse
+                card-info-required:
+                  $ref: '#/components/examples/CardInformationRequiredResponse'
+                invalid-bin-value:
+                  $ref: '#/components/examples/BinValueNotAValidNumberResponse'
+                invalid-bin-start-range:
+                  $ref: '#/components/examples/BinStartRangeNotAValidNumberResponse'
+                invalid-bin-end-range:
+                  $ref: '#/components/examples/BinEndRangeNotAValidNumberResponse'
+                invalid-bin:
+                  $ref: '#/components/examples/InvalidBin68Response'
+                invalid-bin-6-range:
+                  $ref: '#/components/examples/InvalidBinRange6Response'
+                invalid-bin-8-range:
+                  $ref: '#/components/examples/InvalidBinRange8Response'
+        '404':
+          $ref: '#/components/responses/404NotFound2'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                invalid-channel-name:
+                  $ref: '#/components/examples/InvalidChannelNameResponse'
+                fail-create-channel:
+                  $ref: '#/components/examples/FailCreateChannelResponse'
+                fail-create-due-dates:
+                  $ref: '#/components/examples/FailCreateDueDatesResponse'
+                fail-create-transaction-category:
+                  $ref: '#/components/examples/FailCreateTransactionCategoryResponse'
+                transaction-category-not-found:
+                  $ref: '#/components/examples/TransactionCategoryNotFoundResponse'
+                fail-create-coporate-configuration:
+                  $ref: >-
+                    #/components/examples/FailCreateCorporateConfigurationResponse
+                connection-fail:
+                  $ref: '#/components/examples/ConnectionFailResponse'
+                connection-fail-2:
+                  $ref: '#/components/examples/ConnectionFailErrorResponse'
+                body-parsing-error:
+                  $ref: '#/components/examples/BodyParsingErrorResponse'
+                body-parsing-error-2:
+                  $ref: '#/components/examples/BodyParsingError2Response'
+                generic-error:
+                  $ref: '#/components/examples/GenericErrorResponse'
+                generic-error-2:
+                  $ref: '#/components/examples/GenericError2Response'
+  /programs/v2/programs/copy:
+    post:
+      summary: Copy program (async)
+      description: >
+        Copy an existing program to create a new one. 
+
+
+        Refer to [Core objects](doc:setup-overview) for more information about
+        programs.
+
+
+        For information on what properties are copied, refer to [Cloned and
+        exported program properties](doc:cc-cloned-and-exported-data).
+
+
+        This endpoint operates asynchronously; meaning, your program can
+        continue executing while the program is being copied. It can take 2
+        minutes or more to copy the program. 
+
+
+        Alternatively, you can call [Copy program](ref:copyprogram), which
+        executes synchronously and returns a response indicating failure or
+        success.
+
+
+        This endpoint generates a [Program
+        created](https://developers.pismo.io/events/docs/programs-creation-1)
+        event. Given that creation is done asynchronously, it is recommended you
+        do not try to access the program object via Pismo endpoints until this
+        event is received.
+
+
+        To get your Organization's programs, call the [List
+        programs](ref:programs-1) endpoint, or view them in the [Pismo Control
+        Center](doc:get-started-with-control-center).
+      operationId: CopyProgramAsync
+      tags:
+        - Programs
+      requestBody:
+        description: Program copy body request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopyProgram'
+        required: true
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramCopyV2Response'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                missing-x-tenant:
+                  $ref: '#/components/examples/ErrorMissingXTenantResponse'
+                error-to-binder:
+                  $ref: '#/components/examples/ErrorToBinderResponse'
+                field-required:
+                  $ref: '#/components/examples/FieldRequiredResponse'
+                invalid-timezone:
+                  $ref: '#/components/examples/InvalidTimezoneResponse'
+                invalid-currency-numeric-code:
+                  $ref: '#/components/examples/InvalidCurrencyNumericCodeResponse'
+                invalid-country-code:
+                  $ref: '#/components/examples/InvalidCountryCodeResponse'
+                should-not-contain-card-info:
+                  $ref: >-
+                    #/components/examples/ShouldNotContainCardInformationResponse
+                card-info-bin-brand-required:
+                  $ref: >-
+                    #/components/examples/CardInformationBinBrandRequiredResponse
+                card-info-required:
+                  $ref: '#/components/examples/CardInformationRequiredResponse'
+                invalid-bin-value:
+                  $ref: '#/components/examples/BinValueNotAValidNumberResponse'
+                invalid-bin-start-range:
+                  $ref: '#/components/examples/BinStartRangeNotAValidNumberResponse'
+                invalid-bin-end-range:
+                  $ref: '#/components/examples/BinEndRangeNotAValidNumberResponse'
+                invalid-bin:
+                  $ref: '#/components/examples/InvalidBin68Response'
+                invalid-bin-6-range:
+                  $ref: '#/components/examples/InvalidBinRange6Response'
+                invalid-bin-8-range:
+                  $ref: '#/components/examples/InvalidBinRange8Response'
+                invalid-due-dates:
+                  $ref: '#/components/examples/InvalidDueDatesResponse'
+                program-not-operation:
+                  $ref: '#/components/examples/ProgramNotOperationalResponse'
+        '404':
+          $ref: '#/components/responses/404NotFound2'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                connection-fail:
+                  $ref: '#/components/examples/ConnectionFailResponse'
+                body-parsing-error:
+                  $ref: '#/components/examples/BodyParsingErrorResponse'
+                generic-error:
+                  $ref: '#/components/examples/GenericErrorResponse'
+                generic-error-2:
+                  $ref: '#/components/examples/GenericError2Response'
+      x-codegen-request-body-name: programCopy
+  /programs/v1/programs:
+    get:
+      summary: List programs
+      description: >
+        List an organization's programs. The organization ID is parsed from the
+        token.
+
+
+        For information about programs and organizations, refer to [Core
+        objects](doc:setup-overview).
+      operationId: programs
+      tags:
+        - Programs
+      parameters:
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/OrderQuery'
+        - $ref: '#/components/parameters/OrderByQuery'
+        - $ref: '#/components/parameters/ProgramIdQuery'
+        - $ref: '#/components/parameters/ProgramNameQuery'
+        - $ref: '#/components/parameters/ProgramTypeQuery'
+        - $ref: '#/components/parameters/BinValueQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramPage'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+  /programs/v2/programs/{id}:
+    get:
+      summary: Get program V2
+      description: Retrieve program details.
+      operationId: program
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+      tags:
+        - Programs
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramDetails'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+  /programs/v1/programs/{id}:
+    get:
+      summary: Get program V1
+      description: Get details for a specific [program](doc:program-types).
+      operationId: get-program-v1
+      tags:
+        - Programs
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+    patch:
+      summary: Update program
+      description: >
+        Update a program.
+
+
+        This endpoint generates a [Program
+        updated](https://developers.pismo.io/events/docs/programs-update-1)
+        event.
+
+
+        **Note:** Due date is a **REQUIRED** field for [Full balance credit
+        programs](doc:full-balance-credit-program) types.
+      operationId: UpdateProgramInfo
+      tags:
+        - Programs
+      x-codegen-request-body-name: program
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramPatch'
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                missing-x-tenant:
+                  $ref: '#/components/examples/ErrorMissingXTenantResponse'
+                invalid-request:
+                  $ref: '#/components/examples/InvalidRequestResponse'
+                error-to-binder:
+                  $ref: '#/components/examples/ErrorToBinderResponse'
+                invalid-timezone:
+                  $ref: '#/components/examples/InvalidTimezoneResponse'
+                invalid-currency-numeric-code:
+                  $ref: '#/components/examples/InvalidCurrencyNumericCodeResponse'
+                invalid-country-code:
+                  $ref: '#/components/examples/InvalidCountryCodeResponse'
+                should-not-contain-card-info:
+                  $ref: >-
+                    #/components/examples/ShouldNotContainCardInformationResponse
+                card-info-bin-brand-required:
+                  $ref: >-
+                    #/components/examples/CardInformationBinBrandRequiredResponse
+                card-info-required:
+                  $ref: '#/components/examples/CardInformationRequiredResponse'
+                invalid-bin-value:
+                  $ref: '#/components/examples/BinValueNotAValidNumberResponse'
+                invalid-bin-start-range:
+                  $ref: '#/components/examples/BinStartRangeNotAValidNumberResponse'
+                invalid-bin-end-range:
+                  $ref: '#/components/examples/BinEndRangeNotAValidNumberResponse'
+                invalid-bin:
+                  $ref: '#/components/examples/InvalidBin68Response'
+                invalid-bin-6-range:
+                  $ref: '#/components/examples/InvalidBinRange6Response'
+                invalid-bin-8-range:
+                  $ref: '#/components/examples/InvalidBinRange8Response'
+                invalid-due-dates:
+                  $ref: '#/components/examples/InvalidDueDatesResponse'
+                invalid-brand-orverwrite:
+                  $ref: '#/components/examples/InvalidBrandOverwriteResponse'
+        '404':
+          $ref: '#/components/responses/404NotFound2'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                fail-create-due-dates:
+                  $ref: '#/components/examples/FailCreateDueDatesResponse'
+                connection-fail:
+                  $ref: '#/components/examples/ConnectionFailResponse'
+                connection-fail-2:
+                  $ref: '#/components/examples/ConnectionFailErrorResponse'
+                body-parsing-error:
+                  $ref: '#/components/examples/BodyParsingErrorResponse'
+                body-parsing-error-2:
+                  $ref: '#/components/examples/BodyParsingError2Response'
+                generic-error:
+                  $ref: '#/components/examples/GenericErrorResponse'
+                generic-error-2:
+                  $ref: '#/components/examples/GenericError2Response'
+  /programs/v1/programs/{program_id}/parameters:
+    post:
+      summary: Link optional parameter to program
+      description: >
+
+        Link an optional parameter to a program. Some program parameters are
+        optional and not automatically linked to a program when it is created. 
+
+
+        For more information, refer to [Edit program details and
+        parameters](doc:cc-manage-program-details-and-parameters) or the
+        [Program parameters](doc:program-parameters-reference-table) reference
+        table.
+      operationId: createProgramParameter
+      tags:
+        - Parameters
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath2'
+      requestBody:
+        description: Link parameter to program request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProgramParameter'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateProgramParameterResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+    get:
+      summary: List program parameters
+      description: Retrieves a paginated list of program parameters.
+      operationId: programParameter
+      tags:
+        - Parameters
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath2'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/OrderQuery'
+        - $ref: '#/components/parameters/ProgramStatusQuery'
+        - $ref: '#/components/parameters/ProgramNamesQuery'
+        - $ref: '#/components/parameters/ProgramParameterCategoryQuery'
+        - $ref: '#/components/parameters/ValidUntilQuery'
+        - $ref: '#/components/parameters/ValidFromQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramParameterPage'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+  /programs/v1/programs/parameters/batch:
+    post:
+      summary: Update program(s) parameters
+      description: >
+        Update program parameter values for one or more programs. 
+
+
+        For more information, refer to the [program
+        parameters](doc:program-parameters-reference-table) reference table.
+      operationId: setProgramsParameters
+      tags:
+        - Parameters
+      requestBody:
+        description: Update parameter for one or more programs request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetProgramsParameters'
+        required: true
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+  /programs/v1/programs/{id}/parameters/batch:
+    post:
+      summary: Update program parameters
+      description: >
+        Update one or more parameters for a specific program. 
+
+
+        For more information, refer to the [program
+        parameters](doc:program-parameters-reference-table) reference table.
+      operationId: setProgramParameters
+      tags:
+        - Parameters
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+      requestBody:
+        description: Update one or more parameters for program request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetProgramParametersBatch'
+        required: true
+      responses:
+        '204':
+          $ref: '#/components/responses/204NoContent'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+  /programs/v1/programs/{program_id}/parameters/{program_parameter_id}:
+    put:
+      summary: Update program parameter
+      description: >
+        Update a program parameter value.
+
+
+        For more information, refer to the [program
+        parameters](doc:program-parameters-reference-table) reference table.
+      operationId: updateProgramParameter
+      tags:
+        - Parameters
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath2'
+        - $ref: '#/components/parameters/ProgramParameterIdPath'
+      requestBody:
+        description: Update program parameter request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutProgramParameter'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramParameter'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+  /programs/v2/programs/{program_id}/parameters:
+    get:
+      summary: List program parameters with localization
+      description: >
+        Get a paginated list of programs with localization parameters. 
+
+
+        Returns a `translation` object with  language-specific parameter
+        information. 
+
+
+        For information about programs, refer to [Core
+        objects](doc:setup-overview#program).
+      operationId: programParameterV2
+      tags:
+        - Parameters
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath2'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/OrderQuery'
+        - $ref: '#/components/parameters/OrderByQuery'
+        - $ref: '#/components/parameters/ProgramParameterCategoryQuery'
+        - $ref: '#/components/parameters/ProgramStatusQuery'
+        - $ref: '#/components/parameters/RequiredQuery'
+        - $ref: '#/components/parameters/ProgramNamesQuery'
+        - $ref: '#/components/parameters/ValidFromQuery'
+        - $ref: '#/components/parameters/ValidUntilQuery'
+        - $ref: '#/components/parameters/SearchQuery'
+        - $ref: '#/components/parameters/LanguageQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramParameterTranslatedPage'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+  /programs/v1/programs/export:
+    post:
+      summary: Export program
+      description: >
+        Export a program to a JSON file. 
+
+
+        While this endpoint returns an immediate response, it also kicks off an
+        asynchronous export process. You can check its progress with the [Get
+        program export record](ref:getprogramexportrecord) endpoint. When done,
+        the program status changes to `SUCCESS`. 
+
+
+        To download the exported file, call [Download exported
+        program](ref:getprogramexportdownload).
+      operationId: postProgramExport
+      tags:
+        - Export and import
+      x-codegen-request-body-name: programExportRequest
+      requestBody:
+        description: Program export request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramExportRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramExport'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+    get:
+      summary: List exported programs
+      description: >
+        Get your organization's exported programs in a paginated list. The
+        organization ID is parsed from the token.
+      operationId: getProgramExport
+      tags:
+        - Export and import
+      parameters:
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/OrderQuery'
+        - $ref: '#/components/parameters/OrderByQuery'
+        - $ref: '#/components/parameters/TextQuery'
+        - $ref: '#/components/parameters/ProgramStatusQuery2'
+        - $ref: '#/components/parameters/UserQuery'
+        - $ref: '#/components/parameters/BeginDateQuery'
+        - $ref: '#/components/parameters/EndDateQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramExportPage'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+  /programs/v1/programs/export/batch:
+    post:
+      summary: Export programs
+      operationId: postProgramExportBatch
+      tags:
+        - Export and import
+      description: >
+        Exports one or more programs to a ZIP file. 
+
+
+        This endpoint starts an async export process. When that process is done,
+        the program status, for each exported program, changes to `SUCCESS`. 
+
+
+        To download the exported file, call the [Download exported
+        program](ref:getprogramexportdownload) endpoint.
+      x-codegen-request-body-name: programExportRequest
+      requestBody:
+        description: Program export batch request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramExportBatchRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramExportArray'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+  /programs/v1/programs/export/{id}:
+    get:
+      summary: Get program export record
+      description: >
+        Gets a program's detailed export record, including the export steps and
+        their statuses.
+      operationId: getProgramExportRecord
+      tags:
+        - Export and import
+      parameters:
+        - $ref: '#/components/parameters/ProgramExportIdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramExportWithStepResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                program-export-not-found:
+                  $ref: '#/components/examples/ProgramExportNotFoundResponse'
+                program-export-steps-not-found:
+                  $ref: '#/components/examples/ProgramExportStepsNotFoundResponse'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                generic-error:
+                  $ref: '#/components/examples/GenericErrorResponse'
+                generic-error-2:
+                  $ref: '#/components/examples/GenericError2Response'
+  /programs/v1/programs/export/{id}/download:
+    get:
+      summary: Download exported program
+      description: >
+        Download an exported program as a JSON file. 
+
+
+        Use this endpoint after exporting the program (using either [Export
+        program](ref:postprogramexport) or [Export
+        programs](ref:postprogramexportbatch).
+      operationId: getProgramExportDownload
+      tags:
+        - Export and import
+      parameters:
+        - $ref: '#/components/parameters/ProgramExportIdPath'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+  /programs/v1/programs/import:
+    post:
+      summary: Import program
+      description: >
+        Uploads a JSON file to import a program.
+
+
+        This endpoint generates a [Program
+        created](https://developers.pismo.io/events/docs/programs-creation-1)
+        event.
+      operationId: postProgramImport
+      tags:
+        - Export and import
+      x-codegen-request-body-name: programExportRequest
+      requestBody:
+        description: Program import request
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProgramImportRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramExport'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+    get:
+      summary: List imported programs
+      description: |
+        Get your organization's imported programs in a paginated list.
+
+        The org ID is parsed from the access token.
+      operationId: getProgramImport
+      tags:
+        - Export and import
+      parameters:
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/OrderQuery'
+        - $ref: '#/components/parameters/OrderByQuery'
+        - $ref: '#/components/parameters/TextQuery'
+        - $ref: '#/components/parameters/ProgramStatusQuery2'
+        - $ref: '#/components/parameters/UserQuery'
+        - $ref: '#/components/parameters/BeginDateQuery'
+        - $ref: '#/components/parameters/EndDateQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramExportPage'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+  /programs/v1/programs/import/{id}:
+    get:
+      summary: Get program import record
+      description: >
+        Get a detailed program import record, including the import steps and
+        their statuses.
+      operationId: getProgramImportRecord
+      tags:
+        - Export and import
+      parameters:
+        - $ref: '#/components/parameters/ProgramImportIdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramImportWithStepResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                program-import-not-found:
+                  $ref: '#/components/examples/ProgramImportNotFoundResponse'
+                program-import-steps-not-found:
+                  $ref: '#/components/examples/ProgramImportStepsNotFoundResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                generic-error:
+                  $ref: '#/components/examples/GenericErrorResponse'
+                generic-error-2:
+                  $ref: '#/components/examples/GenericError2Response'
+  /programs/v1/programs/import/program/{id}:
+    get:
+      summary: Get program import record by program ID
+      description: >
+        Get a detailed programn import record, including the import steps and
+        their statuses.
+      operationId: getProgramImportRecordByID
+      tags:
+        - Export and import
+      parameters:
+        - $ref: '#/components/parameters/ProgramIdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramImportWithStepResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                program-import-not-found:
+                  $ref: '#/components/examples/ProgramImportNotFoundResponse'
+                program-import-steps-not-found:
+                  $ref: '#/components/examples/ProgramImportStepsNotFoundResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.HTTPError'
+              examples:
+                generic-error:
+                  $ref: '#/components/examples/GenericErrorResponse'
+                generic-error-2:
+                  $ref: '#/components/examples/GenericError2Response'
+  /programs/v1/programs/import/{id}/download:
+    get:
+      summary: Download imported program
+      description: >
+        Download a previously imported program in JSON format. 
+
+
+        You can use this endpoint to review (audit) what program data was
+        imported.
+
+
+        If this call is via Postman, the JSON is returned in the response. In
+        the Control Center, a browser dialog prompts you where to save the file.
+      tags:
+        - Export and import
+      operationId: getProgramImportDownload
+      parameters:
+        - $ref: '#/components/parameters/ProgramImportIdPath'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/400BadRequest'
