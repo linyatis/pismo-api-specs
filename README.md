@@ -7,7 +7,7 @@ https://developers.pismo.io/ using these files.
 
 ## 💻 Documentation
 
-- **[Guides](https://developers.pismo.io/pismo-docs#:~:text=code%2C%20and%20more.-,Guides,-Recipes)**  
+- **[Guides](https://developers.pismo.io/pismo-docs/docs/welcome)**  
   How to issue cards, set up core payments systems, settlement, and more.
 
 - **[API Reference](https://developers.pismo.io/pismo-docs/reference/)**  
